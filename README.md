@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/badge/Ver%20Demo-10b981?style=for-the-badge&logo=vercel&logoColor=white" alt="Demo" />
   </a>
 
-  <br/>
+  <br/><br/>
 
   ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
   ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
