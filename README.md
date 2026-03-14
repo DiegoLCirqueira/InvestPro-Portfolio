@@ -1,16 +1,64 @@
-# React + Vite
+<div align="center">
+  <h1>📈 InvestPro</h1>
+  <p>Plataforma inteligente de gestão de investimentos pessoais</p>
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+  ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+  ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+  ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+</div>
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Funcionalidades
 
-## React Compiler
+- **Dashboard** — visão geral do portfólio com gráficos e resumo financeiro
+- **Análise de Mercado** — índices em tempo real e tabela de ativos com sentimento
+- **Notícias** — principais notícias do mercado financeiro
+- **Recomendações de IA** — sugestões personalizadas baseadas no seu perfil
+- **Diversificação** — distribuição do portfólio por categoria e ativo
+- **Câmbio de Moedas** — cotações e compra de moedas estrangeiras
+- **Transferências Bancárias** — movimentação entre contas com histórico
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tecnologias
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Tecnologia | Uso |
+|---|---|
+| [React 19](https://react.dev/) | Interface de usuário |
+| [Vite](https://vitejs.dev/) | Bundler e dev server |
+| [Tailwind CSS v4](https://tailwindcss.com/) | Estilização |
+| [Recharts](https://recharts.org/) | Gráficos |
+| [Lucide React](https://lucide.dev/) | Ícones |
+
+---
+
+## 🚀 Como rodar localmente
+```bash
+# Clone o repositório
+git clone https://github.com/DiegoLCirqueira/InvestPro.git
+
+# Entre na pasta
+cd InvestPro
+
+# Instale as dependências
+npm install
+
+# Rode o servidor de desenvolvimento
+npm run dev
+```
+
+Acesse `http://localhost:5173` no navegador.
+
+---
+
+## 📝 Licença
+
+Este projeto está sob a licença [MIT](LICENSE).
+
+---
+
+<div align="center">
+  Feito por <a href="https://github.com/DiegoLCirqueira">Diego Lins Cirqueira</a>
+</div>
