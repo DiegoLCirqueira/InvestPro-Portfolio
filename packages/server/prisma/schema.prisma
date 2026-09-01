@@ -1,0 +1,102 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  cpf           String?        @unique
+  phone         String?
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  portfolio     Portfolio?
+  refreshTokens RefreshToken[]
+  bankAccounts  BankAccount[]
+  transfers     Transfer[]
+}
+
+model Portfolio {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  balance   Decimal    @default(0) @db.Decimal(15, 2)
+  user      User       @relation(fields: [userId], references: [id])
+  positions Position[]
+}
+
+model Position {
+  id           String    @id @default(uuid())
+  portfolioId  String
+  ticker       String
+  name         String
+  type         AssetType
+  quantity     Decimal   @db.Decimal(15, 8)
+  avgPrice     Decimal   @db.Decimal(15, 2)
+  currentValue Decimal   @db.Decimal(15, 2)
+  portfolio    Portfolio @relation(fields: [portfolioId], references: [id])
+
+  @@unique([portfolioId, ticker])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model BankAccount {
+  id         String   @id @default(uuid())
+  userId     String
+  bank       String
+  agency     String
+  account    String
+  holderName String?
+  type       String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Transfer {
+  id                String    @id @default(uuid())
+  userId            String
+  status            String    @default("PENDING")
+  type              String
+  amount            Decimal   @db.Decimal(15, 2)
+  description       String?
+  toAccountBank     String?
+  toAccountAgency   String?
+  toAccountNumber   String?
+  toAccountHolder   String?
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+  failureReason     String?
+  user              User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum AssetType {
+  CRYPTO
+  STOCK
+  FIXED_INCOME
+}
+
+enum Role {
+  USER
+  ADMIN
+}

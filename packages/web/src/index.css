@@ -1,0 +1,166 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/*
+ * InvestPro Design System — Tailwind v4 + shadcn/ui
+ *
+ * Cores baseadas na especificação de UX auditada.
+ * Tokens HSL para shadcn/ui, hex para @theme do Tailwind.
+ */
+
+@theme {
+  /* ── Backgrounds ─────────────────────────────── */
+  --color-background: #0a0d11;
+  --color-surface-1: #131720;
+  --color-surface-2: #1a1f2e;
+  --color-surface-3: #232a3b;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  /* ── Foregrounds / Text ──────────────────────── */
+  --color-foreground: #f0f2f5;
+  --color-muted: #8b92a5;
+  --color-muted-foreground: #5a6177;
+
+  /* ── Borders ─────────────────────────────────── */
+  --color-border: #1e2433;
+  --color-border-strong: #2d3548;
+
+  /* ── Primary (Accent Green) ──────────────────── */
+  --color-primary: #00c781;
+  --color-primary-foreground: #0a0d11;
+
+  /* ── Secondary ───────────────────────────────── */
+  --color-secondary: #1a1f2e;
+  --color-secondary-foreground: #f0f2f5;
+
+  /* ── Destructive ─────────────────────────────── */
+  --color-destructive: #ff4757;
+  --color-destructive-foreground: #ffffff;
+
+  /* ── Accent (Blue) ───────────────────────────── */
+  --color-accent: #4c8dff;
+  --color-accent-foreground: #ffffff;
+
+  /* ── Muted surfaces ──────────────────────────── */
+  --color-muted-surface: #131720;
+
+  /* ── Input / Ring ────────────────────────────── */
+  --color-input: #1e2433;
+  --color-ring: #00c781;
+
+  /* ── Semantic extras ─────────────────────────── */
+  --color-warning: #ffb340;
+  --color-success: #00c781;
+  --color-info: #4c8dff;
+
+  /* ── Chart / Category palette ────────────────── */
+  --color-cat-crypto: #f59e0b;
+  --color-cat-stocks: #4c8dff;
+  --color-cat-fixed: #a78bfa;
+  --color-cat-reits: #f472b6;
+  --color-cat-intl: #22d3ee;
+
+  /* ── Typography ──────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Border radius ───────────────────────────── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  /* ── Legacy brand aliases (mantidos para compatibilidade) ── */
+  --color-brand-bg: #0a0d11;
+  --color-brand-card: #131720;
+  --color-brand-primary: #00c781;
+  --color-brand-secondary: #4c8dff;
+  --color-brand-danger: #ff4757;
+
+  /* ── Spacing ─────────────────────────────────── */
+  --spacing-75: 18.75rem;
+}
+
+/*
+ * shadcn/ui CSS variables (HSL format for component layer)
+ * These power the cn()-based component classes.
+ */
+:root {
+  --background: 220 20% 6%;
+  --foreground: 210 40% 96%;
+
+  --card: 220 20% 8%;
+  --card-foreground: 210 40% 96%;
+
+  --popover: 220 20% 8%;
+  --popover-foreground: 210 40% 96%;
+
+  --primary: 160 100% 40%;
+  --primary-foreground: 220 20% 6%;
+
+  --secondary: 220 18% 12%;
+  --secondary-foreground: 210 40% 96%;
+
+  --muted: 220 18% 12%;
+  --muted-foreground: 220 10% 55%;
+
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 354 84% 65%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 15% 14%;
+  --input: 220 15% 14%;
+  --ring: 160 100% 40%;
+
+  --radius: 1rem;
+
+  --chart-1: 160 100% 40%;
+  --chart-2: 217 91% 60%;
+  --chart-3: 270 76% 68%;
+  --chart-4: 330 81% 75%;
+  --chart-5: 175 78% 50%;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar oculta globalmente */
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * shadcn/ui component layer — importa os estilos base
+ * para que cn() possa compor variantes corretamente.
+ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  *::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

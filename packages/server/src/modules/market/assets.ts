@@ -1,0 +1,86 @@
+// @investpro/server
+// Lista base de ativos em memória (fallback/seed) para a demo funcionar sem API externa e sem banco.
+
+import type { SeedAsset } from './adapters/types.js'
+
+export const baseAssets: SeedAsset[] = [
+  {
+    id: 'asset_petr4',
+    ticker: 'PETR4',
+    name: 'Petrobras PN',
+    type: 'STOCK',
+    price: 37.42,
+    change24h: 0.86,
+    changePercent: 2.35,
+    source: 'brapi',
+    remoteId: 'PETR4',
+  },
+  {
+    id: 'asset_vale3',
+    ticker: 'VALE3',
+    name: 'Vale ON',
+    type: 'STOCK',
+    price: 62.75,
+    change24h: 1.02,
+    changePercent: 1.65,
+    source: 'brapi',
+    remoteId: 'VALE3',
+  },
+  {
+    id: 'asset_itub4',
+    ticker: 'ITUB4',
+    name: 'Itaú Unibanco PN',
+    type: 'STOCK',
+    price: 34.18,
+    change24h: -0.12,
+    changePercent: -0.35,
+    source: 'brapi',
+    remoteId: 'ITUB4',
+  },
+  {
+    id: 'asset_bova11',
+    ticker: 'BOVA11',
+    name: 'iShares Ibovespa',
+    type: 'STOCK',
+    price: 128.9,
+    change24h: 0.9,
+    changePercent: 0.7,
+    source: 'brapi',
+    remoteId: 'BOVA11',
+  },
+  {
+    id: 'asset_btc',
+    ticker: 'BTC',
+    name: 'Bitcoin',
+    type: 'CRYPTO',
+    price: 415000,
+    change24h: 3500,
+    changePercent: 0.85,
+    source: 'coingecko',
+    remoteId: 'bitcoin',
+  },
+  {
+    id: 'asset_eth',
+    ticker: 'ETH',
+    name: 'Ethereum',
+    type: 'CRYPTO',
+    price: 15200,
+    change24h: 180,
+    changePercent: 1.2,
+    source: 'coingecko',
+    remoteId: 'ethereum',
+  },
+  {
+    id: 'asset_selic',
+    ticker: 'SELIC',
+    name: 'Tesouro Selic 2029',
+    type: 'FIXED_INCOME',
+    price: 1,
+    change24h: 0,
+    changePercent: 0,
+    // Proxy determinístico: usa o par USDBRL da AwesomeAPI como referência externa
+    // até existir uma fonte específica de renda fixa (pendência WI-205).
+    source: 'awesomeapi',
+    remoteId: 'USDBRL',
+  },
+]
