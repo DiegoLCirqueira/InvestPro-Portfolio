@@ -22,6 +22,30 @@ async function main() {
 
   console.log('Usuário criado:', user.email)
 
+  const adminPasswordHash = hashSync('admin123456', 10)
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@investpro.com' },
+    update: { role: 'ADMIN' },
+    create: {
+      email: 'admin@investpro.com',
+      passwordHash: adminPasswordHash,
+      fullName: 'Admin InvestPro',
+      role: 'ADMIN',
+    },
+  })
+
+  await prisma.portfolio.upsert({
+    where: { userId: admin.id },
+    update: {},
+    create: {
+      userId: admin.id,
+      balance: 0,
+    },
+  })
+
+  console.log('Usuário admin criado:', admin.email)
+
   const portfolio = await prisma.portfolio.upsert({
     where: { userId: user.id },
     update: {},
