@@ -7,6 +7,7 @@ import { registerSecurity } from "./plugins/security.js";
 import { registerErrorHandler } from "./plugins/errors.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { userRoutes } from "./modules/user/user.routes.js";
+import { adminRoutes } from "./modules/admin/admin.routes.js";
 import { portfolioRoutes } from "./modules/portfolio/portfolio.routes.js";
 import { marketRoutes } from "./modules/market/market.routes.js";
 import { newsRoutes } from "./modules/news/news.routes.js";
@@ -34,6 +35,7 @@ export async function buildServer() {
 
   await app.register(authRoutes);
   await app.register(userRoutes);
+  await app.register(adminRoutes);
   await app.register(portfolioRoutes);
   await app.register(marketRoutes);
   await app.register(newsRoutes);
