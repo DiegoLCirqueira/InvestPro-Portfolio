@@ -1,17 +1,14 @@
 // @investpro/server
 // Service de ordens. Obtém o preço corrente via Market (getQuote), avalia a
-// execução e registra a ordem.
-//
-// PERSISTÊNCIA: ainda não existe modelo/tabela "Order" no schema do Prisma.
-// Até a migração correspondente, as ordens são mantidas em memória por usuário
-// (não sobrevivem a restart). Quando o modelo for criado, trocar o store por
-// um prisma.$transaction. NÃO alteramos market nem portfolio.
+// execução e persiste a ordem via Prisma (model Order).
 
+import type { Order as PrismaOrder } from '@prisma/client'
 import type {
   CreateOrderInput,
   Order,
   OrderList,
 } from '@investpro/shared'
+import { prisma } from '../../config/database.js'
 import { getQuote } from '../market/market.service.js'
 import { getPortfolio } from '../portfolio/portfolio.service.js'
 import type { PortfolioPosition } from './order.types.js'
@@ -23,21 +20,28 @@ import {
   validateOrder,
 } from './order.domain.js'
 
-const store = new Map<string, Order[]>()
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
 function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
 function existingPosition(positions: PortfolioPosition[], ticker: string): PortfolioPosition | undefined {
   return positions.find((p) => p.ticker.toUpperCase() === ticker)
+}
+
+function toOrder(record: PrismaOrder): Order {
+  return {
+    id: record.id,
+    assetId: record.assetId,
+    ticker: record.ticker,
+    side: record.side as Order['side'],
+    type: record.type as Order['type'],
+    quantity: record.quantity.toNumber(),
+    price: record.price ? record.price.toNumber() : null,
+    status: record.status as Order['status'],
+    createdAt: record.createdAt.toISOString(),
+    executedAt: record.executedAt ? record.executedAt.toISOString() : null,
+    avgPrice: record.avgPrice ? record.avgPrice.toNumber() : null,
+  }
 }
 
 export async function createOrder(userId: string, input: CreateOrderInput): Promise<Order> {
@@ -81,25 +85,22 @@ export async function createOrder(userId: string, input: CreateOrderInput): Prom
     )
   }
 
-  const order: Order = {
-    id: generateId(),
-    assetId: asset.assetId ?? asset.ticker,
-    ticker: asset.ticker,
-    side: input.side,
-    type: input.type,
-    quantity: input.quantity,
-    price: input.price ?? evaluation.fillPrice,
-    status: evaluation.status,
-    createdAt: new Date().toISOString(),
-    executedAt: evaluation.status === 'FILLED' ? new Date().toISOString() : null,
-    avgPrice,
-  }
+  const created = await prisma.order.create({
+    data: {
+      userId,
+      assetId: asset.assetId ?? asset.ticker,
+      ticker: asset.ticker,
+      side: input.side,
+      type: input.type,
+      quantity: input.quantity,
+      price: input.price ?? evaluation.fillPrice,
+      status: evaluation.status,
+      avgPrice,
+      executedAt: evaluation.status === 'FILLED' ? new Date() : null,
+    },
+  })
 
-  const userOrders = store.get(userId) ?? []
-  userOrders.push(order)
-  store.set(userId, userOrders)
-
-  return order
+  return toOrder(created)
 }
 
 export async function listOrders(
@@ -107,11 +108,20 @@ export async function listOrders(
   page: number,
   limit: number
 ): Promise<OrderList> {
-  const userOrders = store.get(userId) ?? []
-  const start = (page - 1) * limit
+  const skip = (page - 1) * limit
+  const [records, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count({ where: { userId } }),
+  ])
+
   return {
-    items: userOrders.slice(start, start + limit),
-    total: userOrders.length,
+    items: records.map(toOrder),
+    total,
     page,
     limit,
   }
