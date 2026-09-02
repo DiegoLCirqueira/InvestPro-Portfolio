@@ -22,6 +22,7 @@ model User {
   refreshTokens RefreshToken[]
   bankAccounts  BankAccount[]
   transfers     Transfer[]
+  orders        Order[]
 }
 
 model Portfolio {
@@ -86,6 +87,24 @@ model Transfer {
   completedAt       DateTime?
   failureReason     String?
   user              User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Order {
+  id         String    @id @default(uuid())
+  userId     String
+  assetId    String
+  ticker     String
+  side       String
+  type       String
+  quantity   Decimal   @db.Decimal(15, 8)
+  price      Decimal?  @db.Decimal(15, 2)
+  status     String    @default("PENDING")
+  avgPrice   Decimal?  @db.Decimal(15, 2)
+  createdAt  DateTime  @default(now())
+  executedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
