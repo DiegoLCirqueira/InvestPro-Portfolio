@@ -1,83 +1,85 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap");
 @plugin "tailwindcss-animate";
 
 /*
  * InvestPro Design System — Tailwind v4 + shadcn/ui
  *
- * Cores baseadas na especificação de UX auditada.
+ * Tokens portados do mockup Claude Design (paleta light-first,
+ * dark mode via [data-theme="dark"] no elemento raiz).
  * Tokens HSL para shadcn/ui, hex para @theme do Tailwind.
  */
 
 @theme {
-  /* ── Backgrounds ─────────────────────────────── */
-  --color-background: #0a0d11;
-  --color-surface-1: #131720;
-  --color-surface-2: #1a1f2e;
-  --color-surface-3: #232a3b;
-  --color-overlay: rgba(0, 0, 0, 0.6);
+  /* ── Backgrounds (claro / padrão) ────────────── */
+  --color-background: #f6f6f4;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f0f0ee;
+  --color-surface-3: #e6e6e3;
+  --color-overlay: rgba(15, 17, 20, 0.45);
 
   /* ── Foregrounds / Text ──────────────────────── */
-  --color-foreground: #f0f2f5;
-  --color-muted: #8b92a5;
-  --color-muted-foreground: #5a6177;
+  --color-foreground: #15171b;
+  --color-muted: #5b5f68;
+  --color-muted-foreground: #8a8f99;
 
   /* ── Borders ─────────────────────────────────── */
-  --color-border: #1e2433;
-  --color-border-strong: #2d3548;
+  --color-border: #e2e2df;
+  --color-border-strong: #cfcfca;
 
   /* ── Primary (Accent Green) ──────────────────── */
-  --color-primary: #00c781;
-  --color-primary-foreground: #0a0d11;
+  --color-primary: #0b8a63;
+  --color-primary-foreground: #ffffff;
 
   /* ── Secondary ───────────────────────────────── */
-  --color-secondary: #1a1f2e;
-  --color-secondary-foreground: #f0f2f5;
+  --color-secondary: #f0f0ee;
+  --color-secondary-foreground: #15171b;
 
   /* ── Destructive ─────────────────────────────── */
-  --color-destructive: #ff4757;
+  --color-destructive: #c1404c;
   --color-destructive-foreground: #ffffff;
 
-  /* ── Accent (Blue) ───────────────────────────── */
-  --color-accent: #4c8dff;
+  /* ── Accent (Blue / Info) ────────────────────── */
+  --color-accent: #3760d8;
   --color-accent-foreground: #ffffff;
 
   /* ── Muted surfaces ──────────────────────────── */
-  --color-muted-surface: #131720;
+  --color-muted-surface: #f0f0ee;
 
   /* ── Input / Ring ────────────────────────────── */
-  --color-input: #1e2433;
-  --color-ring: #00c781;
+  --color-input: #e2e2df;
+  --color-ring: #0b8a63;
 
   /* ── Semantic extras ─────────────────────────── */
-  --color-warning: #ffb340;
-  --color-success: #00c781;
-  --color-info: #4c8dff;
+  --color-warning: #a8720b;
+  --color-success: #0b8a63;
+  --color-info: #3760d8;
 
   /* ── Chart / Category palette ────────────────── */
-  --color-cat-crypto: #f59e0b;
-  --color-cat-stocks: #4c8dff;
-  --color-cat-fixed: #a78bfa;
-  --color-cat-reits: #f472b6;
-  --color-cat-intl: #22d3ee;
+  --color-cat-crypto: #d9821b;
+  --color-cat-stocks: #3760d8;
+  --color-cat-fixed: #7c5cf0;
+  --color-cat-reits: #0891b2;
+  --color-cat-intl: #1f9d6b;
 
   /* ── Typography ──────────────────────────────── */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji";
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* ── Border radius ───────────────────────────── */
   --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
 
   /* ── Legacy brand aliases (mantidos para compatibilidade) ── */
-  --color-brand-bg: #0a0d11;
-  --color-brand-card: #131720;
-  --color-brand-primary: #00c781;
-  --color-brand-secondary: #4c8dff;
-  --color-brand-danger: #ff4757;
+  --color-brand-bg: #f6f6f4;
+  --color-brand-card: #ffffff;
+  --color-brand-primary: #0b8a63;
+  --color-brand-secondary: #3760d8;
+  --color-brand-danger: #c1404c;
 
   /* ── Spacing ─────────────────────────────────── */
   --spacing-75: 18.75rem;
@@ -86,43 +88,131 @@
 /*
  * shadcn/ui CSS variables (HSL format for component layer)
  * These power the cn()-based component classes.
+ * Padrão = tema claro. Tema escuro entra via [data-theme="dark"].
  */
 :root {
-  --background: 220 20% 6%;
-  --foreground: 210 40% 96%;
+  --background: 60 10% 96%;
+  --foreground: 220 12% 9%;
 
-  --card: 220 20% 8%;
-  --card-foreground: 210 40% 96%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 12% 9%;
 
-  --popover: 220 20% 8%;
-  --popover-foreground: 210 40% 96%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 12% 9%;
 
-  --primary: 160 100% 40%;
-  --primary-foreground: 220 20% 6%;
+  --primary: 162 85% 29%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 18% 12%;
-  --secondary-foreground: 210 40% 96%;
+  --secondary: 60 6% 94%;
+  --secondary-foreground: 220 12% 9%;
 
-  --muted: 220 18% 12%;
-  --muted-foreground: 220 10% 55%;
+  --muted: 60 6% 94%;
+  --muted-foreground: 220 7% 57%;
 
-  --accent: 217 91% 60%;
+  --accent: 225 67% 53%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 354 84% 65%;
+  --destructive: 354 51% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 15% 14%;
-  --input: 220 15% 14%;
-  --ring: 160 100% 40%;
+  --border: 60 5% 88%;
+  --input: 60 5% 88%;
+  --ring: 162 85% 29%;
 
-  --radius: 1rem;
+  --radius: 0.875rem;
 
-  --chart-1: 160 100% 40%;
-  --chart-2: 217 91% 60%;
-  --chart-3: 270 76% 68%;
-  --chart-4: 330 81% 75%;
-  --chart-5: 175 78% 50%;
+  --chart-1: 156 67% 37%;
+  --chart-2: 225 67% 53%;
+  --chart-3: 253 83% 65%;
+  --chart-4: 33 78% 48%;
+  --chart-5: 192 91% 36%;
+}
+
+/*
+ * Tema escuro — ativado via <html data-theme="dark">.
+ * Sobrescreve tanto os tokens hex do @theme (Tailwind)
+ * quanto os tokens HSL do shadcn/ui.
+ */
+:root[data-theme="dark"] {
+  --color-background: #0e1013;
+  --color-surface-1: #16191e;
+  --color-surface-2: #1c212a;
+  --color-surface-3: #232933;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  --color-foreground: #eef0f3;
+  --color-muted: #9aa0ac;
+  --color-muted-foreground: #666d7a;
+
+  --color-border: #262c35;
+  --color-border-strong: #333b47;
+
+  --color-primary: #25c68d;
+  --color-primary-foreground: #0e1013;
+
+  --color-secondary: #1c212a;
+  --color-secondary-foreground: #eef0f3;
+
+  --color-destructive: #f0616d;
+  --color-destructive-foreground: #ffffff;
+
+  --color-accent: #5b8df6;
+  --color-accent-foreground: #ffffff;
+
+  --color-muted-surface: #1c212a;
+
+  --color-input: #262c35;
+  --color-ring: #25c68d;
+
+  --color-warning: #d9a441;
+  --color-success: #25c68d;
+  --color-info: #5b8df6;
+
+  --color-cat-crypto: #fb923c;
+  --color-cat-stocks: #5b8df6;
+  --color-cat-fixed: #a78bfa;
+  --color-cat-reits: #22d3ee;
+  --color-cat-intl: #34d399;
+
+  --color-brand-bg: #0e1013;
+  --color-brand-card: #16191e;
+  --color-brand-primary: #25c68d;
+  --color-brand-secondary: #5b8df6;
+  --color-brand-danger: #f0616d;
+
+  --background: 216 15% 6%;
+  --foreground: 216 17% 94%;
+
+  --card: 218 15% 10%;
+  --card-foreground: 216 17% 94%;
+
+  --popover: 218 15% 10%;
+  --popover-foreground: 216 17% 94%;
+
+  --primary: 159 68% 46%;
+  --primary-foreground: 216 15% 6%;
+
+  --secondary: 219 20% 14%;
+  --secondary-foreground: 216 17% 94%;
+
+  --muted: 219 20% 14%;
+  --muted-foreground: 220 10% 64%;
+
+  --accent: 221 90% 66%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 355 83% 66%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 216 17% 18%;
+  --input: 216 17% 18%;
+  --ring: 159 68% 46%;
+
+  --chart-1: 158 64% 52%;
+  --chart-2: 221 90% 66%;
+  --chart-3: 255 92% 76%;
+  --chart-4: 27 96% 61%;
+  --chart-5: 188 86% 53%;
 }
 
 body {
