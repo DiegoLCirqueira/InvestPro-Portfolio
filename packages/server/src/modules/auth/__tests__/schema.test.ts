@@ -63,9 +63,15 @@ describe('refreshBodySchema', () => {
     expect(refreshBodySchema.safeParse({}).success).toBe(true)
   })
 
+  it('aceita corpo ausente (frontend chama /auth/refresh sem body)', () => {
+    expect(refreshBodySchema.safeParse(undefined).success).toBe(true)
+  })
+
+  it('aceita null (Fastify entrega request.body como null quando não há Content-Type)', () => {
+    expect(refreshBodySchema.safeParse(null).success).toBe(true)
+  })
+
   it('rejeita corpo não-objeto', () => {
-    expect(refreshBodySchema.safeParse(undefined).success).toBe(false)
-    expect(refreshBodySchema.safeParse(null).success).toBe(false)
     expect(refreshBodySchema.safeParse('token').success).toBe(false)
     expect(refreshBodySchema.safeParse(123).success).toBe(false)
   })

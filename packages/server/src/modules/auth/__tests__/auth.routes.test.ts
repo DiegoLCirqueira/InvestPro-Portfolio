@@ -119,6 +119,25 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(res.json().accessToken).toBeTruthy()
   })
 
+  it('rotaciona o access token sem enviar body (comportamento real do frontend)', async () => {
+    const registerRes = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email: uniqueEmail('refresh-nobody'), password: 'SenhaForte123', fullName: 'QA Refresh' },
+    })
+    const cookie = registerRes.cookies.find((c) => c.name === 'investpro_refresh_token')
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      remoteAddress: uniqueIp(),
+      cookies: { investpro_refresh_token: cookie?.value ?? '' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().accessToken).toBeTruthy()
+  })
+
   it('sem cookie retorna 401 MISSING_REFRESH_TOKEN', async () => {
     const res = await app!.inject({
       method: 'POST',

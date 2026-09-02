@@ -14,7 +14,11 @@ export const loginBodySchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória'),
 })
 
-export const refreshBodySchema = z.object({})
+// O handler não lê nada do body (usa apenas o cookie httpOnly do refresh
+// token), e o frontend chama /auth/refresh sem enviar body nenhum — nesse
+// caso o Fastify entrega request.body como null (sem Content-Type, não
+// undefined), então o schema precisa aceitar {}, null e undefined.
+export const refreshBodySchema = z.object({}).nullish()
 
 export const userResponseSchema = z.object({
   id: z.string(),
