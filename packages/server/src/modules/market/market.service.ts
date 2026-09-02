@@ -161,6 +161,17 @@ export async function getQuote(ticker: string): Promise<Quote> {
   return toQuote(fallback)
 }
 
+export interface AssetMeta {
+  name: string
+  type: string
+}
+
+export async function getAssetMeta(ticker: string): Promise<AssetMeta | null> {
+  const seed = findAsset(ticker)
+  if (!seed) return null
+  return { name: seed.name, type: seed.type }
+}
+
 export interface HistoryQueryParams {
   interval: '1d' | '1w' | '1m'
   limit: number
