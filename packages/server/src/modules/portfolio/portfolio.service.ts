@@ -35,7 +35,7 @@ export async function getPortfolio(userId: string) {
 export async function getHistory(userId: string, query: HistoryQuery) {
   const portfolio = await prisma.portfolio.findUnique({
     where: { userId },
-    select: { balance: true },
+    select: { balance: true, positions: { select: { currentValue: true } } },
   });
 
   if (!portfolio) {
@@ -51,7 +51,11 @@ export async function getHistory(userId: string, query: HistoryQuery) {
 
   const days = periodDays[query.period] ?? 30;
   const now = new Date();
-  const balance = Number(portfolio.balance);
+  // Patrimônio total (caixa + posições): usar só o caixa faria o histórico
+  // "cair" a cada compra, já que a ordem FILLED move valor do balance para
+  // a Position sem alterar o patrimônio de fato (ver WI-12/WI-14).
+  const positionsTotal = portfolio.positions.reduce((sum, p) => sum + Number(p.currentValue), 0);
+  const totalEquity = Number(portfolio.balance) + positionsTotal;
 
   const history: Array<{ date: string; balance: number }> = [];
   for (let i = days; i >= 0; i--) {
@@ -61,7 +65,7 @@ export async function getHistory(userId: string, query: HistoryQuery) {
     const factor = 1 + (Math.sin(i * 0.3) * 0.02) + ((days - i) / days) * 0.05;
     history.push({
       date: date.toISOString().split("T")[0],
-      balance: Math.round(balance * factor * 100) / 100,
+      balance: Math.round(totalEquity * factor * 100) / 100,
     });
   }
 
@@ -82,12 +86,16 @@ export async function getDiversification(userId: string) {
     throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
   }
 
-  const totalBalance = Number(portfolio.balance);
-
   const positions = portfolio.positions.map((p) => ({
     type: p.type,
     currentValue: Number(p.currentValue),
   }));
 
-  return calculateDiversification(positions, totalBalance);
+  // Patrimônio total (caixa + posições), não só o caixa: uma ordem FILLED
+  // decrementa/incrementa balance ao mover valor para/de uma Position, então
+  // usar só o balance como denominador distorceria os percentuais (WI-14).
+  const positionsTotal = positions.reduce((sum, p) => sum + p.currentValue, 0);
+  const totalEquity = Number(portfolio.balance) + positionsTotal;
+
+  return calculateDiversification(positions, totalEquity);
 }
