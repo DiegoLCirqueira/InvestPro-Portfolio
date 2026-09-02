@@ -108,3 +108,266 @@ describe('GET /api/v1/orders', () => {
     expect(res.statusCode).toBe(401)
   })
 })
+
+// WI-12: ordem FILLED atualiza Position e Portfolio.balance atomicamente.
+// Verificado como black-box HTTP via GET /api/v1/portfolio (sem acessar o
+// Prisma diretamente no teste) — cada cenário confere o efeito de criar a
+// ordem sobre a posição e o saldo do portfólio do usuário autenticado.
+describe('POST /api/v1/orders — execução FILLED atualiza Position/Portfolio', () => {
+  function mockQuote(price: number) {
+    getQuoteMock.mockImplementationOnce(async (ticker: string): Promise<Quote> => {
+      return { ticker, price, change: 0, changePercent: 0 }
+    })
+  }
+
+  interface PortfolioPositionView {
+    ticker: string
+    quantity: number
+    avgPrice: number
+    currentValue: number
+  }
+  interface PortfolioView {
+    balance: number
+    positions: PortfolioPositionView[]
+  }
+
+  async function getPortfolioOf(userToken: string): Promise<PortfolioView> {
+    const res = await app!.inject({
+      method: 'GET',
+      url: '/api/v1/portfolio',
+      headers: { authorization: `Bearer ${userToken}` },
+      remoteAddress: uniqueIp(),
+    })
+    expect(res.statusCode).toBe(200)
+    return res.json() as PortfolioView
+  }
+
+  async function createOrder(userToken: string, payload: Record<string, unknown>) {
+    return app!.inject({
+      method: 'POST',
+      url: '/api/v1/orders',
+      headers: { authorization: `Bearer ${userToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload,
+    })
+  }
+
+  async function ordersTotalOf(userToken: string): Promise<number> {
+    const res = await app!.inject({
+      method: 'GET',
+      url: '/api/v1/orders?page=1&limit=100',
+      headers: { authorization: `Bearer ${userToken}` },
+      remoteAddress: uniqueIp(),
+    })
+    expect(res.statusCode).toBe(200)
+    return res.json().total as number
+  }
+
+  describe('fluxo BUY -> BUY incremental -> LIMIT OPEN -> balance negativo -> SELL parcial -> SELL zera', () => {
+    let flowEmail = ''
+    let flowToken = ''
+
+    beforeAll(async () => {
+      flowEmail = uniqueEmail('order-flow')
+      const reg = await registerTestUser(app!, flowEmail)
+      flowToken = reg.body.accessToken as string
+    })
+
+    afterAll(async () => {
+      await deleteUser(flowEmail)
+    })
+
+    it('BUY sem posição prévia cria Position e decrementa balance', async () => {
+      mockQuote(20)
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'BUY',
+        quantity: 10,
+        type: 'MARKET',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('FILLED')
+
+      const portfolio = await getPortfolioOf(flowToken)
+      const position = portfolio.positions.find((p) => p.ticker === 'VALE3')
+      expect(position).toBeTruthy()
+      expect(position?.quantity).toBe(10)
+      expect(position?.avgPrice).toBe(20)
+      expect(position?.currentValue).toBe(200)
+      expect(portfolio.balance).toBe(-200)
+    })
+
+    it('BUY incremental recalcula avgPrice e decrementa balance de novo', async () => {
+      mockQuote(30)
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'BUY',
+        quantity: 10,
+        type: 'MARKET',
+      })
+      expect(res.statusCode).toBe(200)
+
+      const portfolio = await getPortfolioOf(flowToken)
+      const position = portfolio.positions.find((p) => p.ticker === 'VALE3')
+      // (20*10 + 30*10) / 20 = 25
+      expect(position?.quantity).toBe(20)
+      expect(position?.avgPrice).toBe(25)
+      expect(position?.currentValue).toBe(500)
+      expect(portfolio.balance).toBe(-500)
+    })
+
+    it('BUY LIMIT que fica OPEN não altera Position nem balance', async () => {
+      mockQuote(50) // mercado 50 > limite 15 -> BUY LIMIT não executa
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'BUY',
+        quantity: 5,
+        type: 'LIMIT',
+        price: 15,
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('OPEN')
+
+      const portfolio = await getPortfolioOf(flowToken)
+      const position = portfolio.positions.find((p) => p.ticker === 'VALE3')
+      expect(position?.quantity).toBe(20)
+      expect(position?.avgPrice).toBe(25)
+      expect(portfolio.balance).toBe(-500)
+    })
+
+    it('BUY com balance já negativo executa normalmente sem erro (sem checagem de saldo nesta fase)', async () => {
+      const before = await getPortfolioOf(flowToken)
+      expect(before.balance).toBeLessThan(0)
+
+      mockQuote(100)
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'BUY',
+        quantity: 1,
+        type: 'MARKET',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('FILLED')
+
+      const after = await getPortfolioOf(flowToken)
+      const position = after.positions.find((p) => p.ticker === 'VALE3')
+      expect(position?.quantity).toBe(21)
+      expect(after.balance).toBe(before.balance - 100)
+    })
+
+    it('SELL com posição suficiente reduz quantity e incrementa balance, avgPrice mantido', async () => {
+      const before = await getPortfolioOf(flowToken)
+      const positionBefore = before.positions.find((p) => p.ticker === 'VALE3')
+      if (!positionBefore) throw new Error('posição VALE3 ausente antes da venda')
+
+      mockQuote(40)
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'SELL',
+        quantity: 5,
+        type: 'MARKET',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('FILLED')
+
+      const after = await getPortfolioOf(flowToken)
+      const positionAfter = after.positions.find((p) => p.ticker === 'VALE3')
+      expect(positionAfter?.quantity).toBeCloseTo(positionBefore.quantity - 5, 8)
+      expect(positionAfter?.avgPrice).toBe(positionBefore.avgPrice)
+      expect(after.balance).toBeCloseTo(before.balance + 200, 2)
+    })
+
+    it('SELL que zera a posição remove a Position da resposta', async () => {
+      const before = await getPortfolioOf(flowToken)
+      const positionBefore = before.positions.find((p) => p.ticker === 'VALE3')
+      if (!positionBefore) throw new Error('posição VALE3 ausente antes da venda final')
+
+      mockQuote(45)
+      const res = await createOrder(flowToken, {
+        ticker: 'VALE3',
+        side: 'SELL',
+        quantity: positionBefore.quantity,
+        type: 'MARKET',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('FILLED')
+
+      const after = await getPortfolioOf(flowToken)
+      expect(after.positions.find((p) => p.ticker === 'VALE3')).toBeUndefined()
+      expect(after.balance).toBeCloseTo(before.balance + positionBefore.quantity * 45, 2)
+    })
+  })
+
+  describe('SELL com posição insuficiente não altera Position/balance nem cria Order', () => {
+    let email = ''
+    let token = ''
+
+    beforeAll(async () => {
+      email = uniqueEmail('order-sell-insuf')
+      const reg = await registerTestUser(app!, email)
+      token = reg.body.accessToken as string
+
+      mockQuote(10)
+      const buy = await createOrder(token, { ticker: 'VALE3', side: 'BUY', quantity: 5, type: 'MARKET' })
+      expect(buy.statusCode).toBe(200)
+    })
+
+    afterAll(async () => {
+      await deleteUser(email)
+    })
+
+    it('SELL maior que a posição retorna 400 ORDER_INSUFFICIENT_POSITION sem criar Order nem alterar Position/balance', async () => {
+      const before = await getPortfolioOf(token)
+      const totalBefore = await ordersTotalOf(token)
+
+      mockQuote(10)
+      const res = await createOrder(token, { ticker: 'VALE3', side: 'SELL', quantity: 999, type: 'MARKET' })
+      expect(res.statusCode).toBe(400)
+      expect(res.json().error).toBe('ORDER_INSUFFICIENT_POSITION')
+
+      const after = await getPortfolioOf(token)
+      expect(after).toEqual(before)
+      expect(await ordersTotalOf(token)).toBe(totalBefore)
+    })
+
+    it('SELL LIMIT que fica OPEN não altera Position nem balance', async () => {
+      const before = await getPortfolioOf(token)
+
+      mockQuote(10) // mercado 10 < limite 1000 -> SELL LIMIT não executa
+      const res = await createOrder(token, { ticker: 'VALE3', side: 'SELL', quantity: 1, type: 'LIMIT', price: 1000 })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().status).toBe('OPEN')
+
+      const after = await getPortfolioOf(token)
+      expect(after).toEqual(before)
+    })
+  })
+
+  describe('SELL sem nenhuma posição prévia', () => {
+    let email = ''
+    let token = ''
+
+    beforeAll(async () => {
+      email = uniqueEmail('order-sell-nopos')
+      const reg = await registerTestUser(app!, email)
+      token = reg.body.accessToken as string
+    })
+
+    afterAll(async () => {
+      await deleteUser(email)
+    })
+
+    it('retorna 400 ORDER_INSUFFICIENT_POSITION sem criar Order', async () => {
+      const totalBefore = await ordersTotalOf(token)
+
+      mockQuote(10)
+      const res = await createOrder(token, { ticker: 'VALE3', side: 'SELL', quantity: 1, type: 'MARKET' })
+      expect(res.statusCode).toBe(400)
+      expect(res.json().error).toBe('ORDER_INSUFFICIENT_POSITION')
+
+      const portfolio = await getPortfolioOf(token)
+      expect(portfolio.positions.find((p) => p.ticker === 'VALE3')).toBeUndefined()
+      expect(await ordersTotalOf(token)).toBe(totalBefore)
+    })
+  })
+})
