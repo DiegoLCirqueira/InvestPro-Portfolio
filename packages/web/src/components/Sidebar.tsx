@@ -9,8 +9,10 @@ import {
   ArrowLeftRight,
   Shield,
   BookOpen,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useAuthStore } from "@/stores/auth";
 
 interface MenuItem {
   to: string;
@@ -30,7 +32,16 @@ const menuItems: MenuItem[] = [
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
 ];
 
+const ADMIN_MENU_ITEM: MenuItem = {
+  to: "/admin/users",
+  label: "Administração",
+  icon: ShieldCheck,
+};
+
 export function Sidebar() {
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
+  const items = isAdmin ? [...menuItems, ADMIN_MENU_ITEM] : menuItems;
+
   return (
     <aside className="w-64 bg-brand-bg border-r border-gray-800 flex flex-col fixed h-full">
       <div className="p-8">
@@ -43,7 +54,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-4 space-y-2">
-        {menuItems.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

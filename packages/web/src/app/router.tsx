@@ -47,6 +47,9 @@ const Login = lazy(() =>
 const Register = lazy(() =>
   import("@/pages/Register").then((m) => ({ default: m.Register })),
 );
+const AdminUsers = lazy(() =>
+  import("@/pages/AdminUsers").then((m) => ({ default: m.AdminUsers })),
+);
 
 function RouteErrorFallback() {
   return (
@@ -130,6 +133,14 @@ export function Router() {
         <Route
           path="/profile"
           element={withSuspense(UserProfile, <RouteErrorFallback />)}
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              {withSuspense(AdminUsers, <RouteErrorFallback />)}
+            </ProtectedRoute>
+          }
         />
       </Route>
       <Route path="/login" element={withSuspense(Login, <RouteErrorFallback />)} />

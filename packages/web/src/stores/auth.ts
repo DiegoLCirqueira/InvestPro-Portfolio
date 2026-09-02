@@ -44,6 +44,8 @@ export const useAuthStore = create<AuthState>()(
           data,
         );
         set({ user, token: accessToken, isAuthenticated: true });
+        const me = await api.get<User>("/users/me");
+        set({ user: me });
       },
 
       register: async (data) => {
@@ -52,6 +54,8 @@ export const useAuthStore = create<AuthState>()(
           data,
         );
         set({ user, token: accessToken, isAuthenticated: true });
+        const me = await api.get<User>("/users/me");
+        set({ user: me });
       },
 
       logout: async () => {
