@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { CreateOrderInput } from '@investpro/shared'
 import {
+  applyBuyFill,
+  applySellFill,
+  canSell,
   computeTotal,
   evaluateOrder,
   isExecutableAt,
@@ -123,5 +126,56 @@ describe('newAveragePrice', () => {
 describe('computeTotal', () => {
   it('multiplica quantidade pelo preço', () => {
     expect(computeTotal(10, 25.5)).toBe(255)
+  })
+})
+
+describe('applyBuyFill', () => {
+  it('sem posição prévia: avgPrice é o próprio preço do fill', () => {
+    const result = applyBuyFill(null, 10, 25)
+    expect(result).toEqual({ quantity: 10, avgPrice: 25, currentValue: 250 })
+  })
+
+  it('com posição prévia: recalcula a média ponderada', () => {
+    // (20*10 + 30*10) / 20 = 25
+    const result = applyBuyFill({ quantity: 10, avgPrice: 20 }, 10, 30)
+    expect(result).toEqual({ quantity: 20, avgPrice: 25, currentValue: 500 })
+  })
+})
+
+describe('canSell', () => {
+  it('sem posição existente: não pode vender', () => {
+    expect(canSell(null, 5)).toBe(false)
+  })
+
+  it('posição insuficiente: não pode vender', () => {
+    expect(canSell({ quantity: 5, avgPrice: 10 }, 10)).toBe(false)
+  })
+
+  it('posição suficiente (inclusive igualdade exata): pode vender', () => {
+    expect(canSell({ quantity: 10, avgPrice: 10 }, 10)).toBe(true)
+    expect(canSell({ quantity: 10, avgPrice: 10 }, 4)).toBe(true)
+  })
+})
+
+describe('applySellFill', () => {
+  it('venda parcial: mantém avgPrice e reduz quantity/currentValue', () => {
+    const result = applySellFill({ quantity: 10, avgPrice: 20 }, 4)
+    expect(result).toEqual({ quantity: 6, avgPrice: 20, currentValue: 120 })
+  })
+
+  it('venda que zera a posição exatamente: retorna null', () => {
+    expect(applySellFill({ quantity: 10, avgPrice: 20 }, 10)).toBeNull()
+  })
+
+  it('tolerância de ponto flutuante: resíduo ínfimo (<=1e-8) é tratado como posição zerada', () => {
+    // 0.1 + 0.2 = 0.30000000000000004 em IEEE754; o resíduo contra 0.3 é ~4.44e-17.
+    const current = { quantity: 0.1 + 0.2, avgPrice: 20 }
+    expect(applySellFill(current, 0.3)).toBeNull()
+  })
+
+  it('resíduo acima da tolerância não é tratado como zerado', () => {
+    const result = applySellFill({ quantity: 10.00000002, avgPrice: 20 }, 10)
+    expect(result).not.toBeNull()
+    expect(result?.quantity).toBeCloseTo(2e-8, 10)
   })
 })

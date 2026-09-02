@@ -97,3 +97,41 @@ export function newAveragePrice(
 export function computeTotal(quantity: number, fillPrice: number): number {
   return quantity * fillPrice
 }
+
+export interface PositionSnapshot {
+  quantity: number
+  avgPrice: number
+}
+
+export interface PositionFillResult {
+  quantity: number
+  avgPrice: number
+  currentValue: number
+}
+
+// BUY: soma a quantidade e recalcula a média ponderada via newAveragePrice.
+export function applyBuyFill(
+  current: PositionSnapshot | null,
+  filledQuantity: number,
+  fillPrice: number
+): PositionFillResult {
+  const currentQuantity = current?.quantity ?? 0
+  const quantity = currentQuantity + filledQuantity
+  const avgPrice = newAveragePrice(current?.avgPrice, currentQuantity, filledQuantity, fillPrice)
+  return { quantity, avgPrice, currentValue: quantity * avgPrice }
+}
+
+// Só pode vender com posição existente e quantidade suficiente.
+export function canSell(current: PositionSnapshot | null, sellQuantity: number): current is PositionSnapshot {
+  return current !== null && current.quantity >= sellQuantity
+}
+
+const POSITION_DUST_THRESHOLD = 1e-8
+
+// SELL: reduz a quantidade sem recalcular avgPrice. Retorna null quando a
+// posição fica zerada (residual dentro da tolerância de ponto flutuante).
+export function applySellFill(current: PositionSnapshot, filledQuantity: number): PositionFillResult | null {
+  const quantity = current.quantity - filledQuantity
+  if (quantity <= POSITION_DUST_THRESHOLD) return null
+  return { quantity, avgPrice: current.avgPrice, currentValue: quantity * current.avgPrice }
+}
