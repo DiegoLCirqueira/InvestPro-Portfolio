@@ -1,21 +1,14 @@
 // @investpro/server
-// Service de transferências. Cria e lista transferências do usuário.
-//
-// PERSISTÊNCIA / DB: os modelos `BankAccount` e `Transfer` foram adicionados ao
-// `prisma/schema.prisma`, MAS o `npx prisma generate` está bloqueado neste
-// ambiente (EPERM na query_engine-windows.dll.node, travada pelo servidor ativo
-// em :3001) e o PostgreSQL :5432 está INDISPONÍVEL. Por isso o service mantém
-// as transferências em memória por usuário (não sobrevivem a restart), em vez
-// de invocar prisma.transfer (que o client atual ainda não reconhece).
-// Quando o servidor for reiniciado + `prisma generate` + migração rodarem, o
-// store pode ser trocado por prisma.$transaction. Se o banco estiver de pé num
-// futuro, a criação deve gravar via prisma e tratar DB_UNAVAILABLE.
+// Service de transferências. Cria e lista transferências do usuário via
+// prisma.transfer (fonte de verdade), no mesmo padrão de order.service.ts.
 
+import type { Transfer as PrismaTransfer } from '@prisma/client'
 import type {
   CreateTransferInput,
   Transfer,
   TransferList,
 } from '@investpro/shared'
+import { prisma } from '../../config/database.js'
 import { AppError } from '../auth/auth.service.js'
 import {
   determineStatus,
@@ -23,13 +16,27 @@ import {
   validateTransfer,
 } from './transfer.domain.js'
 
-const store = new Map<string, Transfer[]>()
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
+function toTransfer(record: PrismaTransfer): Transfer {
+  return {
+    id: record.id,
+    status: record.status as Transfer['status'],
+    type: record.type as Transfer['type'],
+    amount: record.amount.toNumber(),
+    description: record.description,
+    toAccount: record.toAccountId
+      ? {
+          id: record.toAccountId,
+          bank: record.toAccountBank ?? '',
+          agency: record.toAccountAgency ?? '',
+          account: record.toAccountNumber ?? '',
+          holderName: record.toAccountHolder ?? undefined,
+          type: (record.toAccountType as Transfer['type'] | null) ?? undefined,
+        }
+      : undefined,
+    createdAt: record.createdAt.toISOString(),
+    completedAt: record.completedAt ? record.completedAt.toISOString() : null,
+    failureReason: record.failureReason ?? undefined,
   }
-  return `transfer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 export async function createTransfer(
@@ -45,23 +52,32 @@ export async function createTransfer(
   const success = true
   const status = determineStatus(success)
 
-  const transfer: Transfer = {
-    id: generateId(),
-    status,
-    type: input.type,
-    amount: input.amount,
-    description: input.description ?? null,
-    toAccount: input.toAccount ? formatToAccount(input.toAccount) : undefined,
-    createdAt: new Date().toISOString(),
-    completedAt: status === 'COMPLETED' ? new Date().toISOString() : null,
-    failureReason: status === 'FAILED' ? 'Execução externa falhou' : undefined,
-  }
+  // formatToAccount roda uma única vez aqui: reaproveita o id da BankAccount
+  // quando toAccount vem de uma conta existente, ou sintetiza um id novo
+  // (fallback interno do domínio) quando é uma conta avulsa. O resultado é
+  // persistido nas colunas toAccount*; listTransfers só lê essas colunas de
+  // volta, sem chamar formatToAccount de novo (não recalcula a cada leitura).
+  const toAccount = input.toAccount ? formatToAccount(input.toAccount) : undefined
 
-  const userTransfers = store.get(userId) ?? []
-  userTransfers.push(transfer)
-  store.set(userId, userTransfers)
+  const created = await prisma.transfer.create({
+    data: {
+      userId,
+      status,
+      type: input.type,
+      amount: input.amount,
+      description: input.description ?? null,
+      toAccountId: toAccount?.id ?? null,
+      toAccountBank: toAccount?.bank ?? null,
+      toAccountAgency: toAccount?.agency ?? null,
+      toAccountNumber: toAccount?.account ?? null,
+      toAccountHolder: toAccount?.holderName ?? null,
+      toAccountType: toAccount?.type ?? null,
+      completedAt: status === 'COMPLETED' ? new Date() : null,
+      failureReason: status === 'FAILED' ? 'Execução externa falhou' : null,
+    },
+  })
 
-  return transfer
+  return toTransfer(created)
 }
 
 export async function listTransfers(
@@ -69,11 +85,20 @@ export async function listTransfers(
   page: number,
   limit: number
 ): Promise<TransferList> {
-  const userTransfers = store.get(userId) ?? []
-  const start = (page - 1) * limit
+  const skip = (page - 1) * limit
+  const [records, total] = await Promise.all([
+    prisma.transfer.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.transfer.count({ where: { userId } }),
+  ])
+
   return {
-    items: userTransfers.slice(start, start + limit),
-    total: userTransfers.length,
+    items: records.map(toTransfer),
+    total,
     page,
     limit,
   }
