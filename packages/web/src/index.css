@@ -11,6 +11,9 @@
  */
 
 @theme {
+  /* ── Breakpoints ──────────────────────────────── */
+  --breakpoint-nav: 1120px;
+
   /* ── Backgrounds (claro / padrão) ────────────── */
   --color-background: #f6f6f4;
   --color-surface-1: #ffffff;

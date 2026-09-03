@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, CalendarDays, LogOut } from "lucide-react";
+import { Bell, User, CalendarDays, LogOut, Search, X } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 
 interface Notification {
@@ -16,6 +16,7 @@ export function Header() {
   const user = useAuthStore((s) => s.user);
   const isDashboard = location.pathname === "/";
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const hour = new Date().getHours();
@@ -54,8 +55,16 @@ export function Header() {
   }, [isNotificationsOpen]);
 
   return (
-    <header className="flex items-center justify-between mb-10">
-      <div className="space-y-1">
+    <>
+    <header className="flex items-center gap-4 nav:gap-6 mb-6 nav:mb-10">
+      <div className="flex items-center gap-2 nav:hidden">
+        <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
+          <span className="text-black font-black text-xl italic">I</span>
+        </div>
+        <span className="text-lg font-bold tracking-tight">InvestPro</span>
+      </div>
+
+      <div className="hidden nav:block space-y-1">
         <div className="flex items-center gap-2 text-brand-primary">
           <CalendarDays size={14} className="opacity-80" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">
@@ -83,13 +92,36 @@ export function Header() {
         ) : null}
       </div>
 
+      <div className="hidden nav:flex w-full max-w-xs">
+        <div className="relative w-full">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            type="search"
+            placeholder="Buscar..."
+            className="w-full rounded-xl border border-border bg-surface-1 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      </div>
+
       <div
-        className="flex items-center gap-5 relative"
+        className="flex items-center gap-3 nav:gap-5 relative ml-auto"
         ref={notificationsRef}
       >
         <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all nav:hidden"
+          aria-label="Buscar"
+        >
+          <Search size={20} />
+        </button>
+
+        <button
           onClick={() => setIsNotificationsOpen((v) => !v)}
-          className="p-2.5 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl transition-all relative group"
+          className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl transition-all relative group"
           type="button"
           aria-label="Notificações"
         >
@@ -128,7 +160,7 @@ export function Header() {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-4 pl-5 border-l border-gray-800">
+        <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-gray-800">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-white leading-none">
               {user?.fullName || "Investidor"}
@@ -158,7 +190,7 @@ export function Header() {
               await logout();
               navigate("/login");
             }}
-            className="p-2.5 text-gray-400 hover:text-brand-danger hover:bg-gray-800/50 rounded-xl transition-all group"
+            className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-brand-danger hover:bg-gray-800/50 rounded-xl transition-all group"
             aria-label="Sair"
             title="Sair"
           >
@@ -167,5 +199,33 @@ export function Header() {
         </div>
       </div>
     </header>
+
+    {isSearchOpen ? (
+      <div className="fixed inset-0 z-50 flex flex-col bg-background nav:hidden">
+        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+          <div className="relative flex-1">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              autoFocus
+              type="search"
+              placeholder="Buscar..."
+              className="w-full rounded-xl border border-border bg-surface-1 py-2.5 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(false)}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground"
+            aria-label="Fechar busca"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
