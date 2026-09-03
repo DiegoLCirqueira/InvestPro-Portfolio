@@ -56,8 +56,8 @@ const MENU_GROUPS: MenuGroup[] = [
 function menuLinkClass({ isActive }: { isActive: boolean }) {
   return `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
     isActive
-      ? "bg-gray-800/50 text-brand-primary"
-      : "text-gray-500 hover:text-white hover:bg-gray-800/30"
+      ? "bg-secondary text-primary"
+      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
   }`;
 }
 
@@ -65,7 +65,7 @@ export function Sidebar() {
   const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
 
   return (
-    <aside className="hidden nav:flex w-64 bg-brand-bg border-r border-gray-800 flex-col fixed h-full">
+    <aside className="hidden nav:flex w-64 bg-brand-bg border-r border-border flex-col fixed h-full">
       <div className="p-8">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
@@ -78,7 +78,7 @@ export function Sidebar() {
       <nav className="flex-1 px-4 space-y-6 overflow-y-auto">
         {MENU_GROUPS.map((group) => (
           <div key={group.label} className="space-y-2">
-            <p className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600">
+            <p className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
               {group.label}
             </p>
             {group.items.map((item) => (
@@ -92,7 +92,7 @@ export function Sidebar() {
                   <>
                     <item.icon
                       size={20}
-                      className={isActive ? "text-brand-primary" : "group-hover:text-white"}
+                      className={isActive ? "text-primary" : "group-hover:text-foreground"}
                     />
                     <span className="font-medium text-sm">{item.label}</span>
                   </>
@@ -103,13 +103,13 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-gray-800 space-y-2">
+      <div className="px-4 py-4 border-t border-border space-y-2">
         <NavLink to="/profile" className={menuLinkClass}>
           {({ isActive }) => (
             <>
               <User
                 size={20}
-                className={isActive ? "text-brand-primary" : "group-hover:text-white"}
+                className={isActive ? "text-primary" : "group-hover:text-foreground"}
               />
               <span className="font-medium text-sm">Perfil</span>
             </>
@@ -121,7 +121,7 @@ export function Sidebar() {
               <>
                 <ShieldCheck
                   size={20}
-                  className={isActive ? "text-brand-primary" : "group-hover:text-white"}
+                  className={isActive ? "text-primary" : "group-hover:text-foreground"}
                 />
                 <span className="font-medium text-sm">Administração</span>
               </>

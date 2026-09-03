@@ -74,15 +74,15 @@ export function Header() {
 
         {isDashboard ? (
           <>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight">
+            <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
               {greeting},{" "}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-white to-gray-500">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-foreground to-muted-foreground">
                 {user?.fullName?.split(" ")[0] || "Investidor"}
               </span>
             </h2>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
-              <p className="text-gray-500 text-xs font-medium">
+              <p className="text-muted-foreground text-xs font-medium">
                 Seu portfólio rendeu{" "}
                 <span className="text-brand-primary">+2.28%</span> nas últimas
                 24h.
@@ -113,7 +113,7 @@ export function Header() {
         <button
           type="button"
           onClick={() => setIsSearchOpen(true)}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all nav:hidden"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all nav:hidden"
           aria-label="Buscar"
         >
           <Search size={20} />
@@ -121,7 +121,7 @@ export function Header() {
 
         <button
           onClick={() => setIsNotificationsOpen((v) => !v)}
-          className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-xl transition-all relative group"
+          className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all relative group"
           type="button"
           aria-label="Notificações"
         >
@@ -130,13 +130,13 @@ export function Header() {
         </button>
 
         {isNotificationsOpen ? (
-          <div className="absolute right-0 top-12 w-80 rounded-2xl border border-gray-800 bg-[#0b1220] shadow-2xl overflow-hidden z-30">
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+          <div className="absolute right-0 top-12 w-80 rounded-2xl border border-border bg-surface-1 shadow-2xl overflow-hidden z-30">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
                 Notificações
               </span>
               <button
-                className="text-[10px] text-gray-500 hover:text-white font-semibold"
+                className="text-[10px] text-muted-foreground hover:text-foreground font-semibold"
                 type="button"
                 onClick={() => setIsNotificationsOpen(false)}
               >
@@ -148,10 +148,10 @@ export function Header() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  className="px-4 py-3 border-b border-gray-800/70 last:border-0 hover:bg-gray-900/40 transition-colors"
+                  className="px-4 py-3 border-b border-border/70 last:border-0 hover:bg-secondary/60 transition-colors"
                 >
-                  <p className="text-xs font-bold text-white mb-1">{n.title}</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">
+                  <p className="text-xs font-bold text-foreground mb-1">{n.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {n.text}
                   </p>
                 </div>
@@ -160,20 +160,20 @@ export function Header() {
           </div>
         ) : null}
 
-        <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-gray-800">
+        <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-border">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-white leading-none">
+            <p className="text-sm font-bold text-foreground leading-none">
               {user?.fullName || "Investidor"}
             </p>
             <div className="flex items-center justify-end gap-1.5 mt-1">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
                 Premium Account
               </p>
             </div>
           </div>
 
           <div
-            className="w-11 h-11 bg-linear-to-br to-gray-900 border border-gray-700 rounded-2xl flex items-center justify-center text-brand-primary shadow-lg shadow-black/20 group cursor-pointer hover:border-brand-primary/50 transition-colors"
+            className="w-11 h-11 bg-linear-to-br to-secondary border border-border rounded-2xl flex items-center justify-center text-brand-primary shadow-lg shadow-black/20 group cursor-pointer hover:border-brand-primary/50 transition-colors"
             onClick={() => navigate("/profile")}
             role="button"
             tabIndex={0}
@@ -190,7 +190,7 @@ export function Header() {
               await logout();
               navigate("/login");
             }}
-            className="flex min-h-11 min-w-11 items-center justify-center text-gray-400 hover:text-brand-danger hover:bg-gray-800/50 rounded-xl transition-all group"
+            className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-all group"
             aria-label="Sair"
             title="Sair"
           >
