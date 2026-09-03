@@ -7,6 +7,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/app/ErrorBoundary";
 
+if (localStorage.getItem("investpro-theme") === "dark") {
+  document.documentElement.setAttribute("data-theme", "dark");
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>

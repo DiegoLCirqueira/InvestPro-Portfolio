@@ -42,16 +42,16 @@ export function AdminUsers() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-red-500" />
-        <h2 className="text-xl font-bold text-white">
+        <ShieldAlert size={40} className="text-destructive" />
+        <h2 className="text-xl font-bold text-foreground">
           Não foi possível carregar os usuários
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
+          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
         >
           Tentar novamente
         </button>
@@ -64,24 +64,24 @@ export function AdminUsers() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-2">
           <Users size={22} className="text-brand-primary" />
           Administração de Usuários
         </h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-muted-foreground text-sm">
           Lista de todos os usuários cadastrados no sistema.
         </p>
       </header>
 
       {users.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-16">
+        <p className="text-sm text-muted-foreground text-center py-16">
           Nenhum usuário encontrado.
         </p>
       ) : (
-        <div className="rounded-2xl border border-gray-800 bg-[#161b22] overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-surface-1 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
+              <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
                 <th className="px-4 py-3 font-bold">ID</th>
                 <th className="px-4 py-3 font-bold">Email</th>
                 <th className="px-4 py-3 font-bold">Nome</th>
@@ -93,25 +93,25 @@ export function AdminUsers() {
               {users.map((user) => (
                 <tr
                   key={user.id}
-                  className="border-b border-gray-800/50 last:border-0"
+                  className="border-b border-border/50 last:border-0"
                 >
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
                     {user.id}
                   </td>
-                  <td className="px-4 py-3 text-white">{user.email}</td>
-                  <td className="px-4 py-3 text-white">{user.fullName}</td>
+                  <td className="px-4 py-3 text-foreground">{user.email}</td>
+                  <td className="px-4 py-3 text-foreground">{user.fullName}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${
                         user.role === "ADMIN"
                           ? "bg-brand-primary/15 text-brand-primary"
-                          : "bg-gray-700/30 text-gray-400"
+                          : "bg-secondary text-muted-foreground"
                       }`}
                     >
                       {ROLE_LABEL[user.role] ?? user.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400" title={user.createdAt}>
+                  <td className="px-4 py-3 text-muted-foreground" title={user.createdAt}>
                     {formatDate(user.createdAt)}
                   </td>
                 </tr>

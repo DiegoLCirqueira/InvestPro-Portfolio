@@ -46,14 +46,14 @@ const METRICS: MetricConfig[] = [
 
 function riskScoreColor(score: number): string {
   if (score >= 70) return "text-brand-primary";
-  if (score >= 40) return "text-amber-400";
-  return "text-red-500";
+  if (score >= 40) return "text-warning";
+  return "text-destructive";
 }
 
 function riskScoreBar(score: number): string {
   if (score >= 70) return "bg-brand-primary";
-  if (score >= 40) return "bg-amber-400";
-  return "bg-red-500";
+  if (score >= 40) return "bg-warning";
+  return "bg-destructive";
 }
 
 function formatDate(iso: string): string {
@@ -89,17 +89,17 @@ export function RiskMetrics() {
   if (isUnauthorized) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-amber-400" />
-        <h2 className="text-xl font-bold text-white">
+        <ShieldAlert size={40} className="text-warning" />
+        <h2 className="text-xl font-bold text-foreground">
           Análise de Risco indisponível
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           É necessário estar autenticado para visualizar a análise de risco do
           seu portfólio.
         </p>
         <Link
           to="/login"
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
+          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
         >
           Fazer login
         </Link>
@@ -110,16 +110,16 @@ export function RiskMetrics() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-red-500" />
-        <h2 className="text-xl font-bold text-white">
+        <ShieldAlert size={40} className="text-destructive" />
+        <h2 className="text-xl font-bold text-foreground">
           Não foi possível carregar a análise de risco
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
+          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
         >
           Tentar novamente
         </button>
@@ -129,7 +129,7 @@ export function RiskMetrics() {
 
   if (!data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 p-8 text-gray-500 text-sm">
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground text-sm">
         Nenhum dado de risco disponível.
       </div>
     );
@@ -138,17 +138,17 @@ export function RiskMetrics() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
           <Shield size={22} className="text-brand-primary" />
           Análise de Risco
         </h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-muted-foreground text-sm">
           Indicadores de risco do seu portfólio.
         </p>
       </header>
 
       {data.score !== undefined && (
-        <div className="p-6 rounded-2xl border border-gray-800 bg-[#161b22] mb-6">
+        <div className="p-6 rounded-2xl border border-border bg-surface-1 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative h-20 w-20 shrink-0">
               <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
@@ -157,7 +157,7 @@ export function RiskMetrics() {
                   cy="18"
                   r="15.9"
                   fill="none"
-                  stroke="#374151"
+                  stroke="hsl(var(--border))"
                   strokeWidth="3"
                 />
                 <circle
@@ -180,14 +180,14 @@ export function RiskMetrics() {
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-white">Score de Risco</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="font-bold text-foreground">Score de Risco</h3>
+              <p className="text-xs text-muted-foreground">
                 Escala de 0 a 100. Quanto maior o score, maior o risco estimado.
               </p>
             </div>
           </div>
 
-          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${riskScoreBar(data.score)}`}
               style={{ width: `${Math.min(100, Math.max(0, data.score))}%` }}
@@ -201,25 +201,25 @@ export function RiskMetrics() {
           const value = data[metric.key];
           if (typeof value !== "number") return null;
           const isGood = metric.good === "higher" ? value >= 0 : value <= 0;
-          const barColor = isGood ? "bg-brand-primary" : "bg-red-500";
+          const barColor = isGood ? "bg-brand-primary" : "bg-destructive";
           return (
             <div
               key={metric.key}
-              className="p-5 rounded-2xl border border-gray-800 bg-[#161b22]"
+              className="p-5 rounded-2xl border border-border bg-surface-1"
             >
               <div className="flex justify-between items-start mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   {metric.label}
                 </span>
                 <span
                   className={`text-lg font-black tabular-nums ${
-                    isGood ? "text-brand-primary" : "text-red-500"
+                    isGood ? "text-brand-primary" : "text-destructive"
                   }`}
                 >
                   {metric.format(value)}
                 </span>
               </div>
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                   style={{ width: `${metric.barValue(value)}%` }}
@@ -233,22 +233,22 @@ export function RiskMetrics() {
           (() => {
             const isGood = data.concentration! <= 50;
             return (
-              <div className="p-5 rounded-2xl border border-gray-800 bg-[#161b22]">
+              <div className="p-5 rounded-2xl border border-border bg-surface-1">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Concentração
                   </span>
                   <span
                     className={`text-lg font-black tabular-nums ${
-                      isGood ? "text-brand-primary" : "text-red-500"
+                      isGood ? "text-brand-primary" : "text-destructive"
                     }`}
                   >
                     {data.concentration!.toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${isGood ? "bg-brand-primary" : "bg-red-500"}`}
+                    className={`h-full rounded-full transition-all duration-500 ${isGood ? "bg-brand-primary" : "bg-destructive"}`}
                     style={{
                       width: `${Math.min(100, Math.max(0, data.concentration!))}%`,
                     }}
@@ -260,31 +260,31 @@ export function RiskMetrics() {
       </div>
 
       {data.updatedAt && (
-        <p className="text-[10px] text-gray-600 mt-4">
+        <p className="text-[10px] text-muted-foreground mt-4">
           Atualizado em {formatDate(data.updatedAt)}
         </p>
       )}
 
       {formattedMetrics.length > 0 && (
-        <div className="mt-6 p-6 rounded-2xl border border-gray-800 bg-[#161b22]">
-          <h3 className="text-base font-bold text-white mb-4">
+        <div className="mt-6 p-6 rounded-2xl border border-border bg-surface-1">
+          <h3 className="text-base font-bold text-foreground mb-4">
             Métricas detalhadas
           </h3>
           <div className="space-y-3">
             {formattedMetrics.map((m, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between py-2 border-b border-gray-800/50 last:border-0"
+                className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
               >
                 <div>
-                  <p className="font-medium text-white text-sm">
+                  <p className="font-medium text-foreground text-sm">
                     {String(m.metric)}
                   </p>
                   {m.description && (
-                    <p className="text-[10px] text-gray-500">{m.description}</p>
+                    <p className="text-[10px] text-muted-foreground">{m.description}</p>
                   )}
                 </div>
-                <span className="font-bold text-white tabular-nums text-sm">
+                <span className="font-bold text-foreground tabular-nums text-sm">
                   {m.format(m.value)}
                 </span>
               </div>

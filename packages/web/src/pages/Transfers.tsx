@@ -17,7 +17,7 @@ const STATUS_CONFIG: Record<TransferStatus, { label: string; className: string }
   {
     PENDING: {
       label: "Pendente",
-      className: "bg-amber-600/15 text-amber-400",
+      className: "bg-warning/15 text-warning",
     },
     COMPLETED: {
       label: "Concluída",
@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<TransferStatus, { label: string; className: string }
     },
     FAILED: {
       label: "Falhou",
-      className: "bg-brand-danger/15 text-brand-danger",
+      className: "bg-destructive/15 text-destructive",
     },
   };
 
@@ -59,20 +59,20 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
     : "Transferência externa";
 
   return (
-    <div className="p-4 rounded-xl border border-gray-800 bg-[#0f1318]">
+    <div className="p-4 rounded-xl border border-border bg-surface-2">
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="min-w-0">
-          <span className="font-bold text-white tabular-nums">
+          <span className="font-bold text-foreground tabular-nums">
             {formatCurrency(transfer.amount)}
           </span>
-          <span className="text-xs text-gray-500 ml-2 uppercase tracking-wider">
+          <span className="text-xs text-muted-foreground ml-2 uppercase tracking-wider">
             {transfer.type}
           </span>
         </div>
         <StatusBadge status={transfer.status} />
       </div>
-      <p className="text-xs text-gray-400 mb-0.5">{destination}</p>
-      <div className="flex items-center justify-between text-xs text-gray-400">
+      <p className="text-xs text-muted-foreground mb-0.5">{destination}</p>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="truncate">{transfer.description || "Sem descrição"}</span>
         <span className="tabular-nums shrink-0 ml-2">
           {formatDate(transfer.createdAt)}
@@ -149,10 +149,10 @@ export function Transfers() {
   if (isUnauthorized) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">
+        <h2 className="text-xl font-bold text-foreground">
           Transferências indisponíveis
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           É necessário estar autenticado para realizar transferências.
         </p>
         <Link
@@ -168,10 +168,10 @@ export function Transfers() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">
+        <h2 className="text-xl font-bold text-foreground">
           Não foi possível carregar as transferências
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
         <button
@@ -187,33 +187,33 @@ export function Transfers() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-white mb-1">
+        <h2 className="text-2xl font-bold text-foreground mb-1">
           Transferências Bancárias
         </h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-muted-foreground text-sm">
           Movimente dinheiro entre suas contas.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
-          className="p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-5"
+          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-white">Nova Transferência</h3>
+          <h3 className="text-base font-bold text-foreground">Nova Transferência</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Tipo</label>
+            <label className="text-sm text-muted-foreground">Tipo</label>
             <div className="grid grid-cols-3 gap-2">
               {TYPE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setType(option.value)}
-                  className={`py-2.5 rounded-xl border text-sm font-bold transition-colors ${
+                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors ${
                     type === option.value
                       ? "bg-brand-primary text-black border-brand-primary"
-                      : "bg-[#0f1318] text-gray-400 border-gray-700 hover:border-gray-500"
+                      : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
                   }`}
                 >
                   {option.label}
@@ -223,31 +223,31 @@ export function Transfers() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Valor</label>
+            <label className="text-sm text-muted-foreground">Valor</label>
             <input
               type="text"
               inputMode="decimal"
               placeholder="0.00"
               value={amount}
               onChange={(e) => handleNumeric(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Descrição (opcional)</label>
+            <label className="text-sm text-muted-foreground">Descrição (opcional)</label>
             <input
               type="text"
               value={description}
               maxLength={140}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="ex.: Pagamento de aluguel"
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">
+            <label className="text-sm text-muted-foreground">
               Conta de Destino (opcional)
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -256,14 +256,14 @@ export function Transfers() {
                 value={bank}
                 onChange={(e) => setBank(e.target.value)}
                 placeholder="Banco"
-                className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
               />
               <input
                 type="text"
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
                 placeholder="Nº da conta"
-                className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
               />
             </div>
           </div>
@@ -271,19 +271,19 @@ export function Transfers() {
           <button
             type="submit"
             disabled={createTransfer.isPending}
-            className="w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
           </button>
         </form>
 
-        <div className="p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-4">
-          <h3 className="text-base font-bold text-white">
+        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+          <h3 className="text-base font-bold text-foreground">
             Histórico de Transferências
           </h3>
 
           {history.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-16">
+            <p className="text-sm text-muted-foreground text-center py-16">
               Nenhuma transferência registrada ainda.
             </p>
           ) : (

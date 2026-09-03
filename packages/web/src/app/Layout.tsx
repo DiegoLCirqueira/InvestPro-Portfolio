@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 
 export function Layout() {
   return (
-    <div className="h-screen bg-brand-bg flex text-white font-sans overflow-hidden">
+    <div className="h-screen bg-brand-bg flex text-foreground font-sans overflow-hidden">
       <Sidebar />
 
       <main className="nav:ml-64 flex-1 flex justify-center px-4 md:px-6 lg:px-8 pb-16 nav:pb-0">

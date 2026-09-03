@@ -98,8 +98,8 @@ export function Exchange() {
   if (isUnauthorized) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">Câmbio indisponível</h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <h2 className="text-xl font-bold text-foreground">Câmbio indisponível</h2>
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           É necessário estar autenticado para realizar conversões de câmbio.
         </p>
         <Link
@@ -115,10 +115,10 @@ export function Exchange() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">
+        <h2 className="text-xl font-bold text-foreground">
           Não foi possível carregar as moedas
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
         <button
@@ -136,40 +136,40 @@ export function Exchange() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-white mb-1">Câmbio de Moedas</h2>
-        <p className="text-gray-400 text-sm">
+        <h2 className="text-2xl font-bold text-foreground mb-1">Câmbio de Moedas</h2>
+        <p className="text-muted-foreground text-sm">
           Converta entre moedas com as melhores taxas.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleConvert}
-          className="p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-5"
+          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-white">Conversor</h3>
+          <h3 className="text-base font-bold text-foreground">Conversor</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Valor</label>
+            <label className="text-sm text-muted-foreground">Valor</label>
             <input
               type="text"
               inputMode="decimal"
               placeholder="0.00"
               value={amount}
               onChange={(e) => handleNumeric(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">De</label>
+            <label className="text-sm text-muted-foreground">De</label>
             <select
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
             >
               {currencies.map((code) => (
-                <option key={code} value={code} className="bg-[#0f1318]">
+                <option key={code} value={code} className="bg-surface-2">
                   {code} — {currencyName(code)}
                 </option>
               ))}
@@ -181,21 +181,21 @@ export function Exchange() {
               type="button"
               onClick={handleSwap}
               aria-label="Inverter moedas"
-              className="p-2.5 rounded-xl bg-[#0f1318] border border-gray-700 text-gray-300 hover:text-white hover:border-brand-primary transition-colors cursor-pointer"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-xl bg-surface-2 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer"
             >
               <ArrowDownUp size={18} />
             </button>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Para</label>
+            <label className="text-sm text-muted-foreground">Para</label>
             <select
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
             >
               {currencies.map((code) => (
-                <option key={code} value={code} className="bg-[#0f1318]">
+                <option key={code} value={code} className="bg-surface-2">
                   {code} — {currencyName(code)}
                 </option>
               ))}
@@ -205,54 +205,54 @@ export function Exchange() {
           <button
             type="submit"
             disabled={convert.isPending}
-            className="w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
           >
             {convert.isPending ? "Convertendo..." : "Converter"}
           </button>
         </form>
 
-        <div className="p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-4">
-          <h3 className="text-base font-bold text-white">Resultado</h3>
+        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+          <h3 className="text-base font-bold text-foreground">Resultado</h3>
 
           {!result ? (
-            <p className="text-sm text-gray-500 text-center py-16">
+            <p className="text-sm text-muted-foreground text-center py-16">
               Preencha o valor e clique em Converter para ver o resultado.
             </p>
           ) : (
             <>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Você envia</span>
-                  <span className="text-white font-bold tabular-nums">
+                  <span className="text-muted-foreground">Você envia</span>
+                  <span className="text-foreground font-bold tabular-nums">
                     {formatCurrency(result.amount, result.from)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Você recebe</span>
+                  <span className="text-muted-foreground">Você recebe</span>
                   <span className="text-2xl font-bold text-brand-primary tabular-nums">
                     {formatCurrency(result.convertedAmount, result.to)}
                   </span>
                 </div>
               </div>
 
-              <div className="h-px bg-gray-800" />
+              <div className="h-px bg-border" />
 
               <div className="flex flex-col gap-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Taxa ({result.from} → {result.to})</span>
-                  <span className="text-white font-semibold tabular-nums">
+                  <span className="text-muted-foreground">Taxa ({result.from} → {result.to})</span>
+                  <span className="text-foreground font-semibold tabular-nums">
                     {result.rate.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Taxa de serviço</span>
-                  <span className="text-white font-semibold tabular-nums">
+                  <span className="text-muted-foreground">Taxa de serviço</span>
+                  <span className="text-foreground font-semibold tabular-nums">
                     {formatCurrency(result.fee)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Data</span>
-                  <span className="text-white font-semibold tabular-nums">
+                  <span className="text-muted-foreground">Data</span>
+                  <span className="text-foreground font-semibold tabular-nums">
                     {formatDate(result.timestamp)}
                   </span>
                 </div>

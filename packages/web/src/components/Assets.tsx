@@ -9,13 +9,13 @@ const TYPE_LABELS: Record<PortfolioAssetType, string> = {
 
 const TYPE_COLORS: Record<PortfolioAssetType, string> = {
   CRYPTO: "bg-brand-primary/15 text-brand-primary",
-  STOCK: "bg-blue-500/15 text-blue-400",
-  FIXED_INCOME: "bg-amber-500/15 text-amber-400",
+  STOCK: "bg-info/15 text-info",
+  FIXED_INCOME: "bg-warning/15 text-warning",
 };
 
 function PositionRow({ position }: { position: PortfolioPosition }) {
   return (
-    <div className="flex items-center justify-between p-3 hover:bg-gray-800/50 rounded-xl transition-colors">
+    <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-xl transition-colors">
       <div className="flex items-center gap-3">
         <div
           className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${TYPE_COLORS[position.type]}`}
@@ -24,7 +24,7 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
         </div>
         <div>
           <p className="font-bold">{position.ticker}</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {position.name} · {position.quantity}
           </p>
         </div>
@@ -47,22 +47,22 @@ export function Assets() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-gray-800 p-6 h-full">
+      <div className="rounded-2xl border border-border p-6 nav:h-full">
         <h3 className="text-lg font-bold mb-4">Seus Ativos</h3>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 rounded-xl bg-gray-900/40 animate-pulse"
+              className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 animate-pulse"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gray-800" />
+                <div className="w-10 h-10 rounded-lg bg-secondary" />
                 <div className="space-y-2">
-                  <div className="h-3 w-16 bg-gray-800 rounded" />
-                  <div className="h-2.5 w-20 bg-gray-800/70 rounded" />
+                  <div className="h-3 w-16 bg-secondary rounded" />
+                  <div className="h-2.5 w-20 bg-secondary/70 rounded" />
                 </div>
               </div>
-              <div className="h-3 w-20 bg-gray-800 rounded" />
+              <div className="h-3 w-20 bg-secondary rounded" />
             </div>
           ))}
         </div>
@@ -72,13 +72,13 @@ export function Assets() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-gray-800 p-6 h-full">
+      <div className="rounded-2xl border border-border p-6 nav:h-full">
         <h3 className="text-lg font-bold mb-3">Seus Ativos</h3>
         <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-          <p className="text-sm text-red-500">Não foi possível carregar.</p>
+          <p className="text-sm text-destructive">Não foi possível carregar.</p>
           <button
             onClick={() => refetch()}
-            className="px-3 py-1.5 rounded-lg bg-brand-primary text-black text-xs font-bold hover:opacity-90 transition-opacity"
+            className="min-h-11 px-3 py-1.5 rounded-lg bg-brand-primary text-black text-xs font-bold hover:opacity-90 transition-opacity"
           >
             Tentar novamente
           </button>
@@ -88,11 +88,11 @@ export function Assets() {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-800 p-6 h-full flex flex-col">
+    <div className="rounded-2xl border border-border p-6 nav:h-full flex flex-col">
       <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
 
       {positions.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-16">
+        <p className="text-sm text-muted-foreground text-center py-16">
           Nenhum ativo no portfólio.
         </p>
       ) : (

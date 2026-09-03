@@ -25,15 +25,15 @@ const TYPE_OPTIONS: { value: OrderType; label: string }[] = [
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> =
   {
-    PENDING: { label: "Pendente", className: "bg-amber-600/15 text-amber-400" },
-    OPEN: { label: "Aberta", className: "bg-blue-500/15 text-blue-400" },
+    PENDING: { label: "Pendente", className: "bg-warning/15 text-warning" },
+    OPEN: { label: "Aberta", className: "bg-info/15 text-info" },
     PARTIALLY_FILLED: {
       label: "Parcial",
       className: "bg-purple-500/15 text-purple-400",
     },
     FILLED: { label: "Executada", className: "bg-brand-primary/15 text-brand-primary" },
-    CANCELLED: { label: "Cancelada", className: "bg-gray-700/30 text-gray-400" },
-    REJECTED: { label: "Rejeitada", className: "bg-red-500/15 text-red-500" },
+    CANCELLED: { label: "Cancelada", className: "bg-secondary text-muted-foreground" },
+    REJECTED: { label: "Rejeitada", className: "bg-destructive/15 text-destructive" },
   };
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -57,32 +57,32 @@ function SideText({ side }: { side: OrderSide }) {
   return side === "BUY" ? (
     <span className="text-brand-primary font-bold">Compra</span>
   ) : (
-    <span className="text-red-500 font-bold">Venda</span>
+    <span className="text-destructive font-bold">Venda</span>
   );
 }
 
 function OrderRow({ order }: { order: Order }) {
   const showPrice = typeof order.price === "number";
   return (
-    <div className="p-4 rounded-xl border border-gray-800 bg-[#0f1318]">
+    <div className="p-4 rounded-xl border border-border bg-surface-2">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-bold text-white">{order.ticker}</span>
+          <span className="font-bold text-foreground">{order.ticker}</span>
           <SideText side={order.side} />
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
             {order.type}
           </span>
         </div>
         <StatusBadge status={order.status} />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
-          Qtd: <span className="text-white font-semibold tabular-nums">{order.quantity}</span>
+          Qtd: <span className="text-foreground font-semibold tabular-nums">{order.quantity}</span>
           {showPrice && (
             <>
               {" "}
               · Preço:{" "}
-              <span className="text-white font-semibold tabular-nums">
+              <span className="text-foreground font-semibold tabular-nums">
                 {order.price}
               </span>
             </>
@@ -91,7 +91,7 @@ function OrderRow({ order }: { order: Order }) {
             <>
               {" "}
               · PM:{" "}
-              <span className="text-white font-semibold tabular-nums">
+              <span className="text-foreground font-semibold tabular-nums">
                 {order.avgPrice}
               </span>
             </>
@@ -195,8 +195,8 @@ export function Orders() {
   if (isUnauthorized) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">Ordens indisponíveis</h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <h2 className="text-xl font-bold text-foreground">Ordens indisponíveis</h2>
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           É necessário estar autenticado para visualizar e criar ordens.
         </p>
         <Link
@@ -212,10 +212,10 @@ export function Orders() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-white">
+        <h2 className="text-xl font-bold text-foreground">
           Não foi possível carregar as ordens
         </h2>
-        <p className="text-sm text-gray-400 text-center max-w-md">
+        <p className="text-sm text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
         <button
@@ -231,44 +231,44 @@ export function Orders() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-white mb-1">Ordens</h2>
-        <p className="text-gray-400 text-sm">
+        <h2 className="text-2xl font-bold text-foreground mb-1">Ordens</h2>
+        <p className="text-muted-foreground text-sm">
           Envie e acompanhe suas ordens de compra e venda.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+      <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
-          className="lg:col-span-2 p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-5"
+          className="nav:col-span-2 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-white">Nova Ordem</h3>
+          <h3 className="text-base font-bold text-foreground">Nova Ordem</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Ticker</label>
+            <label className="text-sm text-muted-foreground">Ticker</label>
             <input
               type="text"
               value={ticker}
               onChange={(e) => setTicker(e.target.value)}
               placeholder="ex.: PETR4"
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 uppercase"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 uppercase"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Lado</label>
+            <label className="text-sm text-muted-foreground">Lado</label>
             <div className="grid grid-cols-2 gap-2">
               {SIDE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setSide(option.value)}
-                  className={`py-2.5 rounded-xl border text-sm font-bold transition-colors ${
+                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors ${
                     side === option.value
                       ? option.value === "BUY"
                         ? "bg-brand-primary text-black border-brand-primary"
-                        : "bg-red-500 text-white border-red-500"
-                      : "bg-[#0f1318] text-gray-400 border-gray-700 hover:border-gray-500"
+                        : "bg-destructive text-white border-destructive"
+                      : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
                   }`}
                 >
                   {option.label}
@@ -278,14 +278,14 @@ export function Orders() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Tipo</label>
+            <label className="text-sm text-muted-foreground">Tipo</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as OrderType)}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
             >
               {TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} className="bg-[#0f1318]">
+                <option key={option.value} value={option.value} className="bg-surface-2">
                   {option.label}
                 </option>
               ))}
@@ -293,51 +293,51 @@ export function Orders() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Quantidade</label>
+            <label className="text-sm text-muted-foreground">Quantidade</label>
             <input
               type="text"
               inputMode="decimal"
               value={quantity}
               onChange={(e) => handleNumeric(e, setQuantity)}
               placeholder="0"
-              className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
             />
           </div>
 
           {needsPrice && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-400">Preço</label>
+              <label className="text-sm text-muted-foreground">Preço</label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={price}
                 onChange={(e) => handleNumeric(e, setPrice)}
                 placeholder="0.00"
-                className="w-full px-4 py-3 rounded-xl bg-[#0f1318] border border-gray-700 text-white placeholder-gray-600 text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
               />
             </div>
           )}
 
           {createOrder.error && (
-            <p className="text-xs text-red-500">{createOrder.error.message}</p>
+            <p className="text-xs text-destructive">{createOrder.error.message}</p>
           )}
 
           <button
             type="submit"
             disabled={createOrder.isPending}
-            className="w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
           >
             {createOrder.isPending ? "Enviando..." : "Enviar Ordem"}
           </button>
         </form>
 
-        <div className="lg:col-span-3 p-6 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-4">
-          <h3 className="text-base font-bold text-white">
+        <div className="nav:col-span-3 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+          <h3 className="text-base font-bold text-foreground">
             Histórico de Ordens
           </h3>
 
           {orders.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-16">
+            <p className="text-sm text-muted-foreground text-center py-16">
               Nenhuma ordem registrada ainda.
             </p>
           ) : (

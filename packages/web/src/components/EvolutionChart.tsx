@@ -27,15 +27,15 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
 
           <CartesianGrid
             strokeDasharray="3 3"
             vertical={false}
-            stroke="#1f2937"
+            stroke="var(--color-border)"
           />
           <XAxis dataKey="date" hide />
           <YAxis
@@ -47,17 +47,17 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
           <Tooltip
             formatter={(value) => [formatCurrency(Number(value)), "Patrimônio"]}
             contentStyle={{
-              backgroundColor: "#161b22",
-              border: "1px solid #374151",
+              backgroundColor: "var(--color-surface-1)",
+              border: "1px solid var(--color-border)",
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            itemStyle={{ color: "#10b981" }}
+            itemStyle={{ color: "var(--color-primary)" }}
           />
           <Area
             type="monotone"
             dataKey="balance"
-            stroke="#10b981"
+            stroke="var(--color-primary)"
             strokeWidth={3}
             fill="url(#colorValue)"
             animationDuration={1000}

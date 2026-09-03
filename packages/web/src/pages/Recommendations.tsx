@@ -70,11 +70,11 @@ export function Recommendations() {
       <header className="mb-8">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles size={24} className="text-brand-primary" />
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-foreground">
             Recomendações de IA
           </h2>
         </div>
-        <p className="text-gray-400 text-sm">
+        <p className="text-muted-foreground text-sm">
           Sugestões personalizadas geradas pela inteligência artificial do
           InvestPro com base no seu perfil e no mercado.
         </p>
@@ -84,14 +84,14 @@ export function Recommendations() {
         {RECOMMENDATIONS.map((rec) => (
           <div
             key={rec.id}
-            className="bg-[#161b22] border border-gray-800 p-5 rounded-2xl hover:border-brand-primary/50 transition-all cursor-pointer group"
+            className="bg-surface-1 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all cursor-pointer group"
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-brand-primary transition-colors">
+                <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-brand-primary transition-colors">
                   {rec.title}
                 </h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {rec.description}
                 </p>
               </div>

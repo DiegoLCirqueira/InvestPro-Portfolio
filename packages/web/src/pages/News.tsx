@@ -63,15 +63,15 @@ export function News() {
     return (
       <div className="flex-1 animate-in fade-in duration-300">
         <header className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Notícias do Mercado
           </h2>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-gray-800">
-          <h3 className="text-white font-semibold text-lg">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-border">
+          <h3 className="text-foreground font-semibold text-lg">
             Não foi possível carregar as notícias
           </h3>
-          <p className="text-sm text-gray-500 text-center max-w-md">
+          <p className="text-sm text-muted-foreground text-center max-w-md">
             {error.message}
           </p>
           <button
@@ -88,10 +88,10 @@ export function News() {
   return (
     <div className="flex-1">
       <header className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
           Notícias do Mercado
         </h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-muted-foreground text-sm">
           Fique por dentro do que move o seu dinheiro hoje.
         </p>
       </header>
@@ -104,10 +104,10 @@ export function News() {
               setFilter(option.value);
               setPage(1);
             }}
-            className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${
+            className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${
               filter === option.value
                 ? "bg-brand-primary text-black border-brand-primary"
-                : "bg-gray-900/60 text-gray-400 border-gray-800 hover:border-brand-primary/40"
+                : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
             }`}
           >
             {option.label}
@@ -117,7 +117,7 @@ export function News() {
 
       <div className="grid gap-4">
         {items.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-16">
+          <p className="text-sm text-muted-foreground text-center py-16">
             Nenhuma notícia encontrada para esta categoria.
           </p>
         ) : (
@@ -127,33 +127,33 @@ export function News() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-800/20 border border-gray-800 p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
+              className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
             >
               <div className="flex justify-between items-start mb-3 gap-3">
                 <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-[10px] font-bold rounded-full uppercase">
                   {CATEGORY_LABELS[item.category] ?? item.category}
                 </span>
-                <div className="flex items-center gap-3 text-gray-500 text-xs shrink-0">
+                <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} />
                     {formatDate(item.publishedAt)}
                   </span>
-                  <span className="hidden sm:inline text-gray-600">
+                  <span className="hidden sm:inline text-muted-foreground">
                     {item.source}
                   </span>
                   <ExternalLink
                     size={13}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-brand-primary"
+                    className="opacity-100 nav:opacity-0 nav:group-hover:opacity-100 transition-opacity text-brand-primary"
                   />
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-white group-hover:text-brand-primary transition-colors mb-2">
+              <h3 className="text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors mb-2">
                 {item.title}
               </h3>
 
               {item.summary && (
-                <p className="text-gray-400 text-xs leading-relaxed">
+                <p className="text-muted-foreground text-xs leading-relaxed">
                   {item.summary}
                 </p>
               )}
@@ -163,22 +163,22 @@ export function News() {
       </div>
 
       {data && data.total > data.limit && (
-        <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-800">
+        <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800 text-gray-300 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft size={15} />
             Anterior
           </button>
-          <span className="text-xs text-gray-500 font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             Página {data.page} de {totalPage}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPage, p + 1))}
             disabled={page >= totalPage}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-900/60 border border-gray-800 text-gray-300 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Próxima
             <ChevronRight size={15} />
