@@ -14,6 +14,7 @@ import {
 } from "./auth.schema.js";
 import { env } from "../../config/env.js";
 import * as authService from "./auth.service.js";
+import { startRefreshTokenCleanup } from "./scheduler.js";
 
 const REFRESH_COOKIE = "investpro_refresh_token";
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -146,4 +147,6 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return { message: "Sessão encerrada com sucesso" };
     }
   );
+
+  startRefreshTokenCleanup(app.log);
 }
