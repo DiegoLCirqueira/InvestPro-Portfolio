@@ -1,3 +1,4 @@
+import type { FastifyBaseLogger } from "fastify";
 import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import type { RegisterBody, LoginBody } from "./auth.schema.js";
@@ -8,6 +9,9 @@ import {
   verifyToken,
   type TokenPayload,
 } from "./lib/jwt.js";
+import { generatePasswordResetToken, hashResetToken } from "./lib/resetToken.js";
+import { isEmailRateLimited } from "./lib/emailRateLimit.js";
+import { sendPasswordResetEmail, sendPasswordChangedEmail } from "./lib/email.js";
 
 interface TokenPair {
   accessToken: string;
@@ -144,6 +148,69 @@ export async function logout(token: string): Promise<void> {
   } catch {
     // Silently fail if token not found — logout is best-effort
   }
+}
+
+export async function forgotPassword(email: string, log: FastifyBaseLogger): Promise<void> {
+  if (isEmailRateLimited(email)) return;
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return;
+
+  await prisma.passwordResetToken.deleteMany({
+    where: { userId: user.id, usedAt: null },
+  });
+
+  const { token, tokenHash, expiresAt } = generatePasswordResetToken();
+  await prisma.passwordResetToken.create({
+    data: { userId: user.id, tokenHash, expiresAt },
+  });
+
+  const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+  void sendPasswordResetEmail(user.email, resetLink).catch((err) => {
+    log.error({ err }, "Erro ao enviar email de redefinição de senha");
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+  log: FastifyBaseLogger
+): Promise<void> {
+  const tokenHash = hashResetToken(token);
+  const now = new Date();
+  const passwordHash = await hashPassword(newPassword);
+
+  const user = await prisma.$transaction(async (tx) => {
+    // updateMany com WHERE usedAt/expiresAt é atômico no nível do banco: só uma
+    // requisição concorrente com o mesmo token consegue "reivindicar" o registro,
+    // evitando a race condition de duas requests usando o mesmo token ao mesmo tempo.
+    const claimed = await tx.passwordResetToken.updateMany({
+      where: { tokenHash, usedAt: null, expiresAt: { gt: now } },
+      data: { usedAt: now },
+    });
+
+    if (claimed.count === 0) {
+      throw new AppError("INVALID_RESET_TOKEN", "Token inválido ou expirado", 400);
+    }
+
+    const record = await tx.passwordResetToken.findUniqueOrThrow({ where: { tokenHash } });
+
+    const updatedUser = await tx.user.update({
+      where: { id: record.userId },
+      data: { passwordHash },
+    });
+
+    await tx.refreshToken.deleteMany({ where: { userId: record.userId } });
+    await tx.passwordResetToken.deleteMany({
+      where: { userId: record.userId, usedAt: null },
+    });
+
+    return updatedUser;
+  });
+
+  void sendPasswordChangedEmail(user.email).catch((err) => {
+    log.error({ err }, "Erro ao enviar email de confirmação de senha alterada");
+  });
 }
 
 export class AppError extends Error {

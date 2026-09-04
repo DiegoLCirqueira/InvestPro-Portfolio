@@ -11,6 +11,9 @@ vi.mock('../../../config/env.js', () => ({
     NODE_ENV: 'development',
     JWT_SECRET: 'test-secret',
     JWT_REFRESH_SECRET: 'test-refresh-secret',
+    FRONTEND_URL: 'http://localhost:5173',
+    RESEND_API_KEY: 'test-resend-key',
+    RESEND_FROM_EMAIL: 'InvestPro <test@investpro.app>',
   },
 }))
 
@@ -22,8 +25,17 @@ const mocks = vi.hoisted(() => {
     refreshTokenFindUnique: vi.fn(),
     refreshTokenDelete: vi.fn(),
     refreshTokenCreate: vi.fn(),
+    refreshTokenDeleteMany: vi.fn(),
     userCreate: vi.fn(),
+    userUpdate: vi.fn(),
     portfolioCreate: vi.fn(),
+    passwordResetTokenDeleteMany: vi.fn(),
+    passwordResetTokenCreate: vi.fn(),
+    passwordResetTokenUpdateMany: vi.fn(),
+    passwordResetTokenFindUniqueOrThrow: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+    sendPasswordChangedEmail: vi.fn(),
+    isEmailRateLimited: vi.fn(),
   }
 })
 
@@ -32,6 +44,7 @@ vi.mock('../../../config/database.js', () => ({
     user: {
       findUnique: mocks.findUnique,
       create: mocks.userCreate,
+      update: mocks.userUpdate,
     },
     portfolio: {
       create: mocks.portfolioCreate,
@@ -40,14 +53,33 @@ vi.mock('../../../config/database.js', () => ({
       findUnique: mocks.refreshTokenFindUnique,
       delete: mocks.refreshTokenDelete,
       create: mocks.refreshTokenCreate,
+      deleteMany: mocks.refreshTokenDeleteMany,
+    },
+    passwordResetToken: {
+      deleteMany: mocks.passwordResetTokenDeleteMany,
+      create: mocks.passwordResetTokenCreate,
+      updateMany: mocks.passwordResetTokenUpdateMany,
+      findUniqueOrThrow: mocks.passwordResetTokenFindUniqueOrThrow,
     },
     $transaction: mocks.transaction,
   },
 }))
 
+vi.mock('../lib/email.js', () => ({
+  sendPasswordResetEmail: mocks.sendPasswordResetEmail,
+  sendPasswordChangedEmail: mocks.sendPasswordChangedEmail,
+}))
+
+vi.mock('../lib/emailRateLimit.js', () => ({
+  isEmailRateLimited: mocks.isEmailRateLimited,
+}))
+
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { register, login, refresh, logout, AppError } from '../auth.service.js'
+import type { FastifyBaseLogger } from 'fastify'
+import { register, login, refresh, logout, forgotPassword, resetPassword, AppError } from '../auth.service.js'
+
+const fakeLog = { error: vi.fn() } as unknown as FastifyBaseLogger
 
 const BASE = {
   email: 'diego@investpro.com',
@@ -70,6 +102,9 @@ function tokenFor(sub: string, secret: string, expiresIn: string): string {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.refreshTokenFindUnique.mockResolvedValue(null)
+  mocks.isEmailRateLimited.mockReturnValue(false)
+  mocks.sendPasswordResetEmail.mockResolvedValue(undefined)
+  mocks.sendPasswordChangedEmail.mockResolvedValue(undefined)
 })
 
 describe('register', () => {
@@ -217,5 +252,103 @@ describe('logout', () => {
   it('não lança erro quando o token não existe', async () => {
     mocks.refreshTokenFindUnique.mockResolvedValue(null)
     await expect(logout('desconhecido')).resolves.toBeUndefined()
+  })
+})
+
+describe('forgotPassword', () => {
+  it('invalida tokens anteriores e cria um novo token de reset quando o email existe', async () => {
+    mocks.findUnique.mockResolvedValue(dbUser)
+    mocks.passwordResetTokenDeleteMany.mockResolvedValue({ count: 1 })
+    mocks.passwordResetTokenCreate.mockResolvedValue({ id: 'prt-1' })
+
+    await forgotPassword(dbUser.email, fakeLog)
+
+    expect(mocks.passwordResetTokenDeleteMany).toHaveBeenCalledWith({
+      where: { userId: dbUser.id, usedAt: null },
+    })
+    expect(mocks.passwordResetTokenCreate).toHaveBeenCalledTimes(1)
+    const createArgs = mocks.passwordResetTokenCreate.mock.calls[0][0].data
+    expect(createArgs.userId).toBe(dbUser.id)
+    expect(createArgs.tokenHash).toMatch(/^[a-f0-9]{64}$/) // hex sha256
+    expect(createArgs.tokenHash).not.toContain(' ')
+  })
+
+  it('nunca persiste o token em texto puro (só o hash)', async () => {
+    mocks.findUnique.mockResolvedValue(dbUser)
+    mocks.passwordResetTokenDeleteMany.mockResolvedValue({ count: 0 })
+    mocks.passwordResetTokenCreate.mockResolvedValue({ id: 'prt-1' })
+
+    await forgotPassword(dbUser.email, fakeLog)
+
+    const createArgs = mocks.passwordResetTokenCreate.mock.calls[0][0].data
+    expect(createArgs).not.toHaveProperty('token')
+    expect(Object.keys(createArgs).sort()).toEqual(['expiresAt', 'tokenHash', 'userId'].sort())
+  })
+
+  it('não cria token nem lança erro quando o email não existe', async () => {
+    mocks.findUnique.mockResolvedValue(null)
+    await expect(forgotPassword('nao-existe@teste.com', fakeLog)).resolves.toBeUndefined()
+    expect(mocks.passwordResetTokenCreate).not.toHaveBeenCalled()
+  })
+
+  it('não faz nada quando o email está sob rate limit', async () => {
+    mocks.isEmailRateLimited.mockReturnValue(true)
+    await forgotPassword(dbUser.email, fakeLog)
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+    expect(mocks.passwordResetTokenCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('resetPassword', () => {
+  function mockTransactionTx(): void {
+    mocks.transaction.mockImplementation(async (fn: unknown) => {
+      return await (fn as (tx: unknown) => Promise<unknown>)({
+        passwordResetToken: {
+          updateMany: mocks.passwordResetTokenUpdateMany,
+          findUniqueOrThrow: mocks.passwordResetTokenFindUniqueOrThrow,
+          deleteMany: mocks.passwordResetTokenDeleteMany,
+        },
+        user: { update: mocks.userUpdate },
+        refreshToken: { deleteMany: mocks.refreshTokenDeleteMany },
+      })
+    })
+  }
+
+  it('redefine a senha, invalida refresh tokens e outros tokens de reset pendentes (fluxo feliz)', async () => {
+    mockTransactionTx()
+    mocks.passwordResetTokenUpdateMany.mockResolvedValue({ count: 1 })
+    mocks.passwordResetTokenFindUniqueOrThrow.mockResolvedValue({ id: 'prt-1', userId: dbUser.id })
+    mocks.userUpdate.mockResolvedValue(dbUser)
+    mocks.refreshTokenDeleteMany.mockResolvedValue({ count: 2 })
+    mocks.passwordResetTokenDeleteMany.mockResolvedValue({ count: 1 })
+
+    await resetPassword('token-valido', 'NovaSenhaForte123', fakeLog)
+
+    expect(mocks.passwordResetTokenUpdateMany).toHaveBeenCalledWith({
+      where: { tokenHash: expect.any(String), usedAt: null, expiresAt: { gt: expect.any(Date) } },
+      data: { usedAt: expect.any(Date) },
+    })
+    expect(mocks.userUpdate).toHaveBeenCalledWith({
+      where: { id: dbUser.id },
+      data: { passwordHash: expect.any(String) },
+    })
+    expect(mocks.refreshTokenDeleteMany).toHaveBeenCalledWith({ where: { userId: dbUser.id } })
+    expect(mocks.passwordResetTokenDeleteMany).toHaveBeenCalledWith({
+      where: { userId: dbUser.id, usedAt: null },
+    })
+
+    const newHash = mocks.userUpdate.mock.calls[0][0].data.passwordHash
+    expect(await bcrypt.compare('NovaSenhaForte123', newHash)).toBe(true)
+  })
+
+  it('lança INVALID_RESET_TOKEN (genérico) quando o token não existe/expirou/já foi usado', async () => {
+    mockTransactionTx()
+    mocks.passwordResetTokenUpdateMany.mockResolvedValue({ count: 0 })
+
+    await expect(resetPassword('token-invalido', 'NovaSenhaForte123', fakeLog)).rejects.toMatchObject<AppError>({
+      code: 'INVALID_RESET_TOKEN',
+      statusCode: 400,
+    })
+    expect(mocks.userUpdate).not.toHaveBeenCalled()
   })
 })

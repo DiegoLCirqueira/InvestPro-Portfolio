@@ -20,4 +20,7 @@ export const env = {
   JWT_SECRET: jwtSecret,
   JWT_REFRESH_SECRET: jwtRefreshSecret,
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:5173",
+  RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
 } as const;

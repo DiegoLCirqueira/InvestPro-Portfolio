@@ -55,6 +55,7 @@ export async function deleteUser(email: string): Promise<void> {
   const portfolio = await prisma.portfolio.findUnique({ where: { userId: user.id } })
 
   await prisma.refreshToken.deleteMany({ where: { userId: user.id } })
+  await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } })
   await prisma.transfer.deleteMany({ where: { userId: user.id } })
   await prisma.bankAccount.deleteMany({ where: { userId: user.id } })
   await prisma.order.deleteMany({ where: { userId: user.id } })

@@ -39,5 +39,16 @@ export const logoutResponseSchema = z.object({
   message: z.string(),
 })
 
+export const forgotPasswordBodySchema = z.object({
+  email: z.email('Email inválido'),
+})
+
+export const resetPasswordBodySchema = z.object({
+  token: z.string().min(1, 'Token é obrigatório'),
+  newPassword: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+})
+
 export type RegisterBody = z.infer<typeof registerBodySchema>
 export type LoginBody = z.infer<typeof loginBodySchema>
+export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>
+export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>

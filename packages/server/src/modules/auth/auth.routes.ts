@@ -11,6 +11,8 @@ import {
   authResponseSchema,
   refreshResponseSchema,
   logoutResponseSchema,
+  forgotPasswordBodySchema,
+  resetPasswordBodySchema,
 } from "./auth.schema.js";
 import { env } from "../../config/env.js";
 import * as authService from "./auth.service.js";
@@ -145,6 +147,50 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
       clearRefreshCookie(reply);
       return { message: "Sessão encerrada com sucesso" };
+    }
+  );
+
+  r.post(
+    "/api/v1/auth/forgot-password",
+    {
+      ...AUTH_RATE_LIMIT,
+      schema: {
+        tags: ["Auth"],
+        summary: "Solicitar redefinição de senha",
+        description:
+          "Envia um email com link de redefinição de senha, caso o email exista. Sempre responde 200 com mensagem genérica, para não revelar se o email está cadastrado.",
+        body: forgotPasswordBodySchema,
+        response: {
+          200: logoutResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      await authService.forgotPassword(request.body.email, request.log);
+      return {
+        message: "Se o email existir em nossa base, você receberá as instruções em instantes.",
+      };
+    }
+  );
+
+  r.post(
+    "/api/v1/auth/reset-password",
+    {
+      ...AUTH_RATE_LIMIT,
+      schema: {
+        tags: ["Auth"],
+        summary: "Redefinir senha",
+        description:
+          "Redefine a senha do usuário a partir do token recebido por email. Invalida o token, os demais tokens de reset pendentes e todos os refresh tokens ativos do usuário.",
+        body: resetPasswordBodySchema,
+        response: {
+          200: logoutResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      await authService.resetPassword(request.body.token, request.body.newPassword, request.log);
+      return { message: "Senha redefinida com sucesso" };
     }
   );
 

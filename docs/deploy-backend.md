@@ -77,6 +77,9 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `NODE_ENV` | `production` |
 | `CORS_ORIGIN` | URL do frontend no Vercel (ex.: `https://investpro1-five.vercel.app`) |
 | `PORT` | Opcional — o Railway injeta a própria `PORT` automaticamente |
+| `FRONTEND_URL` | URL do frontend no Vercel — usada para montar o link de reset de senha (WI-20). Mesmo valor de `CORS_ORIGIN` na prática. |
+| `RESEND_API_KEY` | Chave da API do [Resend](https://resend.com) (WI-20, email transacional). **Precisa ser criada manualmente no painel do Resend** — não há acesso automatizado a isso. |
+| `RESEND_FROM_EMAIL` | Remetente dos emails (ex.: `InvestPro <no-reply@investpro.app>`). Requer domínio verificado no Resend em produção — sem isso, usar o default `onboarding@resend.dev` (limitado, não recomendado pra produção real). |
 
 > **Importante:** a aplicação **falha na inicialização** se `NODE_ENV=production`
 > e `CORS_ORIGIN` não for definida explicitamente (proteção do plugin CORS em

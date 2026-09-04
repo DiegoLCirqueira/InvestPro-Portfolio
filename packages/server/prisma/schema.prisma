@@ -9,20 +9,21 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String
-  fullName      String
-  cpf           String?        @unique
-  phone         String?
-  role          Role           @default(USER)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  portfolio     Portfolio?
-  refreshTokens RefreshToken[]
-  bankAccounts  BankAccount[]
-  transfers     Transfer[]
-  orders        Order[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  fullName            String
+  cpf                 String?              @unique
+  phone               String?
+  role                Role                 @default(USER)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  portfolio           Portfolio?
+  refreshTokens       RefreshToken[]
+  bankAccounts        BankAccount[]
+  transfers           Transfer[]
+  orders              Order[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Portfolio {
@@ -54,6 +55,18 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
