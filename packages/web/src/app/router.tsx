@@ -47,6 +47,12 @@ const Login = lazy(() =>
 const Register = lazy(() =>
   import("@/pages/Register").then((m) => ({ default: m.Register })),
 );
+const ForgotPassword = lazy(() =>
+  import("@/pages/ForgotPassword").then((m) => ({ default: m.ForgotPassword })),
+);
+const ResetPassword = lazy(() =>
+  import("@/pages/ResetPassword").then((m) => ({ default: m.ResetPassword })),
+);
 const AdminUsers = lazy(() =>
   import("@/pages/AdminUsers").then((m) => ({ default: m.AdminUsers })),
 );
@@ -148,6 +154,14 @@ export function Router() {
       </Route>
       <Route path="/login" element={withSuspense(Login, <RouteErrorFallback />)} />
       <Route path="/register" element={withSuspense(Register, <RouteErrorFallback />)} />
+      <Route
+        path="/forgot-password"
+        element={withSuspense(ForgotPassword, <RouteErrorFallback />)}
+      />
+      <Route
+        path="/reset-password"
+        element={withSuspense(ResetPassword, <RouteErrorFallback />)}
+      />
       <Route path="*" element={withSuspense(NotFound, <RouteErrorFallback />)} />
     </Routes>
   );

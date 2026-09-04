@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { UserPlus, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useAuthStore } from "@/stores/auth";
 import { ApiError } from "@/services/api";
 import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
@@ -50,14 +51,7 @@ export function Register() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
-      {/* Painel de marketing — só a partir de nav */}
-      <div className="hidden nav:flex items-center justify-center bg-[#081a15] border-r border-border overflow-hidden">
-        <img
-          src="/foto_login.png"
-          alt="InvestPro — sua carteira, mais inteligente desde o primeiro dia"
-          className="max-h-full max-w-full object-contain"
-        />
-      </div>
+      <AuthMarketingPanel alt="InvestPro — sua carteira, mais inteligente desde o primeiro dia" />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">

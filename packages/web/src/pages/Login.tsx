@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { LogIn, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useAuthStore } from "@/stores/auth";
 import { ApiError } from "@/services/api";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
@@ -43,14 +44,7 @@ export function Login() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
-      {/* Painel de marketing — só a partir de nav */}
-      <div className="hidden nav:flex items-center justify-center bg-[#081a15] border-r border-border overflow-hidden">
-        <img
-          src="/foto_login.png"
-          alt="InvestPro — invista com clareza, cresça com confiança"
-          className="max-h-full max-w-full object-contain"
-        />
-      </div>
+      <AuthMarketingPanel alt="InvestPro — invista com clareza, cresça com confiança" />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md space-y-8">
@@ -92,20 +86,12 @@ export function Login() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-semibold text-muted-foreground"
-                  >
-                    Senha
-                  </label>
-                  <button
-                    type="button"
-                    className="min-h-11 inline-flex items-center text-xs text-brand-primary hover:underline"
-                  >
-                    Esqueceu a senha?
-                  </button>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-semibold text-muted-foreground"
+                >
+                  Senha
+                </label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -130,6 +116,14 @@ export function Login() {
                     {errors.password.message}
                   </p>
                 )}
+                <div className="text-right">
+                  <Link
+                    to="/forgot-password"
+                    className="min-h-11 inline-flex items-center text-xs text-brand-primary hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </Link>
+                </div>
               </div>
 
               {errors.root && (
