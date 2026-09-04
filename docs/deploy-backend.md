@@ -15,10 +15,10 @@ arquitetura **D9**.
 | Item | Valor |
 |---|---|
 | Domínio | `api.investpro...` (gerado pelo Railway) |
-| Builder | Nixpacks (legacy) — ver §6 |
+| Builder | Railpack (padrão da Railway para projetos novos; `railway.json` com `builder: NIXPACKS` não é mais respeitado — ver §6) |
 | Serviço | `@investpro/server` em `packages/server/` |
 | Build | `tsc` (output em `dist/`) |
-| Start | `node dist/index.js` + `prisma migrate deploy` |
+| Start | `npx tsx dist/index.js` + `prisma migrate deploy` (não `node dist/index.js` puro — `@investpro/shared` é consumido como `.ts` bruto via `main: ./src/index.ts`, e `node` sozinho não resolve os imports `.js` que apontam para arquivos `.ts`; `tsx` resolve isso do mesmo jeito que `npm run dev`) |
 | Banco | PostgreSQL gerenciado (plugin do Railway) |
 | Healthcheck | `GET /health` |
 
