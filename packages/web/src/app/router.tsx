@@ -50,6 +50,9 @@ const Register = lazy(() =>
 const AdminUsers = lazy(() =>
   import("@/pages/AdminUsers").then((m) => ({ default: m.AdminUsers })),
 );
+const NotFound = lazy(() =>
+  import("@/pages/NotFound").then((m) => ({ default: m.NotFound })),
+);
 
 function RouteErrorFallback() {
   return (
@@ -145,6 +148,7 @@ export function Router() {
       </Route>
       <Route path="/login" element={withSuspense(Login, <RouteErrorFallback />)} />
       <Route path="/register" element={withSuspense(Register, <RouteErrorFallback />)} />
+      <Route path="*" element={withSuspense(NotFound, <RouteErrorFallback />)} />
     </Routes>
   );
 }

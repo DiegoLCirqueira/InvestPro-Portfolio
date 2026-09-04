@@ -12,7 +12,7 @@ export function ExchangeSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="p-5 rounded-2xl border border-gray-800 bg-[#161b22] flex flex-col gap-4"
+            className="p-5 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4"
           >
             <div className="flex items-start justify-between">
               <div className="space-y-1">

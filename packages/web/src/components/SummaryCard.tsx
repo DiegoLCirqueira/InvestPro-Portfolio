@@ -1,4 +1,5 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface SummaryCardProps {
   balance: number;
@@ -6,10 +7,7 @@ interface SummaryCardProps {
 }
 
 export function SummaryCard({ balance, change }: SummaryCardProps) {
-  const formattedBalance = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(balance);
+  const formattedBalance = formatCurrency(balance);
 
   const isPositive = change >= 0;
 

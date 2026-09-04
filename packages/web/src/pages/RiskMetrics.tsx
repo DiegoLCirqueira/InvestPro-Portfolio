@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
-import { ShieldAlert, Shield } from "lucide-react";
+import { ShieldAlert, ShieldQuestion, Shield, LogIn } from "lucide-react";
 import { RiskSkeleton } from "@/components/skeletons/RiskSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useRisk } from "@/hooks/use-risk";
 import { ApiError } from "@/services/api";
+import { formatDateTime } from "@/lib/format";
 import type { RiskReport } from "@/types/risk";
 
 interface MetricConfig {
@@ -56,12 +58,6 @@ function riskScoreBar(score: number): string {
   return "bg-destructive";
 }
 
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
-}
-
 export function RiskMetrics() {
   const { data, error, isLoading, refetch } = useRisk();
 
@@ -88,49 +84,32 @@ export function RiskMetrics() {
 
   if (isUnauthorized) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-warning" />
-        <h2 className="text-xl font-bold text-foreground">
-          Análise de Risco indisponível
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          É necessário estar autenticado para visualizar a análise de risco do
-          seu portfólio.
-        </p>
-        <Link
-          to="/login"
-          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Fazer login
-        </Link>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState
+          icon={LogIn}
+          title="Análise de Risco indisponível"
+          message="É necessário estar autenticado para visualizar a análise de risco do seu portfólio."
+          action={{ label: "Fazer login", to: "/login" }}
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-destructive" />
-        <h2 className="text-xl font-bold text-foreground">
-          Não foi possível carregar a análise de risco
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          {error.message}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState
+        icon={ShieldAlert}
+        title="Não foi possível carregar a análise de risco"
+        message={error.message}
+        onRetry={() => refetch()}
+      />
     );
   }
 
   if (!data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground text-sm">
-        Nenhum dado de risco disponível.
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState icon={ShieldQuestion} message="Nenhum dado de risco disponível." />
       </div>
     );
   }
@@ -261,7 +240,7 @@ export function RiskMetrics() {
 
       {data.updatedAt && (
         <p className="text-[10px] text-muted-foreground mt-4">
-          Atualizado em {formatDate(data.updatedAt)}
+          Atualizado em {formatDateTime(data.updatedAt)}
         </p>
       )}
 

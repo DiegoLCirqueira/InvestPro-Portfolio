@@ -9,7 +9,7 @@ export function MarketSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="p-6 rounded-2xl border border-gray-800 space-y-4"
+            className="p-6 rounded-2xl border border-border space-y-4"
           >
             <Skeleton className="h-3 w-20" />
             <div className="space-y-1">
@@ -20,7 +20,7 @@ export function MarketSkeleton() {
         ))}
       </div>
 
-      <div className="flex-1 p-6 rounded-2xl border border-gray-800 flex flex-col min-h-0">
+      <div className="flex-1 p-6 rounded-2xl border border-border flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-6">
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-6 w-24 rounded-full" />
@@ -37,7 +37,7 @@ export function MarketSkeleton() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 p-3 rounded-xl bg-gray-900/40"
+              className="flex items-center gap-4 p-3 rounded-xl bg-secondary/40"
             >
               <div className="space-y-1 min-w-[80px]">
                 <Skeleton className="h-3.5 w-16" />

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, LogIn } from "lucide-react";
 import { ExchangeSkeleton } from "@/components/skeletons/ExchangeSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useConvert, useExchange } from "@/hooks/useExchange";
 import { ApiError } from "@/services/api";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 
 const CURRENCY_NAMES: Record<string, string> = {
   BRL: "Real Brasileiro",
@@ -21,20 +23,6 @@ const CURRENCY_NAMES: Record<string, string> = {
 
 function currencyName(code: string): string {
   return CURRENCY_NAMES[code] ?? code;
-}
-
-function formatCurrency(value: number, currency = "BRL"): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
 }
 
 export function Exchange() {
@@ -97,37 +85,24 @@ export function Exchange() {
 
   if (isUnauthorized) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">Câmbio indisponível</h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          É necessário estar autenticado para realizar conversões de câmbio.
-        </p>
-        <Link
-          to="/login"
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Fazer login
-        </Link>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState
+          icon={LogIn}
+          title="Câmbio indisponível"
+          message="É necessário estar autenticado para realizar conversões de câmbio."
+          action={{ label: "Fazer login", to: "/login" }}
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">
-          Não foi possível carregar as moedas
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          {error.message}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState
+        title="Não foi possível carregar as moedas"
+        message={error.message}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -253,7 +228,7 @@ export function Exchange() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Data</span>
                   <span className="text-foreground font-semibold tabular-nums">
-                    {formatDate(result.timestamp)}
+                    {formatDateTime(result.timestamp)}
                   </span>
                 </div>
               </div>

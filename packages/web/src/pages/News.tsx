@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { Clock, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, ExternalLink, ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useNewsFeed } from "@/hooks/use-news-feed";
+import { formatDateShort } from "@/lib/format";
 import type { NewsCategory } from "@/types/news";
 
 const CATEGORY_FILTERS: { value: NewsCategory | "ALL"; label: string }[] = [
@@ -22,17 +25,6 @@ const CATEGORY_LABELS: Record<NewsCategory, string> = {
   ECONOMY: "Economia",
   WORLD: "Mundo",
 };
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function News() {
   const [filter, setFilter] = useState<NewsCategory | "ALL">("ALL");
@@ -67,20 +59,11 @@ export function News() {
             Notícias do Mercado
           </h2>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-border">
-          <h3 className="text-foreground font-semibold text-lg">
-            Não foi possível carregar as notícias
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {error.message}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ErrorState
+          title="Não foi possível carregar as notícias"
+          message={error.message}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
@@ -104,7 +87,7 @@ export function News() {
               setFilter(option.value);
               setPage(1);
             }}
-            className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${
+            className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               filter === option.value
                 ? "bg-brand-primary text-black border-brand-primary"
                 : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
@@ -117,9 +100,7 @@ export function News() {
 
       <div className="grid gap-4">
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-16">
-            Nenhuma notícia encontrada para esta categoria.
-          </p>
+          <EmptyState icon={Newspaper} message="Nenhuma notícia encontrada para esta categoria." />
         ) : (
           items.map((item) => (
             <a
@@ -136,7 +117,7 @@ export function News() {
                 <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} />
-                    {formatDate(item.publishedAt)}
+                    {formatDateShort(item.publishedAt)}
                   </span>
                   <span className="hidden sm:inline text-muted-foreground">
                     {item.source}
@@ -167,7 +148,7 @@ export function News() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronLeft size={15} />
             Anterior
@@ -178,7 +159,7 @@ export function News() {
           <button
             onClick={() => setPage((p) => Math.min(totalPage, p + 1))}
             disabled={page >= totalPage}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Próxima
             <ChevronRight size={15} />

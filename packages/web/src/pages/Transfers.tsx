@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { LogIn, Receipt } from "lucide-react";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useCreateTransfer, useTransfers } from "@/hooks/useTransfers";
 import { ApiError } from "@/services/api";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
@@ -13,44 +17,16 @@ const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
   { value: "DOC", label: "DOC" },
 ];
 
-const STATUS_CONFIG: Record<TransferStatus, { label: string; className: string }> =
+const STATUS_CONFIG: Record<TransferStatus, { label: string; tone: StatusTone }> =
   {
-    PENDING: {
-      label: "Pendente",
-      className: "bg-warning/15 text-warning",
-    },
-    COMPLETED: {
-      label: "Concluída",
-      className: "bg-brand-primary/15 text-brand-primary",
-    },
-    FAILED: {
-      label: "Falhou",
-      className: "bg-destructive/15 text-destructive",
-    },
+    PENDING: { label: "Pendente", tone: "warning" },
+    COMPLETED: { label: "Concluída", tone: "success" },
+    FAILED: { label: "Falhou", tone: "danger" },
   };
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
-}
-
-function StatusBadge({ status }: { status: TransferStatus }) {
+function TransferStatusBadge({ status }: { status: TransferStatus }) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
-  return (
-    <span
-      className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${config.className}`}
-    >
-      {config.label}
-    </span>
-  );
+  return <StatusBadge label={config.label} tone={config.tone} />;
 }
 
 function TransferItem({ transfer }: { transfer: Transfer }) {
@@ -69,13 +45,13 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
             {transfer.type}
           </span>
         </div>
-        <StatusBadge status={transfer.status} />
+        <TransferStatusBadge status={transfer.status} />
       </div>
       <p className="text-xs text-muted-foreground mb-0.5">{destination}</p>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="truncate">{transfer.description || "Sem descrição"}</span>
         <span className="tabular-nums shrink-0 ml-2">
-          {formatDate(transfer.createdAt)}
+          {formatDateTime(transfer.createdAt)}
         </span>
       </div>
     </div>
@@ -148,39 +124,24 @@ export function Transfers() {
 
   if (isUnauthorized) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">
-          Transferências indisponíveis
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          É necessário estar autenticado para realizar transferências.
-        </p>
-        <Link
-          to="/login"
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Fazer login
-        </Link>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState
+          icon={LogIn}
+          title="Transferências indisponíveis"
+          message="É necessário estar autenticado para realizar transferências."
+          action={{ label: "Fazer login", to: "/login" }}
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">
-          Não foi possível carregar as transferências
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          {error.message}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState
+        title="Não foi possível carregar as transferências"
+        message={error.message}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -210,7 +171,7 @@ export function Transfers() {
                   key={option.value}
                   type="button"
                   onClick={() => setType(option.value)}
-                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors ${
+                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                     type === option.value
                       ? "bg-brand-primary text-black border-brand-primary"
                       : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
@@ -271,7 +232,7 @@ export function Transfers() {
           <button
             type="submit"
             disabled={createTransfer.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
           </button>
@@ -283,9 +244,7 @@ export function Transfers() {
           </h3>
 
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-16">
-              Nenhuma transferência registrada ainda.
-            </p>
+            <EmptyState icon={Receipt} message="Nenhuma transferência registrada ainda." />
           ) : (
             <div className="flex flex-col gap-3">
               {history.map((transfer) => (

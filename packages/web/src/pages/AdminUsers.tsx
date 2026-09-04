@@ -1,20 +1,17 @@
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2, ShieldAlert, Users } from "lucide-react";
+import { Loader2, ShieldAlert, Users, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminUsers } from "@/hooks/use-admin-users";
 import { ApiError } from "@/services/api";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { formatDateTime } from "@/lib/format";
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
   USER: "Usuário",
 };
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
-}
 
 export function AdminUsers() {
   const { data, error, isLoading, refetch } = useAdminUsers();
@@ -41,21 +38,12 @@ export function AdminUsers() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <ShieldAlert size={40} className="text-destructive" />
-        <h2 className="text-xl font-bold text-foreground">
-          Não foi possível carregar os usuários
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          {error.message}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState
+        icon={ShieldAlert}
+        title="Não foi possível carregar os usuários"
+        message={error.message}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -74,9 +62,7 @@ export function AdminUsers() {
       </header>
 
       {users.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-16">
-          Nenhum usuário encontrado.
-        </p>
+        <EmptyState icon={UserX} message="Nenhum usuário encontrado." />
       ) : (
         <div className="rounded-2xl border border-border bg-surface-1 overflow-x-auto">
           <table className="w-full text-sm">
@@ -112,7 +98,7 @@ export function AdminUsers() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground" title={user.createdAt}>
-                    {formatDate(user.createdAt)}
+                    {formatDateTime(user.createdAt)}
                   </td>
                 </tr>
               ))}

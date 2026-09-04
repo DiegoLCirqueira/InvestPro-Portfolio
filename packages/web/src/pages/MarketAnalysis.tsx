@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useMarketAssets } from "@/hooks/use-market-assets";
+import { formatCurrency, formatPercent as formatPercentValue } from "@/lib/format";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
 
 const TYPE_FILTERS: { value: MarketAssetType | "ALL"; label: string }[] = [
@@ -11,17 +15,11 @@ const TYPE_FILTERS: { value: MarketAssetType | "ALL"; label: string }[] = [
 ];
 
 function formatPrice(price: number): string {
-  return price.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    maximumFractionDigits: 2,
-  });
+  return formatCurrency(price);
 }
 
 function formatPercent(value?: number): string {
-  const v = value ?? 0;
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
+  return formatPercentValue(value ?? 0, { showSign: true });
 }
 
 function sentimentFor(asset: MarketAsset): string {
@@ -133,20 +131,11 @@ export function MarketAnalysis() {
         <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
           Análise de Mercado
         </h2>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-border">
-          <h3 className="text-foreground font-semibold text-lg">
-            Não foi possível carregar os dados do mercado
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {error.message}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ErrorState
+          title="Não foi possível carregar os dados do mercado"
+          message={error.message}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
@@ -163,7 +152,7 @@ export function MarketAnalysis() {
             <button
               key={filterOption.value}
               onClick={() => setFilter(filterOption.value)}
-              className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${
+              className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 filter === filterOption.value
                   ? "bg-brand-primary text-black border-brand-primary"
                   : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
@@ -220,9 +209,7 @@ export function MarketAnalysis() {
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           {assets.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-16">
-              Nenhum ativo encontrado para este filtro.
-            </p>
+            <EmptyState icon={SearchX} message="Nenhum ativo encontrado para este filtro." />
           ) : (
             <>
               {/* Mobile/tablet (abaixo de nav): cards. A tabela exige largura para as colunas fazerem sentido. */}

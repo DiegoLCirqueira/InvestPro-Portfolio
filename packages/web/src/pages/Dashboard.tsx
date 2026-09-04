@@ -5,6 +5,7 @@ import { usePortfolio, usePortfolioHistory } from "@/hooks/usePortfolio";
 import { usePortfolioStore } from "@/stores/portfolio";
 import { useAuthStore } from "@/stores/auth";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { ErrorState } from "@/components/ErrorState";
 import type { PortfolioPeriod } from "@/types/portfolio";
 
 function MobileGreeting() {
@@ -80,20 +81,12 @@ export function Dashboard() {
     return (
       <div className="flex-1 animate-in fade-in duration-300">
         <MobileGreeting />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-border min-h-[60vh]">
-          <h3 className="text-foreground font-semibold text-lg">
-            Não foi possível carregar o portfólio
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {error.message}
-          </p>
-          <button
-            onClick={refetch}
-            className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ErrorState
+          title="Não foi possível carregar o portfólio"
+          message={error.message}
+          onRetry={refetch}
+          className="min-h-[60vh]"
+        />
       </div>
     );
   }
@@ -115,7 +108,7 @@ export function Dashboard() {
                   <button
                     key={option.value}
                     onClick={() => setPeriod(option.value)}
-                    className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                    className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                       period === option.value
                         ? "bg-brand-primary text-black"
                         : "text-muted-foreground hover:text-foreground"

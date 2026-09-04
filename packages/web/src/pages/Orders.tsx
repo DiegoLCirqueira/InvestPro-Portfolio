@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ClipboardList, LogIn } from "lucide-react";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useCreateOrder, useOrders } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
+import { formatDateTime } from "@/lib/format";
 import type {
   Order,
   OrderSide,
@@ -23,34 +27,19 @@ const TYPE_OPTIONS: { value: OrderType; label: string }[] = [
   { value: "STOP", label: "Stop" },
 ];
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> =
+const STATUS_CONFIG: Record<OrderStatus, { label: string; tone: StatusTone }> =
   {
-    PENDING: { label: "Pendente", className: "bg-warning/15 text-warning" },
-    OPEN: { label: "Aberta", className: "bg-info/15 text-info" },
-    PARTIALLY_FILLED: {
-      label: "Parcial",
-      className: "bg-purple-500/15 text-purple-400",
-    },
-    FILLED: { label: "Executada", className: "bg-brand-primary/15 text-brand-primary" },
-    CANCELLED: { label: "Cancelada", className: "bg-secondary text-muted-foreground" },
-    REJECTED: { label: "Rejeitada", className: "bg-destructive/15 text-destructive" },
+    PENDING: { label: "Pendente", tone: "warning" },
+    OPEN: { label: "Aberta", tone: "info" },
+    PARTIALLY_FILLED: { label: "Parcial", tone: "purple" },
+    FILLED: { label: "Executada", tone: "success" },
+    CANCELLED: { label: "Cancelada", tone: "neutral" },
+    REJECTED: { label: "Rejeitada", tone: "danger" },
   };
 
-function StatusBadge({ status }: { status: OrderStatus }) {
+function OrderStatusBadge({ status }: { status: OrderStatus }) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
-  return (
-    <span
-      className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${config.className}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR");
+  return <StatusBadge label={config.label} tone={config.tone} />;
 }
 
 function SideText({ side }: { side: OrderSide }) {
@@ -73,7 +62,7 @@ function OrderRow({ order }: { order: Order }) {
             {order.type}
           </span>
         </div>
-        <StatusBadge status={order.status} />
+        <OrderStatusBadge status={order.status} />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
@@ -97,7 +86,7 @@ function OrderRow({ order }: { order: Order }) {
             </>
           )}
         </span>
-        <span title={order.createdAt}>{formatDate(order.createdAt)}</span>
+        <span title={order.createdAt}>{formatDateTime(order.createdAt)}</span>
       </div>
     </div>
   );
@@ -194,37 +183,24 @@ export function Orders() {
 
   if (isUnauthorized) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">Ordens indisponíveis</h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          É necessário estar autenticado para visualizar e criar ordens.
-        </p>
-        <Link
-          to="/login"
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Fazer login
-        </Link>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+        <EmptyState
+          icon={LogIn}
+          title="Ordens indisponíveis"
+          message="É necessário estar autenticado para visualizar e criar ordens."
+          action={{ label: "Fazer login", to: "/login" }}
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-        <h2 className="text-xl font-bold text-foreground">
-          Não foi possível carregar as ordens
-        </h2>
-        <p className="text-sm text-muted-foreground text-center max-w-md">
-          {error.message}
-        </p>
-        <button
-          onClick={() => refetch()}
-          className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <ErrorState
+        title="Não foi possível carregar as ordens"
+        message={error.message}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -263,7 +239,7 @@ export function Orders() {
                   key={option.value}
                   type="button"
                   onClick={() => setSide(option.value)}
-                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors ${
+                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                     side === option.value
                       ? option.value === "BUY"
                         ? "bg-brand-primary text-black border-brand-primary"
@@ -325,7 +301,7 @@ export function Orders() {
           <button
             type="submit"
             disabled={createOrder.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createOrder.isPending ? "Enviando..." : "Enviar Ordem"}
           </button>
@@ -337,9 +313,7 @@ export function Orders() {
           </h3>
 
           {orders.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-16">
-              Nenhuma ordem registrada ainda.
-            </p>
+            <EmptyState icon={ClipboardList} message="Nenhuma ordem registrada ainda." />
           ) : (
             <div className="flex flex-col gap-3">
               {orders.map((order) => (

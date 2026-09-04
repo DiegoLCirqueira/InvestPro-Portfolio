@@ -6,7 +6,11 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { PieChart as PieChartIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { formatCurrency } from "@/lib/format";
 import type {
   PortfolioAssetType,
   PortfolioDiversificationItem,
@@ -18,12 +22,7 @@ const CATEGORY_COLORS: Record<PortfolioAssetType, string> = {
   FIXED_INCOME: "var(--color-cat-fixed)",
 };
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
+const FALLBACK_CATEGORY_COLOR = "var(--color-muted-foreground)";
 
 interface ChartDatum {
   name: string;
@@ -39,7 +38,7 @@ function buildChartData(
     name: item.label,
     value: item.value,
     percentage: item.percentage,
-    color: CATEGORY_COLORS[item.type] ?? "#6b7280",
+    color: CATEGORY_COLORS[item.type] ?? FALLBACK_CATEGORY_COLOR,
   }));
 }
 
@@ -50,7 +49,7 @@ function CategoryCard({
   item: PortfolioDiversificationItem;
   totalBalance: number;
 }) {
-  const color = CATEGORY_COLORS[item.type] ?? "var(--color-muted-foreground)";
+  const color = CATEGORY_COLORS[item.type] ?? FALLBACK_CATEGORY_COLOR;
   const width = totalBalance > 0 ? (item.value / totalBalance) * 100 : 0;
 
   return (
@@ -116,20 +115,11 @@ export function Diversification() {
         <header className="mb-4 shrink-0">
           <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border border-border">
-          <h3 className="text-foreground font-semibold text-lg">
-            Não foi possível carregar a diversificação
-          </h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            {error.message}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ErrorState
+          title="Não foi possível carregar a diversificação"
+          message={error.message}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
@@ -155,9 +145,11 @@ export function Diversification() {
             </h3>
             <div className="h-64">
               {chartData.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-20">
-                  Sem dados de diversificação.
-                </p>
+                <EmptyState
+                  icon={PieChartIcon}
+                  message="Sem dados de diversificação."
+                  className="py-20"
+                />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -207,9 +199,7 @@ export function Diversification() {
 
           <div className="flex flex-col gap-4">
             {breakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-16">
-                Sem dados de diversificação.
-              </p>
+              <EmptyState icon={PieChartIcon} message="Sem dados de diversificação." />
             ) : (
               breakdown.map((item) => (
                 <CategoryCard

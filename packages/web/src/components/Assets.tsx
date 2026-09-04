@@ -1,4 +1,7 @@
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
+import { formatCurrency } from "@/lib/format";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
 
 const TYPE_LABELS: Record<PortfolioAssetType, string> = {
@@ -31,12 +34,7 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
       </div>
 
       <div className="text-right">
-        <p className="font-bold">
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(position.currentValue)}
-        </p>
+        <p className="font-bold">{formatCurrency(position.currentValue)}</p>
       </div>
     </div>
   );
@@ -74,15 +72,12 @@ export function Assets() {
     return (
       <div className="rounded-2xl border border-border p-6 nav:h-full">
         <h3 className="text-lg font-bold mb-3">Seus Ativos</h3>
-        <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-          <p className="text-sm text-destructive">Não foi possível carregar.</p>
-          <button
-            onClick={() => refetch()}
-            className="min-h-11 px-3 py-1.5 rounded-lg bg-brand-primary text-black text-xs font-bold hover:opacity-90 transition-opacity"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ErrorState
+          message={error.message}
+          onRetry={refetch}
+          bordered={false}
+          className="py-8"
+        />
       </div>
     );
   }
@@ -92,9 +87,7 @@ export function Assets() {
       <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
 
       {positions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-16">
-          Nenhum ativo no portfólio.
-        </p>
+        <EmptyState message="Nenhum ativo no portfólio." />
       ) : (
         <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
           {positions.map((position) => (

@@ -45,21 +45,21 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 Algo deu errado
               </h1>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 Ocorreu um erro inesperado. Tente novamente ou volte para a
                 página inicial.
               </p>
             </div>
 
             {isDev && this.state.error && (
-              <div className="p-4 rounded-xl bg-[#0f1318] border border-gray-800 text-left overflow-auto max-h-48">
+              <div className="p-4 rounded-xl bg-surface-2 border border-border text-left overflow-auto max-h-48">
                 <p className="text-xs font-mono text-brand-danger mb-2 font-bold">
                   {this.state.error.message}
                 </p>
-                <pre className="text-[10px] text-gray-500 font-mono whitespace-pre-wrap break-all">
+                <pre className="text-[10px] text-muted-foreground font-mono whitespace-pre-wrap break-all">
                   {this.state.error.stack}
                 </pre>
               </div>
@@ -68,14 +68,14 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 transition-colors text-white text-sm font-bold cursor-pointer"
+                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-foreground text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <RefreshCw size={14} />
                 Tentar novamente
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary hover:opacity-90 transition-opacity text-black text-sm font-bold cursor-pointer"
+                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary hover:opacity-90 transition-opacity text-black text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <Home size={14} />
                 Voltar ao início

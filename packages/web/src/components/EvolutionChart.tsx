@@ -40,7 +40,9 @@ export function EvolutionChart({ data }: EvolutionChartProps) {
           <XAxis dataKey="date" hide />
           <YAxis
             width={60}
-            tick={{ fontSize: 12 }}
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
             tickFormatter={(value: number) => `R$${value}`}
           />
 

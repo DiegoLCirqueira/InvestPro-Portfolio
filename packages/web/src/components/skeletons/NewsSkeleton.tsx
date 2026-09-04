@@ -12,7 +12,7 @@ export function NewsSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-gray-800/20 border border-gray-800 p-5 rounded-2xl space-y-3"
+            className="bg-secondary/20 border border-border p-5 rounded-2xl space-y-3"
           >
             <div className="flex justify-between items-start">
               <Skeleton className="h-5 w-20 rounded-full" />
