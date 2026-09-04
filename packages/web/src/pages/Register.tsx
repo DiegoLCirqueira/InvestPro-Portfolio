@@ -51,26 +51,12 @@ export function Register() {
   return (
     <div className="min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
       {/* Painel de marketing — só a partir de nav */}
-      <div className="hidden nav:flex flex-col justify-center px-16 bg-surface-2 border-r border-border">
-        <div className="max-w-sm">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-primary-foreground font-black text-xl italic">
-                I
-              </span>
-            </div>
-            <span className="text-xl font-bold text-foreground">
-              InvestPro
-            </span>
-          </div>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight mb-3">
-            Sua carteira, mais inteligente desde o primeiro dia.
-          </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Crie sua conta gratuita e comece a acompanhar ações, cripto,
-            câmbio e recomendações personalizadas em minutos.
-          </p>
-        </div>
+      <div className="hidden nav:flex items-center justify-center bg-[#081a15] border-r border-border overflow-hidden">
+        <img
+          src="/foto_login.png"
+          alt="InvestPro — sua carteira, mais inteligente desde o primeiro dia"
+          className="max-h-full max-w-full object-contain"
+        />
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
