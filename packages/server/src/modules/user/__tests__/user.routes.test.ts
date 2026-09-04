@@ -86,13 +86,13 @@ describe('PATCH /api/v1/users/me', () => {
     expect(res.json().fullName).toBe('QA Atualizado')
   })
 
-  it('valida CPF inválido com 400', async () => {
+  it('rejeita tentativa de alterar CPF (somente leitura) com 400', async () => {
     const res = await app!.inject({
       method: 'PATCH',
       url: '/api/v1/users/me',
       headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { cpf: '123' },
+      payload: { cpf: '123.456.789-00' },
     })
     expect(res.statusCode).toBe(400)
   })

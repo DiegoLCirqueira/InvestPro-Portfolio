@@ -38,7 +38,6 @@ export async function updateMe(userId: string, data: UpdateUserBody) {
       data: {
         ...(data.fullName !== undefined && { fullName: data.fullName }),
         ...(data.phone !== undefined && { phone: data.phone }),
-        ...(data.cpf !== undefined && { cpf: data.cpf }),
       },
       select: userSelect,
     })
@@ -46,10 +45,6 @@ export async function updateMe(userId: string, data: UpdateUserBody) {
     return { ...user, createdAt: user.createdAt.toISOString() }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      const target = (err.meta?.target as string[]) ?? []
-      if (target.includes('cpf')) {
-        throw new AppError('CPF_TAKEN', 'CPF já está em uso', 409)
-      }
       throw new AppError('DUPLICATE_VALUE', 'Valor duplicado', 409)
     }
     throw err

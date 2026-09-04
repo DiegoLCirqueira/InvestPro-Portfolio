@@ -1,15 +1,14 @@
 import { z } from 'zod'
 
-const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/
-
-export const updateUserBodySchema = z.object({
-  fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
-  phone: z.string().regex(/^\+?\d{10,15}$/, 'Telefone inválido').optional(),
-  cpf: z
-    .string()
-    .regex(cpfRegex, 'CPF inválido (use XXX.XXX.XXX-XX ou 11 dígitos)')
-    .optional(),
-})
+// CPF é definido no cadastro (auth.schema.ts) e não pode ser alterado pelo
+// usuário via perfil — .strict() garante 400 explícito se o campo for enviado,
+// em vez de descartá-lo silenciosamente.
+export const updateUserBodySchema = z
+  .object({
+    fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
+    phone: z.string().regex(/^\+?\d{10,15}$/, 'Telefone inválido').optional(),
+  })
+  .strict()
 
 export const userMeResponseSchema = z.object({
   id: z.string(),
