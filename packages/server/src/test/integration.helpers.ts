@@ -36,6 +36,11 @@ export function signAccessTokenFor(userId: string): string {
   return jwt.sign({ sub: userId }, env.JWT_SECRET as string, { expiresIn: '15m' })
 }
 
+/** Define o saldo do portfólio de um usuário diretamente via Prisma (sem rota de depósito). */
+export async function fundPortfolio(userId: string, balance: number): Promise<void> {
+  await prisma.portfolio.update({ where: { userId }, data: { balance } })
+}
+
 /** Registra um usuário de teste via rota real e devolve status + corpo. */
 export async function registerTestUser(app: FastifyInstance, email = uniqueEmail()) {
   const res = await app.inject({

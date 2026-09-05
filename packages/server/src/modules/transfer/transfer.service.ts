@@ -2,8 +2,10 @@
 // Service de transferências. Cria e lista transferências do usuário via
 // prisma.transfer (fonte de verdade), no mesmo padrão de order.service.ts.
 
+import { Prisma } from '@prisma/client'
 import type { Transfer as PrismaTransfer } from '@prisma/client'
 import type {
+  BankAccount,
   CreateTransferInput,
   Transfer,
   TransferList,
@@ -11,10 +13,18 @@ import type {
 import { prisma } from '../../config/database.js'
 import { AppError } from '../auth/auth.service.js'
 import {
+  calculateTotal,
   determineStatus,
   formatToAccount,
   validateTransfer,
+  type TransferStatus,
 } from './transfer.domain.js'
+
+const MAX_TX_ATTEMPTS = 3
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100
+}
 
 function toTransfer(record: PrismaTransfer): Transfer {
   return {
@@ -39,6 +49,55 @@ function toTransfer(record: PrismaTransfer): Transfer {
   }
 }
 
+// Executa a criação da Transfer e, quando há saldo suficiente, o débito
+// atômico de Portfolio.balance. Deve rodar dentro de uma transação Serializable.
+// Saldo insuficiente lança ANTES de qualquer escrita — nada é persistido nesse
+// caso (mesmo padrão de ORDER_INSUFFICIENT_POSITION em order.service.ts).
+async function executeTransferTx(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  input: CreateTransferInput,
+  status: TransferStatus,
+  toAccount: BankAccount | undefined
+): Promise<PrismaTransfer> {
+  const portfolio = await tx.portfolio.findUnique({ where: { userId } })
+  if (!portfolio) {
+    throw new AppError('PORTFOLIO_NOT_FOUND', 'Portfólio não encontrado', 404)
+  }
+
+  const total = round2(calculateTotal(input.amount, input.type))
+  if (portfolio.balance.toNumber() < total) {
+    throw new AppError(
+      'TRANSFER_INSUFFICIENT_BALANCE',
+      'Saldo insuficiente para realizar a transferência',
+      400
+    )
+  }
+
+  await tx.portfolio.update({
+    where: { id: portfolio.id },
+    data: { balance: { decrement: total } },
+  })
+
+  return tx.transfer.create({
+    data: {
+      userId,
+      status,
+      type: input.type,
+      amount: input.amount,
+      description: input.description ?? null,
+      toAccountId: toAccount?.id ?? null,
+      toAccountBank: toAccount?.bank ?? null,
+      toAccountAgency: toAccount?.agency ?? null,
+      toAccountNumber: toAccount?.account ?? null,
+      toAccountHolder: toAccount?.holderName ?? null,
+      toAccountType: toAccount?.type ?? null,
+      completedAt: status === 'COMPLETED' ? new Date() : null,
+      failureReason: status === 'FAILED' ? 'Execução externa falhou' : null,
+    },
+  })
+}
+
 export async function createTransfer(
   userId: string,
   input: CreateTransferInput
@@ -59,25 +118,36 @@ export async function createTransfer(
   // volta, sem chamar formatToAccount de novo (não recalcula a cada leitura).
   const toAccount = input.toAccount ? formatToAccount(input.toAccount) : undefined
 
-  const created = await prisma.transfer.create({
-    data: {
-      userId,
-      status,
-      type: input.type,
-      amount: input.amount,
-      description: input.description ?? null,
-      toAccountId: toAccount?.id ?? null,
-      toAccountBank: toAccount?.bank ?? null,
-      toAccountAgency: toAccount?.agency ?? null,
-      toAccountNumber: toAccount?.account ?? null,
-      toAccountHolder: toAccount?.holderName ?? null,
-      toAccountType: toAccount?.type ?? null,
-      completedAt: status === 'COMPLETED' ? new Date() : null,
-      failureReason: status === 'FAILED' ? 'Execução externa falhou' : null,
-    },
-  })
+  for (let attempt = 1; attempt <= MAX_TX_ATTEMPTS; attempt++) {
+    try {
+      const created = await prisma.$transaction(
+        (tx) => executeTransferTx(tx, userId, input, status, toAccount),
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      )
+      return toTransfer(created)
+    } catch (err) {
+      const isSerializationConflict =
+        err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034'
+      if (isSerializationConflict && attempt < MAX_TX_ATTEMPTS) {
+        continue
+      }
+      if (isSerializationConflict) {
+        throw new AppError(
+          'TRANSFER_EXECUTION_CONFLICT',
+          'Conflito ao executar a transferência, tente novamente',
+          409
+        )
+      }
+      throw err
+    }
+  }
 
-  return toTransfer(created)
+  // Inalcançável: o loop sempre retorna ou lança dentro das MAX_TX_ATTEMPTS iterações.
+  throw new AppError(
+    'TRANSFER_EXECUTION_CONFLICT',
+    'Conflito ao executar a transferência, tente novamente',
+    409
+  )
 }
 
 export async function listTransfers(

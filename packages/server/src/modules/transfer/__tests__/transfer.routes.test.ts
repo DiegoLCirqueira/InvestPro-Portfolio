@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import { prisma } from '../../../config/database.js'
 import {
   deleteUser,
+  fundPortfolio,
   registerTestUser,
   startApp,
   stopApp,
@@ -18,11 +19,37 @@ let app: FastifyInstance | undefined
 let email = ''
 let token = ''
 
+interface PortfolioView {
+  balance: number
+}
+
+async function getPortfolioOf(userToken: string): Promise<PortfolioView> {
+  const res = await app!.inject({
+    method: 'GET',
+    url: '/api/v1/portfolio',
+    headers: { authorization: `Bearer ${userToken}` },
+    remoteAddress: uniqueIp(),
+  })
+  expect(res.statusCode).toBe(200)
+  return res.json() as PortfolioView
+}
+
+async function transfersTotalOf(userToken: string): Promise<number> {
+  const res = await app!.inject({
+    method: 'GET',
+    url: '/api/v1/transfers?page=1&limit=100',
+    headers: { authorization: `Bearer ${userToken}` },
+  })
+  expect(res.statusCode).toBe(200)
+  return res.json().total as number
+}
+
 beforeAll(async () => {
   app = await startApp()
   email = uniqueEmail('transfer')
   const reg = await registerTestUser(app, email)
   token = reg.body.accessToken as string
+  await fundPortfolio(reg.body.user.id as string, 100000)
 })
 
 afterAll(async () => {
@@ -143,6 +170,7 @@ describe('fluxo completo: criar, listar e paginar (WI-13)', () => {
     flowEmail = uniqueEmail('transfer-flow')
     const reg = await registerTestUser(app!, flowEmail)
     flowToken = reg.body.accessToken as string
+    await fundPortfolio(reg.body.user.id as string, 100000)
 
     for (let i = 0; i < 3; i++) {
       const res = await app!.inject({
@@ -211,6 +239,7 @@ describe('transferência sobrevive a um restart do servidor', () => {
     let appBeforeRestart: FastifyInstance | undefined = await startApp()
     const reg = await registerTestUser(appBeforeRestart, restartEmail)
     const restartToken = reg.body.accessToken as string
+    await fundPortfolio(reg.body.user.id as string, 100000)
 
     const created = await appBeforeRestart.inject({
       method: 'POST',
@@ -241,5 +270,82 @@ describe('transferência sobrevive a um restart do servidor', () => {
       await stopApp(appAfterRestart)
       await deleteUser(restartEmail)
     }
+  })
+})
+
+// Bugfix (produção): createTransfer não debitava Portfolio.balance nem validava
+// saldo suficiente antes de completar a transferência — toda transferência era
+// aceita e concluída independente do saldo. Estes testes cobrem os dois casos
+// do critério de aceitação: rejeição por saldo insuficiente (sem persistir
+// nada e sem alterar o saldo) e débito exato (amount + tarifa) quando há saldo.
+describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bugfix)', () => {
+  let balanceEmail = ''
+  let balanceToken = ''
+  let balanceUserId = ''
+
+  beforeAll(async () => {
+    balanceEmail = uniqueEmail('transfer-balance')
+    const reg = await registerTestUser(app!, balanceEmail)
+    balanceToken = reg.body.accessToken as string
+    balanceUserId = reg.body.user.id as string
+  })
+
+  afterAll(async () => {
+    await deleteUser(balanceEmail)
+  })
+
+  it('TED com valor + tarifa maior que o saldo é rejeitada (400) e não persiste nem altera o saldo', async () => {
+    await fundPortfolio(balanceUserId, 100)
+    const totalBefore = await transfersTotalOf(balanceToken)
+
+    // amount 95 + tarifa TED (10) = 105 > saldo de 100
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'TED', amount: 95, description: 'Deve ser rejeitada por saldo' },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('TRANSFER_INSUFFICIENT_BALANCE')
+
+    const after = await getPortfolioOf(balanceToken)
+    expect(after.balance).toBe(100)
+    expect(await transfersTotalOf(balanceToken)).toBe(totalBefore)
+  })
+
+  it('PIX dentro do saldo (sem tarifa) decrementa o valor exato e conclui (200 COMPLETED)', async () => {
+    await fundPortfolio(balanceUserId, 300)
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'PIX', amount: 300, description: 'PIX no limite exato do saldo' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().status).toBe('COMPLETED')
+
+    const after = await getPortfolioOf(balanceToken)
+    expect(after.balance).toBe(0)
+  })
+
+  it('TED dentro do saldo debita amount + tarifa (não só o amount)', async () => {
+    await fundPortfolio(balanceUserId, 1000)
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'TED', amount: 500, description: 'TED com tarifa' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().status).toBe('COMPLETED')
+
+    // 1000 - (500 + tarifa TED de 10) = 490
+    const after = await getPortfolioOf(balanceToken)
+    expect(after.balance).toBe(490)
   })
 })
