@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { LogIn, Receipt } from "lucide-react";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
@@ -59,15 +60,29 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
 }
 
 export function Transfers() {
+  const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useTransfers();
   const createTransfer = useCreateTransfer({
     onSuccess: () => toast.success("Transferência iniciada com sucesso!"),
-    onError: (err) =>
-      toast.error(
-        err instanceof ApiError && err.status === 401
-          ? "Sessão expirada. Faça login novamente."
-          : err.message,
-      ),
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      if (err instanceof ApiError && err.code === "CPF_REQUIRED") {
+        toast.error(
+          "Você precisa completar seu CPF no perfil para fazer transferências.",
+          {
+            action: {
+              label: "Completar CPF",
+              onClick: () => navigate("/profile"),
+            },
+          },
+        );
+        return;
+      }
+      toast.error(err.message);
+    },
   });
 
   const [type, setType] = useState<TransferType>("PIX");
