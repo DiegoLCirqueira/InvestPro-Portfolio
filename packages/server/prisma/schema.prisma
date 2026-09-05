@@ -86,43 +86,75 @@ model BankAccount {
 }
 
 model Transfer {
-  id                String    @id @default(uuid())
-  userId            String
-  status            String    @default("PENDING")
-  type              String
-  amount            Decimal   @db.Decimal(15, 2)
-  description       String?
-  toAccountBank     String?
-  toAccountAgency   String?
-  toAccountNumber   String?
-  toAccountHolder   String?
-  toAccountId       String?
-  toAccountType     String?
-  createdAt         DateTime  @default(now())
-  completedAt       DateTime?
-  failureReason     String?
-  user              User      @relation(fields: [userId], references: [id])
+  id              String         @id @default(uuid())
+  userId          String
+  status          TransferStatus @default(PENDING)
+  type            TransferType
+  amount          Decimal        @db.Decimal(15, 2)
+  description     String?
+  toAccountBank   String?
+  toAccountAgency String?
+  toAccountNumber String?
+  toAccountHolder String?
+  toAccountId     String?
+  toAccountType   String?
+  createdAt       DateTime       @default(now())
+  completedAt     DateTime?
+  failureReason   String?
+  user            User           @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
 
 model Order {
-  id         String    @id @default(uuid())
+  id         String      @id @default(uuid())
   userId     String
   assetId    String
   ticker     String
-  side       String
-  type       String
-  quantity   Decimal   @db.Decimal(15, 8)
-  price      Decimal?  @db.Decimal(15, 2)
-  status     String    @default("PENDING")
-  avgPrice   Decimal?  @db.Decimal(15, 2)
-  createdAt  DateTime  @default(now())
+  side       OrderSide
+  type       OrderType
+  quantity   Decimal     @db.Decimal(15, 8)
+  price      Decimal?    @db.Decimal(15, 2)
+  status     OrderStatus @default(PENDING)
+  avgPrice   Decimal?    @db.Decimal(15, 2)
+  createdAt  DateTime    @default(now())
   executedAt DateTime?
-  user       User      @relation(fields: [userId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([userId, createdAt])
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP
+}
+
+enum OrderStatus {
+  PENDING
+  OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+}
+
+enum TransferType {
+  PIX
+  TED
+  DOC
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 enum AssetType {
