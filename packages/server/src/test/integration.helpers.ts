@@ -23,6 +23,12 @@ export function uniqueIp(): string {
   return `10.200.0.${n}`
 }
 
+/** CPF único (só formato, sem dígito verificador real) para cada usuário de teste. */
+export function uniqueCpf(): string {
+  seq += 1
+  return String(seq).padStart(11, '0')
+}
+
 export async function startApp(): Promise<FastifyInstance> {
   return buildServer()
 }
@@ -41,13 +47,13 @@ export async function fundPortfolio(userId: string, balance: number): Promise<vo
   await prisma.portfolio.update({ where: { userId }, data: { balance } })
 }
 
-/** Registra um usuário de teste via rota real e devolve status + corpo. */
-export async function registerTestUser(app: FastifyInstance, email = uniqueEmail()) {
+/** Registra um usuário de teste via rota real e devolve status + corpo. Sem `cpf`, salvo se informado. */
+export async function registerTestUser(app: FastifyInstance, email = uniqueEmail(), cpf?: string) {
   const res = await app.inject({
     method: 'POST',
     url: '/api/v1/auth/register',
     remoteAddress: uniqueIp(),
-    payload: { email, password: 'SenhaForte123', fullName: 'QA User' },
+    payload: { email, password: 'SenhaForte123', fullName: 'QA User', ...(cpf ? { cpf } : {}) },
   })
   return { status: res.statusCode, body: res.json() }
 }

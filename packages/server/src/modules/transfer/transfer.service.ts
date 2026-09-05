@@ -107,6 +107,18 @@ export async function createTransfer(
     throw new AppError('TRANSFER_INVALID', errors.join('; '), 400)
   }
 
+  // Decisão arquitetural R5: CPF é obrigatório para qualquer Transfer (PIX/TED/
+  // DOC), exigência regulatória (BACEN). Checado ANTES de tocar em saldo/DB —
+  // não afeta Order (compra/venda de ativos), só este módulo.
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { cpf: true } })
+  if (!user?.cpf) {
+    throw new AppError(
+      'CPF_REQUIRED',
+      'Complete seu CPF no perfil para realizar transferências',
+      400
+    )
+  }
+
   // Simula a execução online da transferência (determinística: sucesso).
   const success = true
   const status = determineStatus(success)

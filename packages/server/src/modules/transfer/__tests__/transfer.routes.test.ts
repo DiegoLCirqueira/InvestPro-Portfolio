@@ -11,6 +11,7 @@ import {
   registerTestUser,
   startApp,
   stopApp,
+  uniqueCpf,
   uniqueEmail,
   uniqueIp,
 } from '../../../test/integration.helpers.js'
@@ -47,7 +48,7 @@ async function transfersTotalOf(userToken: string): Promise<number> {
 beforeAll(async () => {
   app = await startApp()
   email = uniqueEmail('transfer')
-  const reg = await registerTestUser(app, email)
+  const reg = await registerTestUser(app, email, uniqueCpf())
   token = reg.body.accessToken as string
   await fundPortfolio(reg.body.user.id as string, 100000)
 })
@@ -168,7 +169,7 @@ describe('fluxo completo: criar, listar e paginar (WI-13)', () => {
 
   beforeAll(async () => {
     flowEmail = uniqueEmail('transfer-flow')
-    const reg = await registerTestUser(app!, flowEmail)
+    const reg = await registerTestUser(app!, flowEmail, uniqueCpf())
     flowToken = reg.body.accessToken as string
     await fundPortfolio(reg.body.user.id as string, 100000)
 
@@ -237,7 +238,7 @@ describe('transferência sobrevive a um restart do servidor', () => {
     const restartEmail = uniqueEmail('transfer-restart')
 
     let appBeforeRestart: FastifyInstance | undefined = await startApp()
-    const reg = await registerTestUser(appBeforeRestart, restartEmail)
+    const reg = await registerTestUser(appBeforeRestart, restartEmail, uniqueCpf())
     const restartToken = reg.body.accessToken as string
     await fundPortfolio(reg.body.user.id as string, 100000)
 
@@ -285,7 +286,7 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
 
   beforeAll(async () => {
     balanceEmail = uniqueEmail('transfer-balance')
-    const reg = await registerTestUser(app!, balanceEmail)
+    const reg = await registerTestUser(app!, balanceEmail, uniqueCpf())
     balanceToken = reg.body.accessToken as string
     balanceUserId = reg.body.user.id as string
   })
@@ -347,5 +348,65 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
     // 1000 - (500 + tarifa TED de 10) = 490
     const after = await getPortfolioOf(balanceToken)
     expect(after.balance).toBe(490)
+  })
+})
+
+// WI-26: decisão arquitetural R5 (BACEN) exige CPF preenchido pra criar
+// Transfer. A checagem roda ANTES de tocar em saldo/DB, então mesmo com saldo
+// de sobra a transferência é rejeitada sem CPF.
+describe('CPF obrigatório para criar Transfer (WI-26)', () => {
+  let noCpfEmail = ''
+  let noCpfToken = ''
+  let withCpfEmail = ''
+  let withCpfToken = ''
+
+  beforeAll(async () => {
+    noCpfEmail = uniqueEmail('transfer-no-cpf')
+    const regNoCpf = await registerTestUser(app!, noCpfEmail) // sem cpf (default do helper)
+    noCpfToken = regNoCpf.body.accessToken as string
+    await fundPortfolio(regNoCpf.body.user.id as string, 100000)
+
+    withCpfEmail = uniqueEmail('transfer-with-cpf')
+    const regWithCpf = await registerTestUser(app!, withCpfEmail, uniqueCpf())
+    withCpfToken = regWithCpf.body.accessToken as string
+    await fundPortfolio(regWithCpf.body.user.id as string, 100000)
+  })
+
+  afterAll(async () => {
+    await deleteUser(noCpfEmail)
+    await deleteUser(withCpfEmail)
+  })
+
+  it('usuário sem CPF: 400 CPF_REQUIRED mesmo com saldo de sobra, saldo intacto e nada persistido', async () => {
+    const totalBefore = await transfersTotalOf(noCpfToken)
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${noCpfToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'PIX', amount: 50, description: 'Deve ser rejeitada por falta de CPF' },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('CPF_REQUIRED')
+
+    const after = await getPortfolioOf(noCpfToken)
+    expect(after.balance).toBe(100000)
+    expect(await transfersTotalOf(noCpfToken)).toBe(totalBefore)
+  })
+
+  it('usuário com CPF: transferência continua funcionando normalmente (regressão)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${withCpfToken}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'PIX', amount: 50, description: 'CPF preenchido' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().status).toBe('COMPLETED')
+
+    const after = await getPortfolioOf(withCpfToken)
+    expect(after.balance).toBe(99950)
   })
 })
