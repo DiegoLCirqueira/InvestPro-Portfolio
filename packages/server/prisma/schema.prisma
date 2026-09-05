@@ -30,7 +30,7 @@ model Portfolio {
   id        String     @id @default(uuid())
   userId    String     @unique
   balance   Decimal    @default(0) @db.Decimal(15, 2)
-  user      User       @relation(fields: [userId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   positions Position[]
 }
 
@@ -43,7 +43,7 @@ model Position {
   quantity     Decimal   @db.Decimal(15, 8)
   avgPrice     Decimal   @db.Decimal(15, 2)
   currentValue Decimal   @db.Decimal(15, 2)
-  portfolio    Portfolio @relation(fields: [portfolioId], references: [id])
+  portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@unique([portfolioId, ticker])
 }
@@ -54,7 +54,7 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -66,7 +66,7 @@ model PasswordResetToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -80,7 +80,7 @@ model BankAccount {
   holderName String?
   type       String?
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -101,7 +101,7 @@ model Transfer {
   createdAt       DateTime       @default(now())
   completedAt     DateTime?
   failureReason   String?
-  user            User           @relation(fields: [userId], references: [id])
+  user            User           @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([userId])
 }
@@ -119,7 +119,7 @@ model Order {
   avgPrice   Decimal?    @db.Decimal(15, 2)
   createdAt  DateTime    @default(now())
   executedAt DateTime?
-  user       User        @relation(fields: [userId], references: [id])
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([userId])
   @@index([userId, createdAt])

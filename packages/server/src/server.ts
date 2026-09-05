@@ -20,6 +20,13 @@ export async function buildServer() {
   const app = Fastify({
     logger: {
       level: env.NODE_ENV === "production" ? "info" : "debug",
+      // Defesa em profundidade: hoje o serializer padrão do Fastify não inclui
+      // req.body no log (confirmado pelo AppSec), mas se algum log futuro vier
+      // a expor a request completa, senha e CPF nunca aparecem em texto puro.
+      redact: {
+        paths: ["req.body.password", "req.body.cpf"],
+        remove: true,
+      },
       transport:
         env.NODE_ENV !== "production"
           ? { target: "pino-pretty", options: { colorize: true } }
