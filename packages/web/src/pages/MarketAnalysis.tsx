@@ -219,8 +219,17 @@ export function MarketAnalysis() {
                 ))}
               </div>
 
-              {/* Desktop (>=nav): tabela */}
-              <table className="hidden nav:table w-full text-left border-separate border-spacing-y-2">
+              {/* Desktop (>=nav): tabela. table-fixed + colgroup: largura das colunas
+                  não pode depender do conteúdo da seleção atual (senão o layout
+                  "pula" ao trocar o filtro Todos/Ações/Cripto/Renda Fixa). */}
+              <table className="hidden nav:table w-full table-fixed text-left border-separate border-spacing-y-2">
+                <colgroup>
+                  <col className="w-[38%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[16%]" />
+                </colgroup>
                 <thead>
                   <tr className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
                     <th className="pb-2 pl-4">Ativo</th>
@@ -240,23 +249,23 @@ export function MarketAnalysis() {
                         className="bg-secondary/40 hover:bg-secondary/70 transition-colors"
                       >
                         <td className="py-3 pl-4 rounded-l-xl border-y border-l border-transparent">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm text-foreground transition-colors">
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-sm text-foreground transition-colors truncate">
                               {asset.ticker}
                             </span>
-                            <span className="text-[10px] text-muted-foreground font-medium">
+                            <span className="text-[10px] text-muted-foreground font-medium truncate">
                               {asset.name}
                             </span>
                           </div>
                         </td>
-                        <td className="py-3 text-sm font-medium tabular-nums">
+                        <td className="py-3 text-sm font-medium tabular-nums truncate">
                           {formatPrice(asset.price)}
                         </td>
                         <td className="py-3">
                           <AssetTypeLabel type={asset.type} />
                         </td>
                         <td
-                          className={`py-3 text-sm font-bold tabular-nums ${
+                          className={`py-3 text-sm font-bold tabular-nums truncate ${
                             isUp ? "text-brand-primary" : "text-destructive"
                           }`}
                         >
