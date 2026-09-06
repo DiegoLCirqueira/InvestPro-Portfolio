@@ -236,7 +236,7 @@ export function UserProfile() {
       </div>
 
       {/* A partir de nav: card centralizado */}
-      <div className="hidden nav:flex flex-1 items-start justify-center min-h-0">
+      <div className="hidden nav:flex flex-1 items-start justify-center min-h-0 overflow-y-auto custom-scrollbar">
         <div className="w-full max-w-xl rounded-2xl border border-border bg-surface-1 p-8 shadow-2xl">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-foreground">Perfil do Usuário</h2>
