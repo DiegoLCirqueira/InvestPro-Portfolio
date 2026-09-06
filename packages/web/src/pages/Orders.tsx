@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { toast } from "sonner";
 import { ClipboardList, LogIn } from "lucide-react";
@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useCreateOrder, useOrders } from "@/hooks/use-orders";
+import { useMarketAssets } from "@/hooks/use-market-assets";
 import { ApiError } from "@/services/api";
 import { formatDateTime } from "@/lib/format";
 import type {
@@ -15,6 +16,7 @@ import type {
   OrderStatus,
   OrderType,
 } from "@/types/order";
+import type { MarketAsset } from "@/types/market";
 
 const SIDE_OPTIONS: { value: OrderSide; label: string }[] = [
   { value: "BUY", label: "Compra" },
@@ -92,8 +94,87 @@ function OrderRow({ order }: { order: Order }) {
   );
 }
 
+interface TickerComboboxProps {
+  value: string;
+  onChange: (ticker: string) => void;
+  assets: MarketAsset[];
+  isLoading: boolean;
+}
+
+function TickerCombobox({ value, onChange, assets, isLoading }: TickerComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const query = value.trim().toLowerCase();
+  const filtered = [...assets]
+    .sort((a, b) => a.ticker.localeCompare(b.ticker))
+    .filter(
+      (asset) =>
+        !query ||
+        asset.ticker.toLowerCase().includes(query) ||
+        asset.name.toLowerCase().includes(query),
+    );
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setOpen(false);
+        }}
+        placeholder="ex.: PETR4"
+        autoComplete="off"
+        className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 uppercase"
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-input bg-surface-2 shadow-lg custom-scrollbar">
+          {isLoading ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">Carregando ativos...</p>
+          ) : filtered.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">Nenhum ativo encontrado.</p>
+          ) : (
+            filtered.map((asset) => (
+              <button
+                key={asset.id}
+                type="button"
+                onClick={() => {
+                  onChange(asset.ticker);
+                  setOpen(false);
+                }}
+                className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-secondary/60 transition-colors"
+              >
+                <span className="font-bold text-sm text-foreground">{asset.ticker}</span>
+                <span className="text-[10px] text-muted-foreground truncate ml-2">
+                  {asset.name}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Orders() {
   const { data, error, isLoading, refetch } = useOrders();
+  const { data: assetsData, isLoading: assetsLoading } = useMarketAssets();
   const createOrder = useCreateOrder({
     onSuccess: () => toast.success("Ordem criada com sucesso!"),
     onError: (err) =>
@@ -222,12 +303,11 @@ export function Orders() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Ticker</label>
-            <input
-              type="text"
+            <TickerCombobox
               value={ticker}
-              onChange={(e) => setTicker(e.target.value)}
-              placeholder="ex.: PETR4"
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 uppercase"
+              onChange={setTicker}
+              assets={assetsData?.items ?? []}
+              isLoading={assetsLoading}
             />
           </div>
 
