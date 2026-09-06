@@ -23,8 +23,9 @@ const mocks = vi.hoisted(() => {
     create: vi.fn(),
     transaction: vi.fn(),
     refreshTokenFindUnique: vi.fn(),
-    refreshTokenDelete: vi.fn(),
+    refreshTokenUpdate: vi.fn(),
     refreshTokenCreate: vi.fn(),
+    refreshTokenUpdateMany: vi.fn(),
     refreshTokenDeleteMany: vi.fn(),
     userCreate: vi.fn(),
     userUpdate: vi.fn(),
@@ -51,8 +52,9 @@ vi.mock('../../../config/database.js', () => ({
     },
     refreshToken: {
       findUnique: mocks.refreshTokenFindUnique,
-      delete: mocks.refreshTokenDelete,
+      update: mocks.refreshTokenUpdate,
       create: mocks.refreshTokenCreate,
+      updateMany: mocks.refreshTokenUpdateMany,
       deleteMany: mocks.refreshTokenDeleteMany,
     },
     passwordResetToken: {
@@ -75,7 +77,6 @@ vi.mock('../lib/emailRateLimit.js', () => ({
 }))
 
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import type { FastifyBaseLogger } from 'fastify'
 import { register, login, refresh, logout, forgotPassword, resetPassword, AppError } from '../auth.service.js'
 
@@ -93,10 +94,6 @@ const dbUser = {
   fullName: BASE.fullName,
   cpf: null,
   passwordHash: '$2b$12$abcdefghijklmnopqrstuv', // valor irrelevante (mock)
-}
-
-function tokenFor(sub: string, secret: string, expiresIn: string): string {
-  return jwt.sign({ sub }, secret, { expiresIn: expiresIn as jwt.SignOptions['expiresIn'] })
 }
 
 beforeEach(() => {
@@ -160,6 +157,28 @@ describe('register', () => {
     expect(createCall.passwordHash).not.toBe(BASE.password)
     expect(await bcrypt.compare(BASE.password, createCall.passwordHash)).toBe(true)
   })
+
+  it('grava o refresh token com hash (nunca texto puro), rememberMe: false e um familyId (WI-27)', async () => {
+    mocks.findUnique.mockResolvedValue(null)
+    mocks.transaction.mockImplementation(async (fn: unknown) => {
+      return await (fn as (tx: unknown) => Promise<unknown>)(
+        { user: { create: mocks.userCreate }, portfolio: { create: mocks.portfolioCreate } }
+      )
+    })
+    mocks.userCreate.mockResolvedValue(dbUser)
+    mocks.portfolioCreate.mockResolvedValue({ id: 'pf-1' })
+    mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-1' })
+
+    const result = await register({ email: BASE.email, password: BASE.password, fullName: BASE.fullName })
+
+    const createArgs = mocks.refreshTokenCreate.mock.calls[0][0].data
+    expect(createArgs).not.toHaveProperty('token')
+    expect(createArgs.tokenHash).toMatch(/^[a-f0-9]{64}$/)
+    expect(createArgs.tokenHash).not.toBe(result.refreshToken)
+    expect(createArgs.rememberMe).toBe(false)
+    expect(createArgs.familyId).toBeTruthy()
+    expect(result.rememberMe).toBe(false)
+  })
 })
 
 describe('login', () => {
@@ -190,28 +209,72 @@ describe('login', () => {
       statusCode: 401,
     })
   })
+
+  it('rememberMe: true grava refresh token com TTL de ~30 dias; ausente/false grava ~7 dias (WI-27)', async () => {
+    const hash = await bcrypt.hash(BASE.password, 4)
+    mocks.findUnique.mockResolvedValue({ ...dbUser, passwordHash: hash })
+    mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-1' })
+
+    const remembered = await login({ email: BASE.email, password: BASE.password, rememberMe: true })
+    const rememberedArgs = mocks.refreshTokenCreate.mock.calls[0][0].data
+    expect(remembered.rememberMe).toBe(true)
+    expect(rememberedArgs.rememberMe).toBe(true)
+    expect(rememberedArgs.expiresAt.getTime() - Date.now()).toBeGreaterThan(29 * 24 * 60 * 60 * 1000)
+
+    mocks.refreshTokenCreate.mockClear()
+    const notRemembered = await login({ email: BASE.email, password: BASE.password, rememberMe: false })
+    const notRememberedArgs = mocks.refreshTokenCreate.mock.calls[0][0].data
+    expect(notRemembered.rememberMe).toBe(false)
+    const ttlMs = notRememberedArgs.expiresAt.getTime() - Date.now()
+    expect(ttlMs).toBeGreaterThan(6 * 24 * 60 * 60 * 1000)
+    expect(ttlMs).toBeLessThanOrEqual(7 * 24 * 60 * 60 * 1000)
+  })
 })
 
+function mockRefreshTx(): void {
+  mocks.transaction.mockImplementation(async (fn: unknown) => {
+    return await (fn as (tx: unknown) => Promise<unknown>)({
+      refreshToken: { update: mocks.refreshTokenUpdate, create: mocks.refreshTokenCreate },
+    })
+  })
+}
+
 describe('refresh', () => {
-  it('rotaciona tokens quando o refresh token é válido e persistido', async () => {
-    const refreshToken = tokenFor('user-1', 'test-refresh-secret', '7d')
+  it('rotaciona tokens quando o refresh token é válido e persistido: revoga o antigo, cria um novo na mesma família', async () => {
+    mockRefreshTx()
     mocks.refreshTokenFindUnique.mockResolvedValue({
       id: 'rt-1',
-      token: refreshToken,
+      userId: 'user-1',
+      familyId: 'fam-1',
+      rememberMe: false,
+      revokedAt: null,
       expiresAt: new Date(Date.now() + 86400000),
     })
-    mocks.refreshTokenDelete.mockResolvedValue({ id: 'rt-1' })
+    mocks.refreshTokenUpdate.mockResolvedValue({ id: 'rt-1' })
     mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-2' })
 
-    const result = await refresh(refreshToken)
+    const result = await refresh('token-valido')
 
-    expect(mocks.refreshTokenDelete).toHaveBeenCalled()
-    expect(mocks.refreshTokenCreate).toHaveBeenCalled()
+    expect(mocks.refreshTokenUpdate).toHaveBeenCalledWith({
+      where: { id: 'rt-1' },
+      data: { revokedAt: expect.any(Date) },
+    })
+    expect(mocks.refreshTokenCreate).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        tokenHash: expect.any(String),
+        familyId: 'fam-1',
+        rememberMe: false,
+        expiresAt: expect.any(Date),
+      },
+    })
     expect(result).toHaveProperty('accessToken')
-    expect(result).toHaveProperty('refreshToken')
+    expect(result.refreshToken).not.toBe('token-valido') // token novo, não o mesmo
+    expect(result.rememberMe).toBe(false)
   })
 
-  it('lança INVALID_REFRESH_TOKEN para token inválido', async () => {
+  it('lança INVALID_REFRESH_TOKEN quando o token não está persistido', async () => {
+    mocks.refreshTokenFindUnique.mockResolvedValue(null)
     await expect(refresh('token-invalido')).rejects.toMatchObject<AppError>({
       code: 'INVALID_REFRESH_TOKEN',
       statusCode: 401,
@@ -219,38 +282,76 @@ describe('refresh', () => {
   })
 
   it('lança REFRESH_TOKEN_EXPIRED quando o token persistido expirou', async () => {
-    const refreshToken = tokenFor('user-1', 'test-refresh-secret', '7d')
     mocks.refreshTokenFindUnique.mockResolvedValue({
       id: 'rt-x',
-      token: refreshToken,
+      userId: 'user-1',
+      familyId: 'fam-1',
+      rememberMe: false,
+      revokedAt: null,
       expiresAt: new Date(Date.now() - 1000),
     })
-    await expect(refresh(refreshToken)).rejects.toMatchObject<AppError>({
+    await expect(refresh('token-expirado')).rejects.toMatchObject<AppError>({
       code: 'REFRESH_TOKEN_EXPIRED',
       statusCode: 401,
     })
   })
 
-  it('lança INVALID_REFRESH_TOKEN quando o token não está persistido (reutilização)', async () => {
-    const refreshToken = tokenFor('user-1', 'test-refresh-secret', '7d')
-    mocks.refreshTokenFindUnique.mockResolvedValue(null)
-    await expect(refresh(refreshToken)).rejects.toMatchObject<AppError>({
-      code: 'INVALID_REFRESH_TOKEN',
+  it('detecta reuso (token já revogado/rotacionado sendo reapresentado) e revoga TODOS os refresh tokens do usuário (WI-27)', async () => {
+    mocks.refreshTokenFindUnique.mockResolvedValue({
+      id: 'rt-old',
+      userId: 'user-1',
+      familyId: 'fam-1',
+      rememberMe: false,
+      revokedAt: new Date(Date.now() - 60_000),
+      expiresAt: new Date(Date.now() + 86400000),
+    })
+    mocks.refreshTokenUpdateMany.mockResolvedValue({ count: 3 })
+
+    await expect(refresh('token-ja-rotacionado')).rejects.toMatchObject<AppError>({
+      code: 'REFRESH_TOKEN_REUSE_DETECTED',
       statusCode: 401,
     })
+    expect(mocks.refreshTokenUpdateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    })
+    expect(mocks.refreshTokenCreate).not.toHaveBeenCalled()
+  })
+
+  it('propaga rememberMe do token original pro token rotacionado (TTL de ~30 dias)', async () => {
+    mockRefreshTx()
+    mocks.refreshTokenFindUnique.mockResolvedValue({
+      id: 'rt-1',
+      userId: 'user-1',
+      familyId: 'fam-1',
+      rememberMe: true,
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+    })
+    mocks.refreshTokenUpdate.mockResolvedValue({ id: 'rt-1' })
+    mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-2' })
+
+    const result = await refresh('token-lembrado')
+
+    expect(result.rememberMe).toBe(true)
+    const createArgs = mocks.refreshTokenCreate.mock.calls[0][0].data
+    expect(createArgs.rememberMe).toBe(true)
+    const ttlMs = createArgs.expiresAt.getTime() - Date.now()
+    expect(ttlMs).toBeGreaterThan(29 * 24 * 60 * 60 * 1000)
   })
 })
 
 describe('logout', () => {
-  it('remove o token persistido em best-effort', async () => {
-    mocks.refreshTokenFindUnique.mockResolvedValue({ id: 'rt-1', token: 't', expiresAt: new Date() })
-    mocks.refreshTokenDelete.mockResolvedValue({ id: 'rt-1' })
+  it('apaga (não só revoga) o refresh token pelo hash — invalidação final e deliberada', async () => {
+    mocks.refreshTokenDeleteMany.mockResolvedValue({ count: 1 })
     await expect(logout('t')).resolves.toBeUndefined()
-    expect(mocks.refreshTokenDelete).toHaveBeenCalled()
+    expect(mocks.refreshTokenDeleteMany).toHaveBeenCalledWith({
+      where: { tokenHash: expect.any(String) },
+    })
   })
 
-  it('não lança erro quando o token não existe', async () => {
-    mocks.refreshTokenFindUnique.mockResolvedValue(null)
+  it('não lança erro quando o token não existe (deleteMany não encontra nada pra apagar)', async () => {
+    mocks.refreshTokenDeleteMany.mockResolvedValue({ count: 0 })
     await expect(logout('desconhecido')).resolves.toBeUndefined()
   })
 })

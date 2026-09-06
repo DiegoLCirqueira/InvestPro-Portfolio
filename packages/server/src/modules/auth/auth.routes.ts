@@ -20,6 +20,7 @@ import { startRefreshTokenCleanup } from "./scheduler.js";
 
 const REFRESH_COOKIE = "investpro_refresh_token";
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+const REFRESH_COOKIE_MAX_AGE_REMEMBER_ME = 30 * 24 * 60 * 60; // WI-27: "lembrar de mim"
 
 const AUTH_RATE_LIMIT = {
   config: {
@@ -32,7 +33,11 @@ const AUTH_RATE_LIMIT = {
 
 const IS_PRODUCTION = env.NODE_ENV === "production";
 
-function setRefreshCookie(reply: { setCookie: Function }, token: string): void {
+function setRefreshCookie(
+  reply: { setCookie: Function },
+  token: string,
+  rememberMe: boolean
+): void {
   reply.setCookie(REFRESH_COOKIE, token, {
     httpOnly: true,
     secure: IS_PRODUCTION,
@@ -43,7 +48,10 @@ function setRefreshCookie(reply: { setCookie: Function }, token: string): void {
     // inesperado ao expirar o access token em produção.
     sameSite: IS_PRODUCTION ? "none" : "lax",
     path: "/api/v1/auth/refresh",
-    maxAge: REFRESH_COOKIE_MAX_AGE,
+    // WI-27: maxAge do cookie acompanha a duração real do refresh token no
+    // banco — senão o navegador descartaria o cookie antes (ou manteria
+    // depois) do token de fato expirar.
+    maxAge: rememberMe ? REFRESH_COOKIE_MAX_AGE_REMEMBER_ME : REFRESH_COOKIE_MAX_AGE,
   });
 }
 
@@ -83,7 +91,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const result = await authService.register(request.body);
-      setRefreshCookie(reply, result.refreshToken);
+      setRefreshCookie(reply, result.refreshToken, result.rememberMe);
       reply.status(201);
       return { user: result.user, accessToken: result.accessToken };
     }
@@ -105,7 +113,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const result = await authService.login(request.body);
-      setRefreshCookie(reply, result.refreshToken);
+      setRefreshCookie(reply, result.refreshToken, result.rememberMe);
       return { user: result.user, accessToken: result.accessToken };
     }
   );
@@ -132,7 +140,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const result = await authService.refresh(token);
-      setRefreshCookie(reply, result.refreshToken);
+      setRefreshCookie(reply, result.refreshToken, result.rememberMe);
       return { accessToken: result.accessToken };
     }
   );

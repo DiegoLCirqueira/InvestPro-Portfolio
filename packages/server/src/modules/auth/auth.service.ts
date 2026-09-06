@@ -3,25 +3,21 @@ import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import type { RegisterBody, LoginBody } from "./auth.schema.js";
 import { hashPassword, verifyPassword } from "./lib/password.js";
+import { signAccessToken } from "./lib/jwt.js";
 import {
-  signAccessToken,
-  signRefreshToken,
-  verifyToken,
-  type TokenPayload,
-} from "./lib/jwt.js";
+  generateRefreshToken,
+  hashRefreshToken,
+  newRefreshTokenFamilyId,
+} from "./lib/refreshToken.js";
 import { generatePasswordResetToken, hashResetToken } from "./lib/resetToken.js";
 import { isEmailRateLimited } from "./lib/emailRateLimit.js";
 import { sendPasswordResetEmail, sendPasswordChangedEmail } from "./lib/email.js";
-
-interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-}
 
 interface AuthResult {
   user: { id: string; email: string; fullName: string };
   accessToken: string;
   refreshToken: string;
+  rememberMe: boolean;
 }
 
 function stripPassword<T extends { passwordHash?: string }>(obj: T): Omit<T, "passwordHash"> {
@@ -55,12 +51,14 @@ export async function register(data: RegisterBody): Promise<AuthResult> {
   });
 
   const accessToken = signAccessToken(result.id, env.JWT_SECRET);
-  const { token: refreshToken, expiresAt } = signRefreshToken(result.id, env.JWT_REFRESH_SECRET);
+  const { token: refreshToken, tokenHash, expiresAt } = generateRefreshToken(false);
 
   await prisma.refreshToken.create({
     data: {
       userId: result.id,
-      token: refreshToken,
+      tokenHash,
+      familyId: newRefreshTokenFamilyId(),
+      rememberMe: false,
       expiresAt,
     },
   });
@@ -69,6 +67,7 @@ export async function register(data: RegisterBody): Promise<AuthResult> {
     user: stripPassword(result),
     accessToken,
     refreshToken,
+    rememberMe: false,
   };
 }
 
@@ -84,12 +83,15 @@ export async function login(data: LoginBody): Promise<AuthResult> {
   }
 
   const accessToken = signAccessToken(user.id, env.JWT_SECRET);
-  const { token: refreshToken, expiresAt } = signRefreshToken(user.id, env.JWT_REFRESH_SECRET);
+  const rememberMe = data.rememberMe ?? false;
+  const { token: refreshToken, tokenHash, expiresAt } = generateRefreshToken(rememberMe);
 
   await prisma.refreshToken.create({
     data: {
       userId: user.id,
-      token: refreshToken,
+      tokenHash,
+      familyId: newRefreshTokenFamilyId(),
+      rememberMe,
       expiresAt,
     },
   });
@@ -98,56 +100,70 @@ export async function login(data: LoginBody): Promise<AuthResult> {
     user: stripPassword(user),
     accessToken,
     refreshToken,
+    rememberMe,
   };
 }
 
-export async function refresh(token: string): Promise<{ accessToken: string; refreshToken: string }> {
-  let payload: TokenPayload;
-  try {
-    payload = verifyToken(token, env.JWT_REFRESH_SECRET);
-  } catch {
+export async function refresh(
+  token: string
+): Promise<{ accessToken: string; refreshToken: string; rememberMe: boolean }> {
+  const tokenHash = hashRefreshToken(token);
+  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+
+  if (!stored) {
     throw new AppError("INVALID_REFRESH_TOKEN", "Refresh token inválido ou expirado", 401);
   }
 
-  if (!payload.sub) {
-    throw new AppError("INVALID_REFRESH_TOKEN", "Refresh token inválido", 401);
-  }
-
-  const stored = await prisma.refreshToken.findUnique({ where: { token } });
-  if (!stored) {
-    throw new AppError("INVALID_REFRESH_TOKEN", "Refresh token não encontrado", 401);
+  // Token já rotacionado/revogado sendo reapresentado: sinal de replay (token
+  // roubado copiado antes da rotação). Revoga TODOS os refresh tokens ativos
+  // do usuário (não só a família), forçando novo login em todo dispositivo.
+  if (stored.revokedAt) {
+    await prisma.refreshToken.updateMany({
+      where: { userId: stored.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    throw new AppError(
+      "REFRESH_TOKEN_REUSE_DETECTED",
+      "Sessão comprometida, faça login novamente",
+      401
+    );
   }
 
   if (new Date() > stored.expiresAt) {
-    await prisma.refreshToken.delete({ where: { id: stored.id } });
     throw new AppError("REFRESH_TOKEN_EXPIRED", "Refresh token expirado", 401);
   }
 
-  await prisma.refreshToken.delete({ where: { id: stored.id } });
+  const accessToken = signAccessToken(stored.userId, env.JWT_SECRET);
+  const {
+    token: newRefreshToken,
+    tokenHash: newTokenHash,
+    expiresAt,
+  } = generateRefreshToken(stored.rememberMe);
 
-  const accessToken = signAccessToken(payload.sub, env.JWT_SECRET);
-  const { token: newRefreshToken, expiresAt } = signRefreshToken(payload.sub, env.JWT_REFRESH_SECRET);
-
-  await prisma.refreshToken.create({
-    data: {
-      userId: payload.sub,
-      token: newRefreshToken,
-      expiresAt,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+    await tx.refreshToken.create({
+      data: {
+        userId: stored.userId,
+        tokenHash: newTokenHash,
+        familyId: stored.familyId,
+        rememberMe: stored.rememberMe,
+        expiresAt,
+      },
+    });
   });
 
-  return { accessToken, refreshToken: newRefreshToken };
+  return { accessToken, refreshToken: newRefreshToken, rememberMe: stored.rememberMe };
 }
 
 export async function logout(token: string): Promise<void> {
-  try {
-    const stored = await prisma.refreshToken.findUnique({ where: { token } });
-    if (stored) {
-      await prisma.refreshToken.delete({ where: { id: stored.id } });
-    }
-  } catch {
-    // Silently fail if token not found — logout is best-effort
-  }
+  // Apaga (não só revoga): logout é invalidação final e deliberada, sem
+  // ambiguidade de reuso pra detectar — igual era antes do WI-27.
+  const tokenHash = hashRefreshToken(token);
+  await prisma.refreshToken.deleteMany({ where: { tokenHash } });
 }
 
 export async function forgotPassword(email: string, log: FastifyBaseLogger): Promise<void> {
@@ -200,6 +216,8 @@ export async function resetPassword(
       data: { passwordHash },
     });
 
+    // Apaga (não só revoga): troca de senha é invalidação final e deliberada,
+    // sem ambiguidade de reuso pra detectar — igual era antes do WI-27.
     await tx.refreshToken.deleteMany({ where: { userId: record.userId } });
     await tx.passwordResetToken.deleteMany({
       where: { userId: record.userId, usedAt: null },

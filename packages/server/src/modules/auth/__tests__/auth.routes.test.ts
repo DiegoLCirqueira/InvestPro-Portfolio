@@ -195,6 +195,69 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(res.json().error).toBe('MISSING_REFRESH_TOKEN')
   })
 
+  it('reapresentar um refresh token já rotacionado é detectado como reuso e revoga a sessão inteira (WI-27)', async () => {
+    const reuseEmail = uniqueEmail('refresh-reuse')
+    const registerRes = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email: reuseEmail, password: 'SenhaForte123', fullName: 'QA Reuse' },
+    })
+    const firstCookie = registerRes.cookies.find((c) => c.name === 'investpro_refresh_token')
+
+    const rotated = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      remoteAddress: uniqueIp(),
+      cookies: { investpro_refresh_token: firstCookie?.value ?? '' },
+    })
+    expect(rotated.statusCode).toBe(200)
+    const secondCookie = rotated.cookies.find((c) => c.name === 'investpro_refresh_token')
+
+    // Reapresenta o token JÁ rotacionado (firstCookie) — sinal de replay.
+    const reused = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      remoteAddress: uniqueIp(),
+      cookies: { investpro_refresh_token: firstCookie?.value ?? '' },
+    })
+    expect(reused.statusCode).toBe(401)
+    expect(reused.json().error).toBe('REFRESH_TOKEN_REUSE_DETECTED')
+
+    // A sessão inteira foi revogada: o token rotacionado válido (secondCookie)
+    // também para de funcionar, mesmo nunca tendo sido reapresentado sozinho.
+    const afterRevocation = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      remoteAddress: uniqueIp(),
+      cookies: { investpro_refresh_token: secondCookie?.value ?? '' },
+    })
+    expect(afterRevocation.statusCode).toBe(401)
+
+    await deleteUser(reuseEmail)
+  })
+
+  it('rememberMe: true no login estende o cookie de refresh pra 30 dias', async () => {
+    const rememberEmail = uniqueEmail('remember')
+    await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email: rememberEmail, password: 'SenhaForte123', fullName: 'QA Remember' },
+    })
+
+    const loginRes = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: uniqueIp(),
+      payload: { email: rememberEmail, password: 'SenhaForte123', rememberMe: true },
+    })
+    const cookie = loginRes.cookies.find((c) => c.name === 'investpro_refresh_token')
+    expect(cookie?.maxAge).toBe(30 * 24 * 60 * 60)
+
+    await deleteUser(rememberEmail)
+  })
+
   afterAll(async () => {
     await deleteUser(email)
   })

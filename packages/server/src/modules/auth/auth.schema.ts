@@ -23,6 +23,9 @@ export const registerBodySchema = z.object({
 export const loginBodySchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Senha é obrigatória'),
+  // WI-27: controla SÓ a duração do refresh token (30 dias vs. 7 dias
+  // padrão). O access token nunca muda — sempre 15min.
+  rememberMe: z.boolean().optional().default(false),
 })
 
 // O handler não lê nada do body (usa apenas o cookie httpOnly do refresh

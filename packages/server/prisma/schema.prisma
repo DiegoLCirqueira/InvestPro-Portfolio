@@ -49,14 +49,25 @@ model Position {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  // Agrupa todos os tokens da mesma cadeia de rotação (WI-27: detecção de
+  // reuso). Preservado a cada rotação, não muda até o próximo login.
+  familyId   String
+  // "Lembrar de mim": true = 30 dias, false = 7 dias (padrão). Decidido uma
+  // vez no login e propagado a cada rotação da mesma família.
+  rememberMe Boolean   @default(false)
+  // null = token ativo. Setado quando o token é rotacionado (uso normal),
+  // usado no logout, ou invalidado por troca de senha/reuso detectado. Um
+  // token com revokedAt preenchido sendo reapresentado é o sinal de reuso.
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
 }
 
 model PasswordResetToken {
