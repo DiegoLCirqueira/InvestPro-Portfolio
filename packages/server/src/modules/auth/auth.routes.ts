@@ -36,7 +36,12 @@ function setRefreshCookie(reply: { setCookie: Function }, token: string): void {
   reply.setCookie(REFRESH_COOKIE, token, {
     httpOnly: true,
     secure: IS_PRODUCTION,
-    sameSite: "lax",
+    // Front (Vercel) e back (Railway) são domínios diferentes em produção —
+    // cookie cross-site só é enviado em fetch/XHR com SameSite=None+Secure
+    // (Lax não vai, exceto navegação top-level GET). Local dev continua Lax
+    // (mesmo domínio/porta, sem HTTPS). WI-32: causa raiz do logout
+    // inesperado ao expirar o access token em produção.
+    sameSite: IS_PRODUCTION ? "none" : "lax",
     path: "/api/v1/auth/refresh",
     maxAge: REFRESH_COOKIE_MAX_AGE,
   });
@@ -46,7 +51,12 @@ function clearRefreshCookie(reply: { clearCookie: Function }): void {
   reply.clearCookie(REFRESH_COOKIE, {
     httpOnly: true,
     secure: IS_PRODUCTION,
-    sameSite: "lax",
+    // Front (Vercel) e back (Railway) são domínios diferentes em produção —
+    // cookie cross-site só é enviado em fetch/XHR com SameSite=None+Secure
+    // (Lax não vai, exceto navegação top-level GET). Local dev continua Lax
+    // (mesmo domínio/porta, sem HTTPS). WI-32: causa raiz do logout
+    // inesperado ao expirar o access token em produção.
+    sameSite: IS_PRODUCTION ? "none" : "lax",
     path: "/api/v1/auth/refresh",
   });
 }
