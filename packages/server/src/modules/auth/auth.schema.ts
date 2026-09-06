@@ -2,15 +2,26 @@ import { z } from 'zod'
 
 const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/
 
+// Normaliza (trim + lowercase) ANTES de validar o formato — assim " Foo@Bar.com "
+// passa a bater com "foo@bar.com" já salvo, e cobre automaticamente todo
+// endpoint que reusar este schema (register/login/forgotPassword e qualquer
+// futuro ponto de entrada), sem precisar normalizar manualmente em cada
+// handler/service (WI-20, parecer do AppSec). toLowerCase() não é
+// case-folding RFC-perfeito pro local-part (RFC 5321 permite, em tese,
+// local-part case-sensitive), mas é o padrão de mercado aceito — Gmail e
+// Outlook fazem a mesma normalização. Não faz normalização estilo Gmail
+// (ignorar pontos/+tag) — só trim + lowercase, por decisão explícita.
+const emailSchema = z.string().trim().toLowerCase().pipe(z.email('Email inválido'))
+
 export const registerBodySchema = z.object({
-  email: z.email('Email inválido'),
+  email: emailSchema,
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   fullName: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   cpf: z.string().regex(cpfRegex, 'CPF inválido (use XXX.XXX.XXX-XX ou 11 dígitos)').optional(),
 })
 
 export const loginBodySchema = z.object({
-  email: z.email('Email inválido'),
+  email: emailSchema,
   password: z.string().min(1, 'Senha é obrigatória'),
 })
 
@@ -40,7 +51,7 @@ export const logoutResponseSchema = z.object({
 })
 
 export const forgotPasswordBodySchema = z.object({
-  email: z.email('Email inválido'),
+  email: emailSchema,
 })
 
 export const resetPasswordBodySchema = z.object({

@@ -57,6 +57,38 @@ describe('POST /api/v1/auth/register', () => {
     expect(res.json().error).toBe('EMAIL_TAKEN')
   })
 
+  it('normaliza email (trim + lowercase) na criação: retorna e persiste em minúsculas (WI-20)', async () => {
+    const mixedCase = uniqueEmail('register-case')
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: {
+        email: `  ${mixedCase.toUpperCase()}  `,
+        password: 'SenhaForte123',
+        fullName: 'QA Register Case',
+      },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(res.json().user.email).toBe(mixedCase)
+
+    const stored = await prisma.user.findUnique({ where: { email: mixedCase } })
+    expect(stored).not.toBeNull()
+
+    await deleteUser(mixedCase)
+  })
+
+  it('normaliza email antes de checar duplicidade: 409 EMAIL_TAKEN mesmo com case/espaços diferentes (WI-20)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email: `  ${email.toUpperCase()}  `, password: 'SenhaForte123', fullName: 'QA Register' },
+    })
+    expect(res.statusCode).toBe(409)
+    expect(res.json().error).toBe('EMAIL_TAKEN')
+  })
+
   afterAll(async () => {
     await deleteUser(email)
   })
@@ -74,6 +106,17 @@ describe('POST /api/v1/auth/login', () => {
     const body = res.json()
     expect(body.user.email).toBe(SEED_EMAIL)
     expect(body.accessToken).toBeTruthy()
+  })
+
+  it('login tolera case e espaços diferentes do email cadastrado (WI-20)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: uniqueIp(),
+      payload: { email: `  ${SEED_EMAIL.toUpperCase()}  `, password: SEED_PASSWORD },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().user.email).toBe(SEED_EMAIL)
   })
 
   it('senha incorreta retorna 401 INVALID_CREDENTIALS', async () => {
@@ -254,6 +297,23 @@ describe('POST /api/v1/auth/forgot-password', () => {
       payload: { email: 'nao-e-um-email' },
     })
     expect(res.statusCode).toBe(400)
+  })
+
+  it('email cadastrado com case/espaços diferentes ainda encontra o usuário e cria token (WI-20, bug relatado)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/forgot-password',
+      remoteAddress: uniqueIp(),
+      payload: { email: `  ${email.toUpperCase()}  ` },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().message).toBe(
+      'Se o email existir em nossa base, você receberá as instruções em instantes.'
+    )
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    const tokens = await prisma.passwordResetToken.findMany({ where: { userId: user!.id } })
+    expect(tokens.length).toBeGreaterThan(0)
   })
 
   afterAll(async () => {
