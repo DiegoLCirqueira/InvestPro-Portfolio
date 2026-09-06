@@ -24,6 +24,24 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: investpro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/investpro?schema=public
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,6 +60,14 @@ jobs:
 
       - name: Build web
         run: npm run build --workspace=packages/web
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+        working-directory: packages/server
+
+      - name: Seed database
+        run: npx tsx prisma/seed.ts
+        working-directory: packages/server
 
       - name: Test server
         run: npm run test --workspace=packages/server
