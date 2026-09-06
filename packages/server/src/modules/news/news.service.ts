@@ -11,11 +11,12 @@ import type { FastifyBaseLogger } from 'fastify'
 import { fetchFeedXml, parseFeed, type RawNewsItem } from './adapters/rss.js'
 import { NEWS_SOURCES, type NewsSource } from './sources.js'
 import {
+  applySourcePolicy,
   dedupeNews,
   normalizeInput,
   sortNewsByDate,
   toNewsId,
-  type NormalizedNews,
+  type CategorizedNews,
 } from './news.domain.js'
 
 const NEWS_TTL_MS = 300_000
@@ -52,7 +53,7 @@ function cacheSet<T>(key: string, data: T, ttlMs: number): void {
   cacheStore.set(key, { data, expiresAt: Date.now() + ttlMs })
 }
 
-function toNewsItem(item: NormalizedNews): NewsItem {
+function toNewsItem(item: CategorizedNews): NewsItem {
   return {
     id: toNewsId(item.guid, item.url),
     title: item.title,
@@ -68,9 +69,12 @@ async function fetchFromSource(source: NewsSource): Promise<NewsItem[]> {
   const xml = await fetchFeedXml(source.url)
   const rawItems: RawNewsItem[] = parseFeed(xml).slice(0, NEWS_MAX_PER_SOURCE)
 
-  return rawItems.map((raw) =>
-    toNewsItem(normalizeInput(raw, source.label, source.category))
-  )
+  const relevant = rawItems
+    .map((raw) => normalizeInput(raw, source.label))
+    .map((item) => applySourcePolicy(item, source))
+    .filter((item): item is CategorizedNews => item !== null)
+
+  return relevant.map(toNewsItem)
 }
 
 async function fetchAllSources(): Promise<NewsItem[]> {

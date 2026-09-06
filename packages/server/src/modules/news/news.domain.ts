@@ -48,7 +48,10 @@ export const CATEGORY_ORDER: NewsCategory[] = [
   'MARKET',
 ]
 
-export function categorizeNews(text: string, fallback: NewsCategory): NewsCategory {
+// Retorna null quando nenhuma keyword de nenhuma categoria bate — o item é
+// então descartado por relevância (ver applySourcePolicy), em vez de cair
+// num fallback que mascarava conteúdo fora de escopo (WI-29).
+export function categorizeNews(text: string): NewsCategory | null {
   const haystack = ` ${text.trim().toLowerCase()} `
   for (const category of CATEGORY_ORDER) {
     const keywords = CATEGORY_KEYWORDS[category]
@@ -56,7 +59,7 @@ export function categorizeNews(text: string, fallback: NewsCategory): NewsCatego
       if (haystack.includes(keyword)) return category
     }
   }
-  return fallback
+  return null
 }
 
 export function stripHtml(value: string): string {
@@ -96,7 +99,7 @@ export interface NormalizedNews {
   title: string
   summary: string
   source: string
-  category: NewsCategory
+  category: NewsCategory | null
   url: string
   publishedAt: string | null
 }
@@ -104,7 +107,6 @@ export interface NormalizedNews {
 export function normalizeInput(
   item: { guid: string; title: string; description: string; url: string; publishedAt: string | null },
   sourceLabel: string,
-  fallbackCategory: NewsCategory,
 ): NormalizedNews {
   const title = item.title.trim() || 'Sem título'
   const summary = summarize(item.description)
@@ -113,14 +115,44 @@ export function normalizeInput(
     title,
     summary,
     source: sourceLabel,
-    category: categorizeNews(`${title} ${summary}`, fallbackCategory),
+    category: categorizeNews(`${title} ${summary}`),
     url: item.url,
     publishedAt: item.publishedAt,
   }
 }
 
-export function dedupeNews(items: ReadonlyArray<NormalizedNews>): NormalizedNews[] {
-  const seen = new Map<string, NormalizedNews>()
+export interface SourceRelevancePolicy {
+  /** Categoria usada quando alwaysInclude é true e nenhuma keyword bateu. */
+  category: NewsCategory
+  /** Mantém o item mesmo sem nenhuma keyword batendo (ex: CoinDesk — cripto BR tem pouca cobertura em português). */
+  alwaysInclude?: boolean
+  /** Restringe as categorias aceitas desta fonte, além do filtro geral de relevância (ex: MarketWatch só MARKET/MACRO). */
+  requiredCategories?: NewsCategory[]
+}
+
+export type CategorizedNews = NormalizedNews & { category: NewsCategory }
+
+// Aplica a política de relevância da fonte sobre um item já normalizado.
+// Retorna null quando o item deve ser descartado (WI-29): sem keyword e a
+// fonte não é exceção, ou com keyword mas fora das categorias exigidas.
+export function applySourcePolicy(
+  item: NormalizedNews,
+  source: SourceRelevancePolicy,
+): CategorizedNews | null {
+  if (item.category === null) {
+    return source.alwaysInclude ? { ...item, category: source.category } : null
+  }
+  if (source.requiredCategories && !source.requiredCategories.includes(item.category)) {
+    return null
+  }
+  return item as CategorizedNews
+}
+
+// Genéricas em T (em vez de fixas em NormalizedNews) só pra preservar, sem
+// cast, o category: NewsCategory (não-nulo) de CategorizedNews através do
+// pipeline de fetchAllSources — comportamento idêntico ao de antes.
+export function dedupeNews<T extends NormalizedNews>(items: ReadonlyArray<T>): T[] {
+  const seen = new Map<string, T>()
   for (const item of items) {
     const key = item.url.toLowerCase()
     if (!seen.has(key)) seen.set(key, item)
@@ -128,7 +160,7 @@ export function dedupeNews(items: ReadonlyArray<NormalizedNews>): NormalizedNews
   return [...seen.values()]
 }
 
-export function sortNewsByDate(items: ReadonlyArray<NormalizedNews>): NormalizedNews[] {
+export function sortNewsByDate<T extends NormalizedNews>(items: ReadonlyArray<T>): T[] {
   return [...items].sort((a, b) => {
     const ta = a.publishedAt ? Date.parse(a.publishedAt) : 0
     const tb = b.publishedAt ? Date.parse(b.publishedAt) : 0
