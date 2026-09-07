@@ -13,7 +13,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const token = useAuthStore((s) => s.token);
   const refresh = useAuthStore((s) => s.refresh);
   const user = useAuthStore((s) => s.user);
   const [isChecking, setIsChecking] = useState(true);
@@ -21,8 +20,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   useEffect(() => {
     let cancelled = false;
     async function bootstrap() {
-      // Se há token persistido mas a sessão não está validada, tenta renovar
-      if (token && !isAuthenticated) {
+      // Access token não é persistido (WI-21) — todo cold load tenta renovar
+      // a sessão a partir do cookie httpOnly de refresh, que é a única fonte
+      // de verdade sobre autenticação.
+      if (!isAuthenticated) {
         const ok = await refresh();
         if (!cancelled && !ok) {
           setIsChecking(false);
@@ -37,7 +38,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return () => {
       cancelled = true;
     };
-  }, [token, isAuthenticated, refresh]);
+  }, [isAuthenticated, refresh]);
 
   const isForbidden =
     !isChecking &&

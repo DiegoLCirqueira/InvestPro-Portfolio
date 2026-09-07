@@ -74,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "investpro-auth",
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      partialize: (state) => ({ user: state.user }),
     },
   ),
 );
