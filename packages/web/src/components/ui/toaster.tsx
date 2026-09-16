@@ -1,9 +1,31 @@
+import { useEffect, useState } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+function useDocumentTheme(): "dark" | "light" {
+  const [theme, setTheme] = useState<"dark" | "light">(() =>
+    document.documentElement.getAttribute("data-theme") === "dark"
+      ? "dark"
+      : "light",
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setTheme(root.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  return theme;
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
+  const theme = useDocumentTheme();
+
   return (
     <Sonner
-      theme="dark"
+      theme={theme}
       className="toaster group"
       toastOptions={{
         classNames: {

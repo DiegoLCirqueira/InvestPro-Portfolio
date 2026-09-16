@@ -8,7 +8,7 @@ import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import type { PortfolioPeriod } from "@/types/portfolio";
 
-function MobileGreeting() {
+function MobileGreeting({ change }: { change?: number }) {
   const user = useAuthStore((s) => s.user);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
@@ -21,13 +21,19 @@ function MobileGreeting() {
           {user?.fullName?.split(" ")[0] || "Investidor"}
         </span>
       </h2>
-      <div className="flex items-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-        <p className="text-muted-foreground text-xs font-medium">
-          Seu portfólio rendeu{" "}
-          <span className="text-primary">+2.28%</span> nas últimas 24h.
-        </p>
-      </div>
+      {change !== undefined && (
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <p className="text-muted-foreground text-xs font-medium">
+            Seu portfólio {change >= 0 ? "rendeu" : "recuou"}{" "}
+            <span className="text-primary">
+              {change >= 0 ? "+" : ""}
+              {change.toFixed(2)}%
+            </span>{" "}
+            no período.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -61,12 +67,12 @@ export function Dashboard() {
     void refetchHistory();
   };
 
-  const change =
-    history.length >= 2
-      ? ((history[history.length - 1].balance - history[0].balance) /
-          history[0].balance) *
-        100
-      : 0;
+  const hasChangeData = history.length >= 2 && history[0].balance !== 0;
+  const change = hasChangeData
+    ? ((history[history.length - 1].balance - history[0].balance) /
+        history[0].balance) *
+      100
+    : 0;
 
   if (isLoading) {
     return (
@@ -93,7 +99,7 @@ export function Dashboard() {
 
   return (
     <div className="flex-1 flex flex-col nav:min-h-0">
-      <MobileGreeting />
+      <MobileGreeting change={hasChangeData ? change : undefined} />
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
