@@ -11,6 +11,7 @@ import {
 } from "./lib/refreshToken.js";
 import { generatePasswordResetToken, hashResetToken } from "./lib/resetToken.js";
 import { isEmailRateLimited } from "./lib/emailRateLimit.js";
+import { isAccountRateLimited, registerLoginFailure, clearLoginAttempts } from "./lib/loginRateLimit.js";
 import { sendPasswordResetEmail, sendPasswordChangedEmail } from "./lib/email.js";
 
 interface AuthResult {
@@ -72,15 +73,27 @@ export async function register(data: RegisterBody): Promise<AuthResult> {
 }
 
 export async function login(data: LoginBody): Promise<AuthResult> {
+  if (isAccountRateLimited(data.email)) {
+    throw new AppError(
+      "ACCOUNT_RATE_LIMITED",
+      "Muitas tentativas de login para esta conta. Tente novamente em alguns minutos.",
+      429
+    );
+  }
+
   const user = await prisma.user.findUnique({ where: { email: data.email } });
   if (!user) {
+    registerLoginFailure(data.email);
     throw new AppError("INVALID_CREDENTIALS", "Email ou senha inválidos", 401);
   }
 
   const valid = await verifyPassword(data.password, user.passwordHash);
   if (!valid) {
+    registerLoginFailure(data.email);
     throw new AppError("INVALID_CREDENTIALS", "Email ou senha inválidos", 401);
   }
+
+  clearLoginAttempts(data.email);
 
   const accessToken = signAccessToken(user.id, env.JWT_SECRET);
   const rememberMe = data.rememberMe ?? false;

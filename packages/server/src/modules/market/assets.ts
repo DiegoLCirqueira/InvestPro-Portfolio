@@ -81,6 +81,6 @@ export const baseAssets: SeedAsset[] = [
     // Proxy determinístico: usa o par USDBRL da AwesomeAPI como referência externa
     // até existir uma fonte específica de renda fixa (pendência WI-205).
     source: 'awesomeapi',
-    remoteId: 'USDBRL',
+    remoteId: 'USD-BRL',
   },
 ]

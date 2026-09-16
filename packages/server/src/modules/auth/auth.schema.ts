@@ -15,7 +15,7 @@ const emailSchema = z.string().trim().toLowerCase().pipe(z.email('Email inválid
 
 export const registerBodySchema = z.object({
   email: emailSchema,
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
   fullName: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   cpf: z.string().regex(cpfRegex, 'CPF inválido (use XXX.XXX.XXX-XX ou 11 dígitos)').optional(),
 })
@@ -59,7 +59,7 @@ export const forgotPasswordBodySchema = z.object({
 
 export const resetPasswordBodySchema = z.object({
   token: z.string().min(1, 'Token é obrigatório'),
-  newPassword: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  newPassword: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
 })
 
 export type RegisterBody = z.infer<typeof registerBodySchema>

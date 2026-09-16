@@ -26,7 +26,7 @@ export const registerSchema = z
     password: z
       .string()
       .min(1, "Senha é obrigatória")
-      .min(6, "Senha deve ter pelo menos 6 caracteres"),
+      .min(8, "Senha deve ter pelo menos 8 caracteres"),
     confirmPassword: z
       .string()
       .min(1, "Confirmação de senha é obrigatória"),
@@ -52,7 +52,7 @@ export const resetPasswordSchema = z
     password: z
       .string()
       .min(1, "Senha é obrigatória")
-      .min(6, "Senha deve ter pelo menos 6 caracteres"),
+      .min(8, "Senha deve ter pelo menos 8 caracteres"),
     confirmPassword: z
       .string()
       .min(1, "Confirmação de senha é obrigatória"),

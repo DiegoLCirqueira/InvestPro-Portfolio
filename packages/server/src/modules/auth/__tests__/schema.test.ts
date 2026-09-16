@@ -25,8 +25,13 @@ describe('registerBodySchema', () => {
     expect(registerBodySchema.safeParse({ ...validRegistration, email: 'nao-email' }).success).toBe(false)
   })
 
-  it('rejeita senha curta (menos de 6 caracteres)', () => {
+  it('rejeita senha curta (menos de 8 caracteres)', () => {
     expect(registerBodySchema.safeParse({ ...validRegistration, password: '12345' }).success).toBe(false)
+    expect(registerBodySchema.safeParse({ ...validRegistration, password: '1234567' }).success).toBe(false)
+  })
+
+  it('aceita senha com exatamente 8 caracteres', () => {
+    expect(registerBodySchema.safeParse({ ...validRegistration, password: '12345678' }).success).toBe(true)
   })
 
   it('rejeita nome curto (menos de 2 caracteres)', () => {

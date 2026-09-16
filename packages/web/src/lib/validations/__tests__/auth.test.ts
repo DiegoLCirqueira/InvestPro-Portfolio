@@ -48,8 +48,13 @@ describe("registerSchema", () => {
     expect(registerSchema.safeParse({ ...validRegister, email: "invalido" }).success).toBe(false);
   });
 
-  it("rejeita senha curta", () => {
+  it("rejeita senha curta (menos de 8 caracteres)", () => {
     expect(registerSchema.safeParse({ ...validRegister, password: "12345" }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...validRegister, password: "1234567" }).success).toBe(false);
+  });
+
+  it("aceita senha com exatamente 8 caracteres", () => {
+    expect(registerSchema.safeParse({ ...validRegister, password: "12345678", confirmPassword: "12345678" }).success).toBe(true);
   });
 
   it("rejeita quando as senhas não coincidem", () => {

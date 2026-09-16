@@ -4,6 +4,22 @@ import { env } from "./config/env.js";
 async function main() {
   const app = await buildServer();
 
+  // Sem esses handlers, uma promise rejeitada sem catch (ex.: pool do Prisma
+  // esgotado sob carga) derruba o processo em silêncio — Node trata rejection
+  // não tratada como fatal por padrão (modo "throw") quando não há listener,
+  // mas sem log nenhum do motivo. Aqui garantimos que o erro completo é
+  // logado via pino antes de encerrar; continuar depois de uncaughtException
+  // é inseguro (estado do processo pode estar corrompido), então sempre saímos.
+  process.on("unhandledRejection", (reason) => {
+    app.log.fatal(reason, "unhandledRejection: promise rejeitada sem tratamento");
+    process.exit(1);
+  });
+
+  process.on("uncaughtException", (err) => {
+    app.log.fatal(err, "uncaughtException: erro não tratado no processo");
+    process.exit(1);
+  });
+
   try {
     await app.listen({ port: env.PORT, host: "0.0.0.0" });
     app.log.info(`Servidor InvestPro rodando em http://localhost:${env.PORT}`);
