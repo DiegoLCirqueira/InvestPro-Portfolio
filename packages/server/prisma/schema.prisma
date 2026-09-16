@@ -68,6 +68,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([familyId])
+  @@index([expiresAt])
 }
 
 model PasswordResetToken {
@@ -115,6 +116,7 @@ model Transfer {
   user            User           @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([userId])
+  @@index([userId, createdAt])
 }
 
 model Order {
@@ -132,7 +134,6 @@ model Order {
   executedAt DateTime?
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  @@index([userId])
   @@index([userId, createdAt])
 }
 
