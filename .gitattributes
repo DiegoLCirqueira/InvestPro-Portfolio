@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts must keep LF endings regardless of checkout platform -
+# a CRLF shebang breaks execution inside Linux containers (e.g. Railway Cron).
+*.sh text eol=lf

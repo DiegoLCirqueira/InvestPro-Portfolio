@@ -52,16 +52,30 @@ Consequências práticas:
 
 ---
 
-## 3. Provisionar o PostgreSQL (Railway)
+## 3. Banco de dados: Supabase Postgres (pós-cutover WI-20)
 
-Pelo **dashboard** (recomendado):
+> **Atualizado (WI-20):** o banco de produção **não é mais** o plugin
+> PostgreSQL do Railway. Após validação do cutover (dump/restore documentado
+> em `infra/supabase-cutover/`), a produção passou a apontar para um projeto
+> **Supabase Postgres**, e o **TCP Proxy do Railway Postgres foi desligado**
+> em seguida — o plugin antigo do Railway não é mais um destino válido para
+> `DATABASE_URL`.
 
-1. Abra o projeto no Railway → botão **New** → **Database** → **PostgreSQL**.
-2. O Railway cria o serviço e **injeta automaticamente a variável
-   `DATABASE_URL`** nos serviços que referenciam o plugin.
-3. Confirme que a URL contém o parâmetro **`?sslmode=require`** (o Railway
-   costuma incluir). Se não conter, anexe manualmente a `DATABASE_URL`.
-4. (Alternativa CLI) `railway add -d postgresql` no projeto vinculado.
+- `DATABASE_URL` do serviço `@investpro/server` deve apontar para o
+  **connection pooler do Supabase** (host `*.pooler.supabase.com`, porta
+  `5432`, modo sessão), com `?sslmode=require`. **Não** referencie mais
+  `${{Postgres.DATABASE_URL}}` (isso apontava para o plugin Postgres do
+  próprio Railway, descontinuado neste projeto).
+- O serviço Postgres do Railway ainda pode aparecer listado no projeto (não
+  foi excluído), mas está **fora do caminho de produção** — seu TCP Proxy
+  está desligado, então qualquer coisa apontando pra ele deixa de conectar.
+- A conexão real (host/senha) fica **apenas** na variável de ambiente do
+  serviço no dashboard do Railway (aba **Variables**) e nos secrets do
+  Supabase — nunca neste repositório.
+- Um workflow de keep-alive (`.github/workflows/supabase-keepalive.yml`) faz
+  `SELECT 1` periódico no Supabase via `secrets.SUPABASE_KEEPALIVE_URL`, para
+  evitar que o projeto entre em pausa por inatividade (comportamento do tier
+  gratuito do Supabase).
 
 ---
 
@@ -71,7 +85,7 @@ Abra o serviço do backend → aba **Variables** e adicione:
 
 | Variável | Valor recomendado |
 |---|---|
-| `DATABASE_URL` | Referência `${{Postgres.DATABASE_URL}}` (ou a URL completa do plugin) |
+| `DATABASE_URL` | Connection string do **pooler do Supabase Postgres** (`?sslmode=require`) — ver §3. Não usar mais o plugin Postgres do Railway. |
 | `JWT_SECRET` | Longa e aleatória — ex.: gerada com `openssl rand -hex 64` |
 | `JWT_REFRESH_SECRET` | Longa e aleatória — ex.: gerada com `openssl rand -hex 64` |
 | `NODE_ENV` | `production` |
@@ -171,7 +185,7 @@ railway logs --latest --lines 200
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `P1001` / conexão recusada | `DATABASE_URL` sem `sslmode=require` ou DB não entregue | Ajuste a URL / confirme o plugin |
+| `P1001` / conexão recusada | `DATABASE_URL` sem `sslmode=require` ou apontando pro host errado (ex.: resquício do Railway Postgres antigo) | Confirme o host do pooler do Supabase e o `sslmode=require` |
 | Boot falha com erro de CORS | `NODE_ENV=production` sem `CORS_ORIGIN` explícita | Defina `CORS_ORIGIN` com a URL do Vercel |
 | `prisma migrate deploy` não encontrado | CLI `prisma` removida no runtime | Mantenha `prisma` em `dependencies` (já ajustado) |
 | Deploy disparado sem alterar backend | Watch paths ausentes | Use `watchPatterns` do `railway.json` |
