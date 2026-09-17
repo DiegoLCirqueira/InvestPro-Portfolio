@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.test.ts'],
     env: {
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/investpro?schema=public',
+      DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/investpro?schema=public',
       JWT_SECRET: 'investpro-dev-jwt-secret-2024',
       JWT_REFRESH_SECRET: 'investpro-dev-refresh-secret-2024',
       NODE_ENV: 'development',
