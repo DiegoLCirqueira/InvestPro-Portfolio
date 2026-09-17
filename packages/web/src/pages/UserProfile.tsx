@@ -59,33 +59,28 @@ function ProfileFieldsSkeleton() {
 
 function TopUpCard() {
   const { balance, isLoading, refetch } = usePortfolioPositions();
-  const [amount, setAmount] = useState("");
+  // Dígitos digitados, tratados como centavos (padrão de input de moeda
+  // "da direita pra esquerda", ex.: apps bancários BR). "500" = R$ 5,00.
+  const [digits, setDigits] = useState("");
+  const amountValue = Number(digits || "0") / 100;
 
   const topUp = useTopUpPortfolio({
     onSuccess: () => {
       toast.success("Saldo adicionado com sucesso!");
-      setAmount("");
+      setDigits("");
       void refetch();
     },
     onError: (err) => toast.error(err.message),
   });
 
-  const handleAmountChange = (value: string) => {
-    const cleaned = value.replace(",", ".");
-    if (cleaned === "" || /^\d*\.?\d*$/.test(cleaned)) {
-      setAmount(cleaned);
-    }
-  };
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
+    if (amountValue <= 0) {
       toast.error("Informe um valor válido.");
       return;
     }
     try {
-      await topUp.mutate(value);
+      await topUp.mutate(amountValue);
     } catch {
       // erro já tratado via onError
     }
@@ -113,11 +108,11 @@ function TopUpCard() {
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
-          inputMode="decimal"
-          value={amount}
-          onChange={(e) => handleAmountChange(e.target.value)}
-          placeholder="0.00"
-          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground placeholder-muted-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
+          inputMode="numeric"
+          value={formatCurrency(amountValue)}
+          onChange={(e) => setDigits(e.target.value.replace(/\D/g, ""))}
+          aria-label="Valor a adicionar"
+          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
         />
         <button
           type="submit"
