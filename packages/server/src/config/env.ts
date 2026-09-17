@@ -35,4 +35,5 @@ export const env = {
   FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:5173",
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
+  BRAPI_API_KEY: process.env.BRAPI_API_KEY ?? "",
 } as const;

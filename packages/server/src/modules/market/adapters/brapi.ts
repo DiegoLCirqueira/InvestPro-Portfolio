@@ -1,7 +1,13 @@
 // @investpro/server
 // Fonte de dados: Brapi (ações brasileiras).
+// Autenticação: Bearer token no header Authorization (método recomendado pela
+// Brapi — a alternativa via query param `?token=` vaza pro histórico do
+// navegador e logs de servidor, por isso evitamos). Sem BRAPI_API_KEY
+// configurada, a chamada segue sem header e a Brapi responde 401 (fonte cai
+// no fallback do market.service).
 
 import type { MarketDataSource, MarketQuote, SourceAsset } from './types.js'
+import { env } from '../../../config/env.js'
 
 const BASE_URL = 'https://brapi.dev/api/quote'
 const FETCH_TIMEOUT_MS = 5000
@@ -19,9 +25,13 @@ interface BrapiResponse {
 }
 
 async function fetchJson(url: string): Promise<BrapiResponse> {
+  const headers: Record<string, string> = env.BRAPI_API_KEY
+    ? { Authorization: `Bearer ${env.BRAPI_API_KEY}` }
+    : {}
+
   let response: Response
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    response = await fetch(url, { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   } catch (err) {
     throw new Error(`Brapi: falha de rede para ${url}: ${err instanceof Error ? err.message : String(err)}`)
   }
