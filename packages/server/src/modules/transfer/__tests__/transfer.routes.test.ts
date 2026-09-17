@@ -80,6 +80,38 @@ describe('POST /api/v1/transfers', () => {
     expect(body.id).toBeTruthy()
   })
 
+  it('cria transferência PIX sem número da conta (só banco + agência) (200 COMPLETED)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: {
+        type: 'PIX',
+        amount: 25,
+        toAccount: { id: 'acc-pix-key', bank: '001', agency: '0001' },
+        description: 'Teste PIX sem conta',
+      },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().status).toBe('COMPLETED')
+  })
+
+  it('retorna 400 para TED sem número da conta', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: {
+        type: 'TED',
+        amount: 25,
+        toAccount: { id: 'acc-ted', bank: '001', agency: '0001' },
+      },
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
   it('retorna 400 para transferência inválida (amount negativo)', async () => {
     const res = await app!.inject({
       method: 'POST',
@@ -159,6 +191,43 @@ describe('POST /api/v1/transfers — persistência real no Postgres', () => {
     expect(row?.toAccountAgency).toBe('4321')
     expect(row?.toAccountNumber).toBe('98765-0')
     expect(row?.toAccountHolder).toBe('Persist QA')
+  })
+
+  it('PIX com pixKey persiste a chave e devolve no corpo da resposta', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: {
+        type: 'PIX',
+        amount: 42,
+        pixKey: 'qa-pix-key@investpro.com',
+        description: 'PIX com chave',
+      },
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.pixKey).toBe('qa-pix-key@investpro.com')
+
+    const row = await prisma.transfer.findUnique({ where: { id: body.id } })
+    expect(row?.pixKey).toBe('qa-pix-key@investpro.com')
+  })
+
+  it('transferência sem pixKey grava a coluna como null', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'PIX', amount: 15, description: 'PIX sem chave' },
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.pixKey ?? null).toBeNull()
+
+    const row = await prisma.transfer.findUnique({ where: { id: body.id } })
+    expect(row?.pixKey).toBeNull()
   })
 })
 

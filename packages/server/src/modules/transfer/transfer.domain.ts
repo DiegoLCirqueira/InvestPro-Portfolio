@@ -34,8 +34,12 @@ export function validateTransfer(input: CreateTransferInput): string[] {
   if (!isTransferType(input.type)) errors.push('Tipo de transferência inválido')
   if (!(input.amount > 0)) errors.push('Valor deve ser positivo')
   if (input.toAccount) {
-    for (const field of ['bank', 'agency', 'account'] as const) {
-      if (!input.toAccount[field] || input.toAccount[field].length === 0) {
+    // PIX identifica o destino pela chave (banco + agência); não exige número
+    // da conta. TED/DOC continuam exigindo os três campos.
+    const requiredFields =
+      input.type === 'PIX' ? (['bank', 'agency'] as const) : (['bank', 'agency', 'account'] as const)
+    for (const field of requiredFields) {
+      if (!input.toAccount[field]) {
         errors.push(`Conta de destino inválida: campo ${field} obrigatório`)
       }
     }

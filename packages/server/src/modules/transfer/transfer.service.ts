@@ -43,6 +43,7 @@ function toTransfer(record: PrismaTransfer): Transfer {
           type: (record.toAccountType as Transfer['type'] | null) ?? undefined,
         }
       : undefined,
+    pixKey: record.pixKey,
     createdAt: record.createdAt.toISOString(),
     completedAt: record.completedAt ? record.completedAt.toISOString() : null,
     failureReason: record.failureReason ?? undefined,
@@ -92,6 +93,7 @@ async function executeTransferTx(
       toAccountNumber: toAccount?.account ?? null,
       toAccountHolder: toAccount?.holderName ?? null,
       toAccountType: toAccount?.type ?? null,
+      pixKey: input.pixKey ?? null,
       completedAt: status === 'COMPLETED' ? new Date() : null,
       failureReason: status === 'FAILED' ? 'Execução externa falhou' : null,
     },

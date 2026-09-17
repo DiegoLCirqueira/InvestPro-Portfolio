@@ -52,6 +52,22 @@ describe('validateTransfer', () => {
     const errors = validateTransfer(input)
     expect(errors.join(' ')).toContain('agency')
   })
+
+  it('PIX sem número da conta é válida (só banco + agência)', () => {
+    const input = baseInput({
+      toAccount: { id: 'x', bank: 'Banco X', agency: '0001' },
+    })
+    expect(validateTransfer(input)).toEqual([])
+  })
+
+  it('TED sem número da conta é inválida', () => {
+    const input = baseInput({
+      type: 'TED',
+      toAccount: { id: 'x', bank: 'Banco X', agency: '0001' },
+    })
+    const errors = validateTransfer(input)
+    expect(errors.join(' ')).toContain('account')
+  })
 })
 
 describe('formatToAccount', () => {

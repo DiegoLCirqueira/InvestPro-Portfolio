@@ -76,6 +76,42 @@ export async function getHistory(userId: string, query: HistoryQuery) {
   return { history };
 }
 
+// Incrementa o balance diretamente (top-up simulado de demo, sem Transfer/Order
+// associado) e grava o registro de auditoria em BalanceTopUp na mesma
+// transação — precisa ser atômico porque balanceAfter é derivado do resultado
+// do próprio increment; se o audit falhar, o crédito não pode ficar sem rastro.
+// actorUserId vem do token de quem chamou a rota, não é assumido igual a
+// userId: hoje sempre coincidem (só top-up na própria conta), mas a distinção
+// já existe na tabela pra quando um ADMIN puder creditar a conta de outro.
+export async function topUp(userId: string, actorUserId: string, amount: number) {
+  return prisma.$transaction(async (tx) => {
+    const portfolio = await tx.portfolio.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!portfolio) {
+      throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
+    }
+
+    const updated = await tx.portfolio.update({
+      where: { id: portfolio.id },
+      data: { balance: { increment: amount } },
+    });
+
+    await tx.balanceTopUp.create({
+      data: {
+        userId,
+        actorUserId,
+        amount,
+        balanceAfter: updated.balance,
+      },
+    });
+
+    return { balance: Number(updated.balance) };
+  });
+}
+
 export async function getDiversification(userId: string) {
   const portfolio = await prisma.portfolio.findUnique({
     where: { userId, deletedAt: null },

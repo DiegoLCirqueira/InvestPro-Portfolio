@@ -70,6 +70,11 @@ export async function deleteUser(email: string): Promise<void> {
   await prisma.transfer.deleteMany({ where: { userId: user.id } })
   await prisma.bankAccount.deleteMany({ where: { userId: user.id } })
   await prisma.order.deleteMany({ where: { userId: user.id } })
+  // FK Restrict nos dois papéis (receiver e actor) — precisa limpar antes do
+  // user.delete, senão o Postgres rejeita por violação de constraint.
+  await prisma.balanceTopUp.deleteMany({
+    where: { OR: [{ userId: user.id }, { actorUserId: user.id }] },
+  })
   if (portfolio) {
     await prisma.position.deleteMany({ where: { portfolioId: portfolio.id } })
     await prisma.portfolio.delete({ where: { id: portfolio.id } })

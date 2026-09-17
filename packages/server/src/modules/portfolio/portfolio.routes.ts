@@ -5,12 +5,14 @@ import {
   serializerCompiler,
 } from "@fastify/type-provider-zod";
 import { authenticate } from "../../shared/middleware/authenticate.js";
-import { readRateLimit } from "../../shared/middleware/rateLimit.js";
+import { readRateLimit, writeRateLimit } from "../../shared/middleware/rateLimit.js";
 import {
   historyQuerySchema,
   portfolioResponseSchema,
   historyResponseSchema,
   diversificationResponseSchema,
+  topUpBodySchema,
+  topUpResponseSchema,
 } from "./portfolio.schema.js";
 import * as portfolioService from "./portfolio.service.js";
 
@@ -84,6 +86,31 @@ export async function portfolioRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const user = request.user as { id: string };
       return portfolioService.getDiversification(user.id);
+    }
+  );
+
+  r.post(
+    "/api/v1/portfolio/topup",
+    {
+      ...writeRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Portfolio"],
+        summary: "Top-up simulado do saldo",
+        description:
+          "Incrementa o saldo do portfólio do usuário autenticado. Funcionalidade de demo (não representa um pagamento real); disponível para USER e ADMIN.",
+        security: [{ BearerAuth: [] }],
+        body: topUpBodySchema,
+        response: {
+          200: topUpResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = request.user as { id: string };
+      // Hoje sempre é top-up na própria conta (userId === actorUserId), mas
+      // ambos vêm do token, não de um único valor reaproveitado.
+      return portfolioService.topUp(user.id, user.id, request.body.amount);
     }
   );
 }

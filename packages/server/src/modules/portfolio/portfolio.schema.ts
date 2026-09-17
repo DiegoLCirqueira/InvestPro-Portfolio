@@ -41,4 +41,15 @@ export const diversificationResponseSchema = z.object({
   breakdown: z.array(diversificationItemSchema),
 })
 
+// Top-up simulado (demo): incrementa o balance diretamente, sem representar
+// um pagamento real. Existe pra permitir testar ordens/transferências sem
+// depender de saldo real.
+export const topUpBodySchema = z.object({
+  amount: z.number().positive(),
+})
+
+export const topUpResponseSchema = z.object({
+  balance: z.number(),
+})
+
 export type HistoryQuery = z.infer<typeof historyQuerySchema>

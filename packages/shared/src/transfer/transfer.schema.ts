@@ -8,7 +8,10 @@ export const bankAccountSchema = z.object({
   id: z.string(),
   bank: z.string(),
   agency: z.string(),
-  account: z.string(),
+  // Opcional no shape: PIX não exige número da conta (só a chave/agência).
+  // A obrigatoriedade por tipo (TED/DOC exigem, PIX não) é decidida em
+  // transfer.domain.ts > validateTransfer, não aqui.
+  account: z.string().optional(),
   holderName: z.string().optional(),
   type: z.enum(TRANSFER_TYPES).optional(),
 });
@@ -18,6 +21,8 @@ export const createTransferInputSchema = z.object({
   toAccount: bankAccountSchema.optional(),
   amount: z.number().positive(),
   description: z.string().max(140).optional(),
+  // Chave PIX (CPF/email/telefone/chave aleatória). Só usada quando type === 'PIX'.
+  pixKey: z.string().optional(),
 });
 
 export const transferSchema = z.object({
@@ -27,6 +32,7 @@ export const transferSchema = z.object({
   amount: z.number().positive(),
   description: z.string().nullable().optional(),
   toAccount: bankAccountSchema.optional(),
+  pixKey: z.string().nullable().optional(),
   createdAt: z.string(),
   completedAt: z.string().nullable().optional(),
   failureReason: z.string().optional(),

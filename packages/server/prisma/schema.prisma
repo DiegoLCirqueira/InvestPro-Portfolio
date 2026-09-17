@@ -24,6 +24,8 @@ model User {
   transfers           Transfer[]
   orders              Order[]
   passwordResetTokens PasswordResetToken[]
+  topUpsReceived      BalanceTopUp[]       @relation("TopUpReceiver")
+  topUpsActed         BalanceTopUp[]       @relation("TopUpActor")
 }
 
 // Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
@@ -117,6 +119,7 @@ model Transfer {
   toAccountHolder String?
   toAccountId     String?
   toAccountType   String?
+  pixKey          String?
   createdAt       DateTime       @default(now())
   completedAt     DateTime?
   failureReason   String?
@@ -140,6 +143,23 @@ model Order {
   createdAt  DateTime    @default(now())
   executedAt DateTime?
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+// Auditoria do top-up simulado (demo, sem Transfer/Order associado): registra
+// quem recebeu o crédito, quem executou a ação (pode divergir quando um ADMIN
+// credita a conta de outro usuário) e o saldo resultante. Restrict nos dois
+// FKs, mesmo tratamento de histórico financeiro dado a Order/Transfer.
+model BalanceTopUp {
+  id           String   @id @default(uuid())
+  userId       String
+  actorUserId  String
+  amount       Decimal  @db.Decimal(15, 2)
+  balanceAfter Decimal  @db.Decimal(15, 2)
+  createdAt    DateTime @default(now())
+  user         User     @relation("TopUpReceiver", fields: [userId], references: [id], onDelete: Restrict)
+  actor        User     @relation("TopUpActor", fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([userId, createdAt])
 }
