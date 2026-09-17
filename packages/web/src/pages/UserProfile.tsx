@@ -1,34 +1,18 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { ChevronLeft, Moon, ShieldCheck, Sun, X } from "lucide-react";
+import { ChevronLeft, ShieldCheck, Wallet, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import type { UpdateProfileInput } from "@/hooks/use-profile";
+import { usePortfolioPositions, useTopUpPortfolio } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/format";
 
-const THEME_KEY = "investpro-theme";
 const PHONE_REGEX = /^\+?\d{10,15}$/;
-
-function useThemeToggle() {
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.getAttribute("data-theme") === "dark",
-  );
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-    localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
-  }, [isDark]);
-
-  return { isDark, toggle: () => setIsDark((v) => !v) };
-}
 
 interface FieldProps {
   label: string;
@@ -73,35 +57,76 @@ function ProfileFieldsSkeleton() {
   );
 }
 
-function ThemeToggleRow({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
+function TopUpCard() {
+  const { balance, isLoading, refetch } = usePortfolioPositions();
+  const [amount, setAmount] = useState("");
+
+  const topUp = useTopUpPortfolio({
+    onSuccess: () => {
+      toast.success("Saldo adicionado com sucesso!");
+      setAmount("");
+      void refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleAmountChange = (value: string) => {
+    const cleaned = value.replace(",", ".");
+    if (cleaned === "" || /^\d*\.?\d*$/.test(cleaned)) {
+      setAmount(cleaned);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      toast.error("Informe um valor válido.");
+      return;
+    }
+    try {
+      await topUp.mutate(value);
+    } catch {
+      // erro já tratado via onError
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-surface-2">
+    <div className="p-4 rounded-xl border border-border bg-surface-2 space-y-3">
       <div className="flex items-center gap-3">
-        {isDark ? (
-          <Moon size={18} className="text-primary" />
-        ) : (
-          <Sun size={18} className="text-primary" />
-        )}
-        <span className="text-sm font-medium text-foreground">
-          Tema {isDark ? "escuro" : "claro"}
-        </span>
+        <Wallet size={18} className="text-primary" />
+        <div>
+          <p className="text-sm font-medium text-foreground">Simular Depósito</p>
+          <p className="text-xs text-muted-foreground">
+            Funcionalidade de demonstração — não representa um pagamento real.
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isDark}
-        aria-label="Alternar tema claro/escuro"
-        onClick={onToggle}
-        className={`relative min-h-11 min-w-16 w-16 h-8 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-          isDark ? "bg-primary" : "bg-border"
-        }`}
-      >
-        <span
-          className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-            isDark ? "translate-x-9" : "translate-x-1"
-          }`}
+
+      <p className="text-xs text-muted-foreground">
+        Saldo atual:{" "}
+        <span className="font-semibold text-foreground">
+          {isLoading ? "..." : formatCurrency(balance)}
+        </span>
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => handleAmountChange(e.target.value)}
+          placeholder="0.00"
+          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground placeholder-muted-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
         />
-      </button>
+        <button
+          type="submit"
+          disabled={topUp.isPending}
+          className="min-h-11 shrink-0 px-4 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
+        </button>
+      </form>
     </div>
   );
 }
@@ -111,7 +136,6 @@ export function UserProfile() {
   const authUser = useAuthStore((s) => s.user);
   const setAuthUser = useAuthStore((s) => s.setUser);
   const isAdmin = authUser?.role === "ADMIN";
-  const { isDark, toggle } = useThemeToggle();
 
   const { data: profile, error, isLoading, refetch } = useProfile();
 
@@ -204,7 +228,7 @@ export function UserProfile() {
       </form>
 
       <div className="mt-6 space-y-3">
-        <ThemeToggleRow isDark={isDark} onToggle={toggle} />
+        <TopUpCard />
 
         {isAdmin && (
           <Link

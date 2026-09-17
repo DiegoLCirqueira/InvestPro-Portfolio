@@ -141,10 +141,10 @@ export function Exchange() {
             <select
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer font-mono"
             >
               {currencies.map((code) => (
-                <option key={code} value={code} className="bg-surface-2">
+                <option key={code} value={code} className="bg-surface-2 font-mono">
                   {code} — {currencyName(code)}
                 </option>
               ))}
@@ -167,10 +167,10 @@ export function Exchange() {
             <select
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer font-mono"
             >
               {currencies.map((code) => (
-                <option key={code} value={code} className="bg-surface-2">
+                <option key={code} value={code} className="bg-surface-2 font-mono">
                   {code} — {currencyName(code)}
                 </option>
               ))}

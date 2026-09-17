@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, CalendarDays, LogOut, Search, X } from "lucide-react";
+import { Bell, User, CalendarDays, LogOut, Moon, Search, Sun, X } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
+import { useTheme } from "@/hooks/use-theme";
 
 interface Notification {
   id: number;
@@ -18,6 +19,7 @@ export function Header() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   const hour = new Date().getHours();
   const greeting =
@@ -117,6 +119,15 @@ export function Header() {
           aria-label="Buscar"
         >
           <Search size={20} />
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label="Alternar tema claro/escuro"
+        >
+          {isDark ? <Moon size={20} /> : <Sun size={20} />}
         </button>
 
         <button

@@ -3,9 +3,28 @@ import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useMarketAssets } from "@/hooks/use-market-assets";
 import { formatCurrency, formatPercent as formatPercentValue } from "@/lib/format";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
+
+const ASSET_TYPE_LABELS: Record<MarketAssetType, string> = {
+  STOCK: "Ação",
+  CRYPTO: "Cripto",
+  FIXED_INCOME: "RF",
+};
+
+const ASSET_TYPE_TONES: Record<MarketAssetType, StatusTone> = {
+  STOCK: "info",
+  CRYPTO: "success",
+  FIXED_INCOME: "warning",
+};
+
+const SENTIMENT_TONES: Record<string, StatusTone> = {
+  Oportunidade: "success",
+  Risco: "danger",
+  Neutral: "neutral",
+};
 
 const TYPE_FILTERS: { value: MarketAssetType | "ALL"; label: string }[] = [
   { value: "ALL", label: "Todos" },
@@ -29,42 +48,6 @@ function sentimentFor(asset: MarketAsset): string {
   return "Neutral";
 }
 
-function AssetTypeLabel({ type }: { type: MarketAssetType }) {
-  const styles: Record<MarketAssetType, string> = {
-    STOCK: "bg-info/10 text-info",
-    CRYPTO: "bg-brand-primary/10 text-brand-primary",
-    FIXED_INCOME: "bg-warning/10 text-warning",
-  };
-  const labels: Record<MarketAssetType, string> = {
-    STOCK: "Ação",
-    CRYPTO: "Cripto",
-    FIXED_INCOME: "RF",
-  };
-  return (
-    <span
-      className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${styles[type]}`}
-    >
-      {labels[type]}
-    </span>
-  );
-}
-
-function SentimentBadge({ sentiment }: { sentiment: string }) {
-  return (
-    <span
-      className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${
-        sentiment === "Oportunidade"
-          ? "bg-brand-primary/10 text-brand-primary"
-          : sentiment === "Risco"
-            ? "bg-destructive/10 text-destructive"
-            : "bg-secondary text-muted-foreground"
-      }`}
-    >
-      {sentiment}
-    </span>
-  );
-}
-
 function AssetCard({ asset }: { asset: MarketAsset }) {
   const isUp = (asset.changePercent ?? asset.change24h) >= 0;
   const sentiment = sentimentFor(asset);
@@ -73,9 +56,13 @@ function AssetCard({ asset }: { asset: MarketAsset }) {
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{asset.ticker}</span>
-          <AssetTypeLabel type={asset.type} />
+          <StatusBadge
+            label={ASSET_TYPE_LABELS[asset.type]}
+            tone={ASSET_TYPE_TONES[asset.type]}
+            fixedWidth
+          />
         </div>
-        <SentimentBadge sentiment={sentiment} />
+        <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} fixedWidth />
       </div>
       <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
         {asset.name}
@@ -262,7 +249,11 @@ export function MarketAnalysis() {
                           {formatPrice(asset.price)}
                         </td>
                         <td className="py-3">
-                          <AssetTypeLabel type={asset.type} />
+                          <StatusBadge
+                            label={ASSET_TYPE_LABELS[asset.type]}
+                            tone={ASSET_TYPE_TONES[asset.type]}
+                            fixedWidth
+                          />
                         </td>
                         <td
                           className={`py-3 text-sm font-bold tabular-nums truncate ${
@@ -272,7 +263,7 @@ export function MarketAnalysis() {
                           {formatPercent(asset.changePercent)}
                         </td>
                         <td className="py-3 pr-4 rounded-r-xl text-right border-y border-r border-transparent">
-                          <SentimentBadge sentiment={sentiment} />
+                          <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} fixedWidth />
                         </td>
                       </tr>
                     );

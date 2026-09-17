@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock, ExternalLink, ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -29,6 +29,7 @@ const CATEGORY_LABELS: Record<NewsCategory, string> = {
 export function News() {
   const [filter, setFilter] = useState<NewsCategory | "ALL">("ALL");
   const [page, setPage] = useState(1);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const {
     data,
@@ -39,6 +40,10 @@ export function News() {
     category: filter === "ALL" ? undefined : filter,
     page,
   });
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [page]);
 
   const items = data?.items ?? [];
   const totalPage = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
@@ -69,7 +74,7 @@ export function News() {
   }
 
   return (
-    <div className="flex-1">
+    <div ref={topRef} className="flex-1">
       <header className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
           Notícias do Mercado
@@ -117,9 +122,11 @@ export function News() {
                 <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} />
-                    {formatDateShort(item.publishedAt)}
+                    <span className="min-w-[64px] text-right tabular-nums">
+                      {formatDateShort(item.publishedAt)}
+                    </span>
                   </span>
-                  <span className="hidden sm:inline text-muted-foreground">
+                  <span className="hidden sm:inline-block min-w-[140px] truncate text-muted-foreground">
                     {item.source}
                   </span>
                   <ExternalLink
