@@ -26,11 +26,17 @@ model User {
   passwordResetTokens PasswordResetToken[]
 }
 
+// Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
+// retenção/auditoria. Deletar um User NÃO pode apagar isso silenciosamente, então a
+// FK é Restrict (bloqueia o delete físico do User enquanto o Portfolio existir) e o
+// "delete" de fato é lógico via deletedAt. RefreshToken/PasswordResetToken/BankAccount
+// permanecem CASCADE — não são histórico financeiro. Ver ADR 0001.
 model Portfolio {
   id        String     @id @default(uuid())
   userId    String     @unique
   balance   Decimal    @default(0) @db.Decimal(15, 2)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
+  user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
   positions Position[]
 }
 
@@ -43,7 +49,8 @@ model Position {
   quantity     Decimal   @db.Decimal(15, 8)
   avgPrice     Decimal   @db.Decimal(15, 2)
   currentValue Decimal   @db.Decimal(15, 2)
-  portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  deletedAt    DateTime?
+  portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Restrict)
 
   @@unique([portfolioId, ticker])
 }

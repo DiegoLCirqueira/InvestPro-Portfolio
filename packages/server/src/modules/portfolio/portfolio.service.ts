@@ -5,9 +5,10 @@ import { calculateDiversification } from "./portfolio.domain.js";
 
 export async function getPortfolio(userId: string) {
   const portfolio = await prisma.portfolio.findUnique({
-    where: { userId },
+    where: { userId, deletedAt: null },
     include: {
       positions: {
+        where: { deletedAt: null },
         orderBy: { currentValue: "desc" },
       },
     },
@@ -34,8 +35,11 @@ export async function getPortfolio(userId: string) {
 
 export async function getHistory(userId: string, query: HistoryQuery) {
   const portfolio = await prisma.portfolio.findUnique({
-    where: { userId },
-    select: { balance: true, positions: { select: { currentValue: true } } },
+    where: { userId, deletedAt: null },
+    select: {
+      balance: true,
+      positions: { where: { deletedAt: null }, select: { currentValue: true } },
+    },
   });
 
   if (!portfolio) {
@@ -74,9 +78,10 @@ export async function getHistory(userId: string, query: HistoryQuery) {
 
 export async function getDiversification(userId: string) {
   const portfolio = await prisma.portfolio.findUnique({
-    where: { userId },
+    where: { userId, deletedAt: null },
     include: {
       positions: {
+        where: { deletedAt: null },
         select: { type: true, currentValue: true },
       },
     },
