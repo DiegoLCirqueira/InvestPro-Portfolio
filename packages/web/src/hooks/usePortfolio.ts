@@ -1,5 +1,6 @@
 import { api } from "@/services/api";
 import { useQuery } from "@/hooks/use-query";
+import { useMutation } from "@/hooks/use-mutation";
 import type {
   PortfolioDiversificationResponse,
   PortfolioHistoryResponse,
@@ -89,6 +90,25 @@ export function usePortfolioHistory({
     error: query.error,
     refetch: query.refetch,
   };
+}
+
+export interface TopUpResult {
+  balance: number;
+}
+
+export interface UseTopUpPortfolioOptions {
+  onSuccess?: (result: TopUpResult) => void;
+  onError?: (error: Error) => void;
+}
+
+export function useTopUpPortfolio(
+  options: UseTopUpPortfolioOptions = {},
+): ReturnType<typeof useMutation<TopUpResult, number>> {
+  return useMutation<TopUpResult, number>({
+    action: (amount) => api.post<TopUpResult>("/portfolio/topup", { amount }),
+    onSuccess: options.onSuccess,
+    onError: options.onError,
+  });
 }
 
 export type {

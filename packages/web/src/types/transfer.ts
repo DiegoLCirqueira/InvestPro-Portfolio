@@ -34,4 +34,5 @@ export interface CreateTransferInput {
   amount: number;
   description?: string;
   toAccount?: Partial<BankAccount>;
+  pixKey?: string;
 }

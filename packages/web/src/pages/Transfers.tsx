@@ -2,7 +2,12 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { LogIn, Receipt } from "lucide-react";
+import { Info, LogIn, Receipt } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -17,6 +22,11 @@ const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
   { value: "TED", label: "TED" },
   { value: "DOC", label: "DOC" },
 ];
+
+const TYPE_HELP: Partial<Record<TransferType, string>> = {
+  TED: "Transferência entre contas de bancos diferentes, compensada no mesmo dia útil.",
+  DOC: "Transferência entre bancos diferentes, compensada em até 1 dia útil, para valores menores.",
+};
 
 const STATUS_CONFIG: Record<TransferStatus, { label: string; tone: StatusTone }> =
   {
@@ -90,6 +100,7 @@ export function Transfers() {
   const [description, setDescription] = useState("");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
+  const [pixKey, setPixKey] = useState("");
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
@@ -118,6 +129,7 @@ export function Transfers() {
           bank.trim() && account.trim()
             ? { bank: bank.trim(), account: account.trim() }
             : undefined,
+        pixKey: type === "PIX" && pixKey.trim() ? pixKey.trim() : undefined,
       });
     } catch {
       return;
@@ -181,20 +193,50 @@ export function Transfers() {
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Tipo</label>
             <div className="grid grid-cols-3 gap-2">
-              {TYPE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setType(option.value)}
-                  className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                    type === option.value
-                      ? "bg-brand-primary text-black border-brand-primary"
-                      : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+              {TYPE_OPTIONS.map((option) => {
+                const help = TYPE_HELP[option.value];
+                return (
+                  <div key={option.value} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setType(option.value);
+                        if (option.value === "PIX") {
+                          setBank("");
+                          setAccount("");
+                        } else {
+                          setPixKey("");
+                        }
+                      }}
+                      className={`min-h-11 w-full py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        help ? "pr-7" : ""
+                      } ${
+                        type === option.value
+                          ? "bg-brand-primary text-black border-brand-primary"
+                          : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+
+                    {help ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Saiba mais sobre ${option.label}`}
+                            className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <Info size={13} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{help}</TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -222,27 +264,40 @@ export function Transfers() {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-muted-foreground">
-              Conta de Destino (opcional)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+          {type === "PIX" ? (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-muted-foreground">Chave PIX</label>
               <input
                 type="text"
-                value={bank}
-                onChange={(e) => setBank(e.target.value)}
-                placeholder="Banco"
-                className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
-              />
-              <input
-                type="text"
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                placeholder="Nº da conta"
+                value={pixKey}
+                onChange={(e) => setPixKey(e.target.value)}
+                placeholder="CPF, e-mail, telefone ou chave aleatória"
                 className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
               />
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-muted-foreground">
+                Conta de Destino (opcional)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={bank}
+                  onChange={(e) => setBank(e.target.value)}
+                  placeholder="Banco"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                />
+                <input
+                  type="text"
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  placeholder="Nº da conta"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                />
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
