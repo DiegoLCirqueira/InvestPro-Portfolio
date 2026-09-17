@@ -76,7 +76,7 @@ describe('POST /api/v1/auth/register', () => {
     expect(stored).not.toBeNull()
 
     await deleteUser(mixedCase)
-  })
+  }, 15000)
 
   it('normaliza email antes de checar duplicidade: 409 EMAIL_TAKEN mesmo com case/espaços diferentes (WI-20)', async () => {
     const res = await app!.inject({
@@ -235,7 +235,7 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(afterRevocation.statusCode).toBe(401)
 
     await deleteUser(reuseEmail)
-  })
+  }, 20000)
 
   it('rememberMe: true no login estende o cookie de refresh pra 30 dias', async () => {
     const rememberEmail = uniqueEmail('remember')

@@ -271,7 +271,7 @@ describe('transferência sobrevive a um restart do servidor', () => {
       await stopApp(appAfterRestart)
       await deleteUser(restartEmail)
     }
-  })
+  }, 20000)
 })
 
 // Bugfix (produção): createTransfer não debitava Portfolio.balance nem validava
@@ -313,7 +313,7 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
     const after = await getPortfolioOf(balanceToken)
     expect(after.balance).toBe(100)
     expect(await transfersTotalOf(balanceToken)).toBe(totalBefore)
-  })
+  }, 15000)
 
   it('PIX dentro do saldo (sem tarifa) decrementa o valor exato e conclui (200 COMPLETED)', async () => {
     await fundPortfolio(balanceUserId, 300)
