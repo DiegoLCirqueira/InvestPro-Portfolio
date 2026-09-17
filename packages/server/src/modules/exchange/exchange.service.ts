@@ -35,10 +35,11 @@ function brlToCurrency(code: string): number {
   return FALLBACK_RATES[code] ?? 1
 }
 
-// Taxa de from→to usando AwesomeAPI (par `${from}${to}`). Se o par direto não
-// existir, tenta o inverso e inverte. Lança erro se indisponível.
+// Taxa de from→to usando AwesomeAPI (par `${from}-${to}`, formato exigido pela
+// URL da API). Se o par direto não existir, tenta o inverso e inverte. Lança
+// erro se indisponível.
 async function fetchLiveRate(from: string, to: string): Promise<number> {
-  const pairs = [`${from}${to}`, `${to}${from}`]
+  const pairs = [`${from}-${to}`, `${to}-${from}`]
   let lastError: unknown
 
   for (let i = 0; i < pairs.length; i++) {

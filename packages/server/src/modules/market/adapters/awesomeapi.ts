@@ -1,5 +1,8 @@
 // @investpro/server
-// Fonte de dados: AwesomeAPI (câmbio / renda fixa proxy, via remoteId do par, ex. USDBRL).
+// Fonte de dados: AwesomeAPI (câmbio / renda fixa proxy, via remoteId do par, ex. USD-BRL).
+// A API exige hífen na URL (/json/last/USD-BRL) mas devolve a chave sem hífen
+// no JSON de resposta ({"USDBRL": {...}}) — por isso a URL e a chave de leitura
+// da resposta usam formatações diferentes do mesmo par.
 // Decisões v1.1 designam AwesomeAPI como fonte de câmbio/fixed income.
 
 import type { MarketDataSource, MarketQuote, SourceAsset } from './types.js'
@@ -43,7 +46,8 @@ export const awesomeapiSource: MarketDataSource = {
     const quotes: MarketQuote[] = []
     for (const asset of assets) {
       const pair = asset.remoteId ?? asset.ticker
-      const raw = data[pair]
+      const responseKey = pair.replace('-', '')
+      const raw = data[responseKey]
       if (!raw || typeof raw.bid !== 'string') continue
       quotes.push({
         ticker: asset.ticker,

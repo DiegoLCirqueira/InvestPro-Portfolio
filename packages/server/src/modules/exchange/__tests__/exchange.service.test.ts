@@ -18,10 +18,10 @@ vi.mock('../../market/adapters/awesomeapi.js', () => ({
 import { convert, getRate, listCurrencies } from '../exchange.service.js'
 import type { SourceAsset } from '../../market/adapters/types.js'
 
-// Só o par USDBRL é "suportado" pelo mock; os demais lançam erro, forçando o
+// Só o par USD-BRL é "suportado" pelo mock; os demais lançam erro, forçando o
 // fallback estático (mesmo comportamento real do serviço quando a fonte falha).
 const MOCKED_RATES: Record<string, number> = {
-  USDBRL: 5.05,
+  'USD-BRL': 5.05,
 }
 
 awesomeapiFetchQuotesMock.mockImplementation(async (assets: SourceAsset[]) => {
