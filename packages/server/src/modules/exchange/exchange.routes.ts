@@ -5,14 +5,18 @@ import {
   serializerCompiler,
 } from "@fastify/type-provider-zod";
 import {
+  currencyHoldingListSchema,
   currencyListResponseSchema,
   convertRequestSchema,
   convertResponseSchema,
   exchangeRateSchema,
+  executeExchangeInputSchema,
+  executeExchangeResponseSchema,
 } from "@investpro/shared";
 import { CURRENCIES } from "@investpro/shared";
 import { z } from "zod";
-import { readRateLimit } from "../../shared/middleware/rateLimit.js";
+import { authenticate } from "../../shared/middleware/authenticate.js";
+import { readRateLimit, writeRateLimit } from "../../shared/middleware/rateLimit.js";
 import * as exchangeService from "./exchange.service.js";
 
 const rateQuerySchema = z.object({
@@ -63,6 +67,56 @@ export async function exchangeRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request) => {
       return exchangeService.convert(request.body.from, request.body.to, request.body.amount);
+    }
+  );
+
+  r.post(
+    "/api/v1/exchange/execute",
+    {
+      ...writeRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Exchange"],
+        summary: "Executar câmbio",
+        description:
+          "Converte de verdade: debita `from` (BRL do Portfolio.balance, ou a moeda do CurrencyHolding) e credita `to`, com a fee de 1% já aplicada. Diferente de /convert (que só calcula).",
+        security: [{ BearerAuth: [] }],
+        body: executeExchangeInputSchema,
+        response: {
+          200: executeExchangeResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return exchangeService.executeExchange(
+        user.id,
+        request.body.from,
+        request.body.to,
+        request.body.amount
+      );
+    }
+  );
+
+  r.get(
+    "/api/v1/exchange/holdings",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Exchange"],
+        summary: "Saldos por moeda",
+        description:
+          "Retorna os saldos em moeda estrangeira (CurrencyHolding) do usuário autenticado — só moedas com saldo positivo, ordenadas por moeda. O saldo em BRL fica em /portfolio.",
+        security: [{ BearerAuth: [] }],
+        response: {
+          200: currencyHoldingListSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return exchangeService.listHoldings(user.id);
     }
   );
 

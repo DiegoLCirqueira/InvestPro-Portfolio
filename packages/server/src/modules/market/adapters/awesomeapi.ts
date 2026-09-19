@@ -34,6 +34,13 @@ async function fetchJson(url: string): Promise<Record<string, AwesomeApiEntry>> 
   }
 }
 
+// bid vem como string e alimenta dinheiro real (câmbio executado): NaN, zero,
+// negativo ou infinito não é cotação, é resposta corrompida.
+function parseBid(bid: string): number | null {
+  const price = Number.parseFloat(bid)
+  return Number.isFinite(price) && price > 0 ? price : null
+}
+
 export const awesomeapiSource: MarketDataSource = {
   source: 'awesomeapi',
 
@@ -49,11 +56,13 @@ export const awesomeapiSource: MarketDataSource = {
       const responseKey = pair.replace('-', '')
       const raw = data[responseKey]
       if (!raw || typeof raw.bid !== 'string') continue
+      const price = parseBid(raw.bid)
+      if (price === null) continue
       quotes.push({
         ticker: asset.ticker,
         name: asset.name,
         type: asset.type,
-        price: Number.parseFloat(raw.bid),
+        price,
         change24h: 0,
         changePercent: raw.pctChange ? Number.parseFloat(raw.pctChange) : 0,
       })

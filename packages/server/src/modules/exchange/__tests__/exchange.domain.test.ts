@@ -34,6 +34,16 @@ describe('decimalPlaces / roundCurrency', () => {
     expect(roundCurrency(1.2345, 'BRL')).toBe(1.23)
     expect(roundCurrency(1.5, 'JPY')).toBe(2)
   })
+
+  it('modo down trunca na precisão da moeda (nunca cria valor)', () => {
+    expect(roundCurrency(0.58, 'JPY', 'down')).toBe(0) // 'nearest' daria 1
+    expect(roundCurrency(1.999, 'BRL', 'down')).toBe(1.99) // 'nearest' daria 2
+  })
+
+  it('modo down não perde 1 unidade por ruído de ponto flutuante', () => {
+    expect(roundCurrency(197.99999999999997, 'BRL', 'down')).toBe(198)
+    expect(roundCurrency(291.0000000000001, 'JPY', 'down')).toBe(291)
+  })
 })
 
 describe('calculateFee', () => {
@@ -53,6 +63,12 @@ describe('convertAmount', () => {
   it('arredonda no destino', () => {
     const { convertedAmount } = convertAmount(100, 5.5555, 0.01, 'BRL')
     expect(convertedAmount).toBeCloseTo(549.99) // ~= (100-1)*5.5555
+  })
+
+  it('com rounding down o crédito é truncado: R$ 0,02 -> JPY não vira ¥1', () => {
+    const rateBrlToJpy = 1 / 0.034
+    expect(convertAmount(0.02, rateBrlToJpy, 0.01, 'JPY').convertedAmount).toBe(1)
+    expect(convertAmount(0.02, rateBrlToJpy, 0.01, 'JPY', 'down').convertedAmount).toBe(0)
   })
 
   it('fee zero resulta em conversão do valor integral', () => {
