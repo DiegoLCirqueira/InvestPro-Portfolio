@@ -28,14 +28,16 @@
   /* ── Foregrounds / Text ──────────────────────── */
   --color-foreground: #15171b;
   --color-muted: #5b5f68;
-  --color-muted-foreground: #8a8f99;
+  /* Texto secundário: >= 4,5:1 (AA) sobre qualquer superfície clara. */
+  --color-muted-foreground: #62666f;
 
   /* ── Borders ─────────────────────────────────── */
   --color-border: #e2e2df;
   --color-border-strong: #cfcfca;
 
   /* ── Primary (Accent Green) ──────────────────── */
-  --color-primary: #0b8a63;
+  /* Verde do claro: >= 4,6:1 como texto sobre qualquer superfície clara e 5,8:1 sob o texto branco dos itens selecionados. */
+  --color-primary: #077455;
   --color-primary-foreground: #ffffff;
 
   /* ── Secondary ───────────────────────────────── */
@@ -43,7 +45,7 @@
   --color-secondary-foreground: #15171b;
 
   /* ── Destructive ─────────────────────────────── */
-  --color-destructive: #c1404c;
+  --color-destructive: #b23944;
   --color-destructive-foreground: #ffffff;
 
   /* ── Accent (Blue / Info) ────────────────────── */
@@ -55,11 +57,11 @@
 
   /* ── Input / Ring ────────────────────────────── */
   --color-input: #e2e2df;
-  --color-ring: #0b8a63;
+  --color-ring: #077455;
 
   /* ── Semantic extras ─────────────────────────── */
-  --color-warning: #a8720b;
-  --color-success: #0b8a63;
+  --color-warning: #8a5d00;
+  --color-success: #077455;
   --color-info: #3760d8;
 
   /* ── Chart / Category palette ────────────────── */
@@ -84,9 +86,9 @@
   /* ── Legacy brand aliases (mantidos para compatibilidade) ── */
   --color-brand-bg: #f6f6f4;
   --color-brand-card: #ffffff;
-  --color-brand-primary: #0b8a63;
+  --color-brand-primary: #077455;
   --color-brand-secondary: #3760d8;
-  --color-brand-danger: #c1404c;
+  --color-brand-danger: #b23944;
 
   /* ── Spacing ─────────────────────────────────── */
   --spacing-75: 18.75rem;
@@ -107,24 +109,24 @@
   --popover: 0 0% 100%;
   --popover-foreground: 220 12% 9%;
 
-  --primary: 162 85% 29%;
+  --primary: 163 89% 24%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 60 6% 94%;
   --secondary-foreground: 220 12% 9%;
 
   --muted: 60 6% 94%;
-  --muted-foreground: 220 7% 57%;
+  --muted-foreground: 222 6% 41%;
 
   --accent: 225 67% 53%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 354 51% 50%;
+  --destructive: 355 51% 46%;
   --destructive-foreground: 0 0% 100%;
 
   --border: 60 5% 88%;
   --input: 60 5% 88%;
-  --ring: 162 85% 29%;
+  --ring: 163 89% 24%;
 
   --radius: 0.875rem;
 

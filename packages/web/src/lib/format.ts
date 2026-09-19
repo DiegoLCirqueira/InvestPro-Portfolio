@@ -32,3 +32,16 @@ export function formatDateShort(iso: string): string {
     minute: "2-digit",
   });
 }
+
+export function formatQuantity(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 8 }).format(
+    value,
+  );
+}
+
+export function formatExchangeRate(rate: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(rate);
+}
