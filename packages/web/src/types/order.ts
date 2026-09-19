@@ -20,6 +20,8 @@ export interface Order {
   createdAt: string;
   executedAt: string | null;
   avgPrice: number | null;
+  // Taxa InvestPro; null enquanto a ordem não foi executada.
+  fee?: number | null;
 }
 
 export interface OrderList {
@@ -36,4 +38,13 @@ export interface CreateOrderInput {
   quantity: number;
   price?: number;
   type: OrderType;
+}
+
+export interface SellableAsset {
+  ticker: string;
+  quantity: number;
+}
+
+export interface SellableAssetList {
+  items: SellableAsset[];
 }

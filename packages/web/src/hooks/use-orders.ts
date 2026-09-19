@@ -1,7 +1,13 @@
 import { api } from "@/services/api";
 import { useQuery } from "@/hooks/use-query";
 import { useMutation } from "@/hooks/use-mutation";
-import type { CreateOrderInput, Order, OrderList } from "@/types/order";
+import type {
+  CreateOrderInput,
+  Order,
+  OrderList,
+  SellableAsset,
+  SellableAssetList,
+} from "@/types/order";
 
 const ORDERS_LIMIT = 50;
 
@@ -25,6 +31,20 @@ export function useOrders({
     initialData,
     enabled,
   });
+}
+
+export function useSellableAssets() {
+  const query = useQuery<SellableAssetList>({
+    fetcher: () => api.get<SellableAssetList>("/orders/sellable-assets"),
+    deps: [],
+  });
+
+  return {
+    sellableAssets: (query.data?.items ?? []) as SellableAsset[],
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }
 
 export interface UseCreateOrderOptions {
