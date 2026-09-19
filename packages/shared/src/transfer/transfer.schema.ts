@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { TRANSFER_STATUSES, TRANSFER_TYPES } from '../types/enums.js';
+import { moneyAmountSchema } from '../types/money.js';
 
 export const bankAccountSchema = z.object({
   id: z.string(),
@@ -19,7 +20,7 @@ export const bankAccountSchema = z.object({
 export const createTransferInputSchema = z.object({
   type: z.enum(TRANSFER_TYPES),
   toAccount: bankAccountSchema.optional(),
-  amount: z.number().positive(),
+  amount: moneyAmountSchema,
   description: z.string().max(140).optional(),
   // Chave PIX (CPF/email/telefone/chave aleatória). Só usada quando type === 'PIX'.
   pixKey: z.string().optional(),

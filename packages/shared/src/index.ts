@@ -6,6 +6,8 @@ export const INVESTPRO_VERSION = '0.0.0';
 
 export * from './types/common.js';
 export * from './types/enums.js';
+export * from './types/decimal.js';
+export * from './types/money.js';
 export * from './types/user.js';
 export * from './client/apiClient.js';
 
@@ -16,6 +18,7 @@ export * from './market/market.schema.js';
 export * from './order/order.schema.js';
 export * from './exchange/exchange.schema.js';
 export * from './transfer/transfer.schema.js';
+export * from './savings-box/savings-box.schema.js';
 export * from './news/news.schema.js';
 export * from './risk/risk.schema.js';
 export * from './ai/ai.schema.js';
