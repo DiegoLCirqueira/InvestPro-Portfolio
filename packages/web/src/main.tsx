@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { InsufficientBalanceDialog } from "@/components/InsufficientBalanceDialog";
 import { ErrorBoundary } from "@/app/ErrorBoundary";
 
 if (localStorage.getItem("investpro-theme") === "dark") {
@@ -18,6 +19,7 @@ createRoot(document.getElementById("root")!).render(
         <TooltipProvider>
           <App />
           <Toaster />
+          <InsufficientBalanceDialog />
         </TooltipProvider>
       </BrowserRouter>
     </ErrorBoundary>
