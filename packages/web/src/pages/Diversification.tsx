@@ -10,6 +10,7 @@ import { PieChart as PieChartIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { CurrencyHoldingsCard } from "@/components/diversification/CurrencyHoldingsCard";
 import { formatCurrency } from "@/lib/format";
 import type {
   PortfolioAssetType,
@@ -210,6 +211,10 @@ export function Diversification() {
               ))
             )}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <CurrencyHoldingsCard />
         </div>
       </div>
     </div>

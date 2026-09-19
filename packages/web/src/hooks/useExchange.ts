@@ -1,27 +1,11 @@
 import { api } from "@/services/api";
 import { useQuery } from "@/hooks/use-query";
 import { useMutation } from "@/hooks/use-mutation";
-
-export interface CurrencyListResponse {
-  base: string;
-  items: string[];
-}
-
-export interface ConvertRequest {
-  from: string;
-  to: string;
-  amount: number;
-}
-
-export interface ConvertResponse {
-  from: string;
-  to: string;
-  amount: number;
-  convertedAmount: number;
-  rate: number;
-  fee: number;
-  timestamp: string;
-}
+import type {
+  CurrencyListResponse,
+  ExecuteExchangeInput,
+  ExecuteExchangeResponse,
+} from "@/types/exchange";
 
 export function useExchange() {
   const currencies = useQuery<CurrencyListResponse>({
@@ -39,20 +23,22 @@ export function useExchange() {
   };
 }
 
-export interface UseConvertOptions {
-  onSuccess?: (data: ConvertResponse) => void;
+export interface UseExecuteExchangeOptions {
+  onSuccess?: (data: ExecuteExchangeResponse) => void;
   onError?: (error: Error) => void;
 }
 
-export function useConvert(options: UseConvertOptions = {}) {
-  return useMutation<ConvertResponse, ConvertRequest>({
+export function useExecuteExchange(options: UseExecuteExchangeOptions = {}) {
+  return useMutation<ExecuteExchangeResponse, ExecuteExchangeInput>({
     action: (input) =>
-      api.post<ConvertResponse>("/exchange/convert", {
-        from: input.from,
-        to: input.to,
-        amount: input.amount,
-      }),
+      api.post<ExecuteExchangeResponse>("/exchange/execute", input),
     onSuccess: options.onSuccess,
     onError: options.onError,
   });
 }
+
+export type {
+  CurrencyListResponse,
+  ExecuteExchangeInput,
+  ExecuteExchangeResponse,
+} from "@/types/exchange";

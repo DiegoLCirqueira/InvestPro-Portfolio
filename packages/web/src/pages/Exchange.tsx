@@ -1,66 +1,46 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { toast } from "sonner";
 import { ArrowDownUp, LogIn } from "lucide-react";
 import { ExchangeSkeleton } from "@/components/skeletons/ExchangeSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
-import { useConvert, useExchange } from "@/hooks/useExchange";
+import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
+import { FormField } from "@/components/FormField";
+import { CurrencySelect } from "@/components/exchange/CurrencySelect";
+import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
+import { useExchange, useExecuteExchange } from "@/hooks/useExchange";
+import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
+import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
+import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
-import { formatCurrency, formatDateTime } from "@/lib/format";
 
-const CURRENCY_NAMES: Record<string, string> = {
-  BRL: "Real Brasileiro",
-  USD: "Dólar Americano",
-  EUR: "Euro",
-  GBP: "Libra Esterlina",
-  JPY: "Iene Japonês",
-  CHF: "Franco Suíço",
-  CAD: "Dólar Canadense",
-  AUD: "Dólar Australiano",
-  CNY: "Yuan Chinês",
-};
-
-function currencyName(code: string): string {
-  return CURRENCY_NAMES[code] ?? code;
-}
+// BRL debita do saldo do portfólio; as demais moedas, do saldo em carteira.
+const INSUFFICIENT_BALANCE_CODES: readonly string[] = [
+  "PORTFOLIO_INSUFFICIENT_BALANCE",
+  "CURRENCY_HOLDING_INSUFFICIENT_BALANCE",
+];
 
 export function Exchange() {
   const { currencies, base, isLoading, error, refetch } = useExchange();
-  const convert = useConvert({
-    onSuccess: () => toast.success("Conversão realizada com sucesso!"),
-    onError: (err) =>
-      toast.error(
-        err instanceof ApiError && err.status === 401
-          ? "Sessão expirada. Faça login novamente."
-          : err.message,
-      ),
+  const handleExecuteError = useFinancialErrorHandler(INSUFFICIENT_BALANCE_CODES);
+  const execute = useExecuteExchange({
+    onSuccess: () => toast.success("Câmbio realizado com sucesso!"),
+    onError: handleExecuteError,
   });
 
   const [from, setFrom] = useState(base);
   const [to, setTo] = useState(currencies[0] ?? "USD");
-  const [amount, setAmount] = useState("");
+  const amountInput = useCurrencyDigitsInput();
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
   const handleSwap = () => {
-    if (from !== to) {
-      setFrom(to);
-      setTo(from);
-    }
+    setFrom(to);
+    setTo(from);
   };
 
-  const handleNumeric = (value: string) => {
-    const cleaned = value.replace(",", ".");
-    if (cleaned === "" || /^\d*\.?\d*$/.test(cleaned)) {
-      setAmount(cleaned);
-    }
-  };
-
-  const handleConvert = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
+  const submitExchange = async () => {
+    if (amountInput.amount <= 0) {
       toast.error("Informe um valor válido.");
       return;
     }
@@ -69,11 +49,15 @@ export function Exchange() {
       return;
     }
     try {
-      await convert.mutate({ from, to, amount: value });
+      await execute.mutate({ from, to, amount: amountInput.amount });
     } catch {
+      // erro já tratado via onError
       return;
     }
+    amountInput.reset();
   };
+
+  const handleSubmit = useSubmitOnce(submitExchange);
 
   if (isLoading) {
     return (
@@ -106,8 +90,6 @@ export function Exchange() {
     );
   }
 
-  const result = convert.data;
-
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
@@ -119,122 +101,55 @@ export function Exchange() {
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
-          onSubmit={handleConvert}
+          onSubmit={handleSubmit}
           className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
           <h3 className="text-base font-bold text-foreground">Conversor</h3>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-muted-foreground">Valor</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => handleNumeric(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
-            />
-          </div>
+          <FormField label="Valor">
+            <CurrencyDigitsField input={amountInput} ariaLabel="Valor a converter" />
+          </FormField>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-muted-foreground">De</label>
-            <select
+          <div className="relative flex flex-col gap-16">
+            <CurrencySelect
+              id="exchange-from"
+              label="De"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer font-mono"
-            >
-              {currencies.map((code) => (
-                <option key={code} value={code} className="bg-surface-2 font-mono">
-                  {code} — {currencyName(code)}
-                </option>
-              ))}
-            </select>
-          </div>
+              currencies={currencies}
+              onChange={setFrom}
+            />
+            <CurrencySelect
+              id="exchange-to"
+              label="Para"
+              value={to}
+              currencies={currencies}
+              onChange={setTo}
+            />
 
-          <div className="flex justify-center">
             <button
               type="button"
               onClick={handleSwap}
               aria-label="Inverter moedas"
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-xl bg-surface-2 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-xl bg-surface-1 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer"
             >
               <ArrowDownUp size={18} />
             </button>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-muted-foreground">Para</label>
-            <select
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 cursor-pointer font-mono"
-            >
-              {currencies.map((code) => (
-                <option key={code} value={code} className="bg-surface-2 font-mono">
-                  {code} — {currencyName(code)}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             type="submit"
-            disabled={convert.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer"
+            disabled={execute.isPending}
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer"
           >
-            {convert.isPending ? "Convertendo..." : "Converter"}
+            {execute.isPending ? "Convertendo..." : "Converter"}
           </button>
+          <p className="text-xs text-muted-foreground text-center">
+            A conversão é executada de verdade: o valor sai da moeda de origem e
+            entra na de destino.
+          </p>
         </form>
 
-        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-          <h3 className="text-base font-bold text-foreground">Resultado</h3>
-
-          {!result ? (
-            <p className="text-sm text-muted-foreground text-center py-16">
-              Preencha o valor e clique em Converter para ver o resultado.
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Você envia</span>
-                  <span className="text-foreground font-bold tabular-nums">
-                    {formatCurrency(result.amount, result.from)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Você recebe</span>
-                  <span className="text-2xl font-bold text-brand-primary tabular-nums">
-                    {formatCurrency(result.convertedAmount, result.to)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="h-px bg-border" />
-
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Taxa ({result.from} → {result.to})</span>
-                  <span className="text-foreground font-semibold tabular-nums">
-                    {result.rate.toFixed(4)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Taxa de serviço</span>
-                  <span className="text-foreground font-semibold tabular-nums">
-                    {formatCurrency(result.fee)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Data</span>
-                  <span className="text-foreground font-semibold tabular-nums">
-                    {formatDateTime(result.timestamp)}
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <ExchangeResultCard result={execute.data} />
       </div>
     </div>
   );
