@@ -15,6 +15,7 @@ import { riskRoutes } from "./modules/risk/risk.routes.js";
 import { orderRoutes } from "./modules/order/order.routes.js";
 import { exchangeRoutes } from "./modules/exchange/exchange.routes.js";
 import { transferRoutes } from "./modules/transfer/transfer.routes.js";
+import { savingsBoxRoutes } from "./modules/savings-box/savings-box.routes.js";
 
 export async function buildServer() {
   const app = Fastify({
@@ -50,6 +51,7 @@ export async function buildServer() {
   await app.register(orderRoutes);
   await app.register(exchangeRoutes);
   await app.register(transferRoutes);
+  await app.register(savingsBoxRoutes);
 
   app.get("/health", async () => {
     return {
