@@ -29,6 +29,8 @@ export default defineConfig([
       "@typescript-eslint": tseslint,
     },
     rules: {
+      // O TypeScript já checa identificadores (React.*, RequestInit etc. são tipos globais).
+      "no-undef": "off",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
