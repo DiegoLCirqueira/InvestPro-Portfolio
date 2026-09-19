@@ -17,19 +17,21 @@ import {
 import { env } from "../../config/env.js";
 import * as authService from "./auth.service.js";
 import { startRefreshTokenCleanup } from "./scheduler.js";
+import { rateLimitPerMinute } from "../../shared/middleware/rateLimit.js";
 
 const REFRESH_COOKIE = "investpro_refresh_token";
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 const REFRESH_COOKIE_MAX_AGE_REMEMBER_ME = 30 * 24 * 60 * 60; // WI-27: "lembrar de mim"
 
-const AUTH_RATE_LIMIT = {
-  config: {
-    rateLimit: {
-      max: 5,
-      timeWindow: "1 minute" as const,
-    },
-  },
-};
+// Register/login/forgot/reset recebem credenciais ou e-mail sem prova prévia de
+// identidade: são vetor de força bruta e enumeração, então o limite é estrito.
+const AUTH_RATE_LIMIT = rateLimitPerMinute(5);
+
+// O refresh só funciona com um cookie de refresh token válido (não há o que
+// adivinhar) e o frontend o chama a cada recarga de página e em cada aba. Com o
+// limite estrito acima, recarregar 5 vezes por minuto dava 429 e derrubava a
+// sessão. Ainda limitado por IP pra conter loop de cliente com bug.
+const REFRESH_RATE_LIMIT = rateLimitPerMinute(30);
 
 const IS_PRODUCTION = env.NODE_ENV === "production";
 
@@ -121,7 +123,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   r.post(
     "/api/v1/auth/refresh",
     {
-      ...AUTH_RATE_LIMIT,
+      ...REFRESH_RATE_LIMIT,
       schema: {
         tags: ["Auth"],
         summary: "Renovar access token",

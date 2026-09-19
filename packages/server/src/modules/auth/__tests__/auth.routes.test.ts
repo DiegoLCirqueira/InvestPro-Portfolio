@@ -505,3 +505,62 @@ describe('POST /api/v1/auth/reset-password', () => {
     await deleteUser(email)
   })
 })
+
+// IPs fixos (fora da faixa de uniqueIp) porque aqui o alvo é justamente o
+// contador de rate limit por IP compartilhado entre as requisições.
+const REFRESH_TEST_IP = '10.201.0.1'
+const LOGIN_LIMIT_TEST_IP = '10.201.0.2'
+
+describe('rate limit de auth', () => {
+  it('recarregar a página várias vezes por minuto não dá 429 no refresh (regressão: limite era 5/min e derrubava a sessão)', async () => {
+    const refreshEmail = uniqueEmail('refresh-reload')
+    const registerRes = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email: refreshEmail, password: 'SenhaForte123', fullName: 'QA Reload' },
+    })
+    let refreshCookie = registerRes.cookies.find((c) => c.name === 'investpro_refresh_token')?.value ?? ''
+
+    const RELOADS = 8 // acima dos 5/min do limite antigo
+    const statuses: number[] = []
+    let lastResponseHeaders: Record<string, unknown> = {}
+    for (let i = 0; i < RELOADS; i++) {
+      const res = await app!.inject({
+        method: 'POST',
+        url: '/api/v1/auth/refresh',
+        remoteAddress: REFRESH_TEST_IP,
+        cookies: { investpro_refresh_token: refreshCookie },
+      })
+      statuses.push(res.statusCode)
+      lastResponseHeaders = res.headers
+      // O refresh rotaciona o token: a próxima recarga usa o cookie novo.
+      refreshCookie =
+        res.cookies.find((c) => c.name === 'investpro_refresh_token')?.value ?? refreshCookie
+    }
+
+    expect(statuses).toEqual(Array(RELOADS).fill(200))
+    expect(lastResponseHeaders['x-ratelimit-limit']).toBe('30')
+    await deleteUser(refreshEmail)
+  }, 60000)
+
+  it('login continua com limite estrito: 5 tentativas passam, a 6ª é 429 com Retry-After e corpo padronizado', async () => {
+    const attempt = () =>
+      app!.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        remoteAddress: LOGIN_LIMIT_TEST_IP,
+        payload: { email: uniqueEmail('login-limit'), password: 'SenhaErrada123' },
+      })
+
+    const statuses: number[] = []
+    for (let i = 0; i < 5; i++) statuses.push((await attempt()).statusCode)
+    expect(statuses).toEqual(Array(5).fill(401))
+
+    const limited = await attempt()
+    expect(limited.statusCode).toBe(429)
+    expect(limited.json().error).toBe('RATE_LIMIT_EXCEEDED')
+    expect(typeof limited.json().message).toBe('string')
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0)
+  }, 60000)
+})

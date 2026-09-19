@@ -2,6 +2,10 @@ import type { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { env } from "../config/env.js";
 
+// O navegador só entrega ao JS cross-origin os headers de resposta listados
+// aqui (fora os básicos): sem isso o frontend não lê o Retry-After de um 429.
+const EXPOSED_HEADERS = ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"];
+
 export async function registerCors(app: FastifyInstance): Promise<void> {
   if (env.NODE_ENV === "production") {
     if (env.CORS_ORIGIN === "http://localhost:5173") {
@@ -22,7 +26,7 @@ export async function registerCors(app: FastifyInstance): Promise<void> {
     origin: env.CORS_ORIGIN,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: [],
+    exposedHeaders: EXPOSED_HEADERS,
     credentials: true,
     maxAge: 86400,
     preflightContinue: false,
