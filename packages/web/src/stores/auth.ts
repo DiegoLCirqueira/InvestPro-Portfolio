@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "@/types/user";
-import { api, refreshAccessToken } from "@/services/api";
+import { api, refreshAccessToken, type RefreshResult } from "@/services/api";
 
 export interface LoginInput {
   email: string;
@@ -26,14 +26,14 @@ interface AuthState {
   login: (data: LoginInput) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
-  refresh: () => Promise<boolean>;
+  refresh: () => Promise<RefreshResult>;
   fetchMe: () => Promise<void>;
   setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -63,7 +63,15 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, token: null, isAuthenticated: false });
       },
 
-      refresh: () => refreshAccessToken(),
+      // Restaurar a sessão pelo cookie só devolve o token; o usuário (nome no
+      // cabeçalho etc.) precisa ser buscado de novo.
+      refresh: async () => {
+        const result = await refreshAccessToken();
+        if (result.status === "renewed") {
+          await get().fetchMe().catch(() => {});
+        }
+        return result;
+      },
 
       fetchMe: async () => {
         const user = await api.get<User>("/users/me");

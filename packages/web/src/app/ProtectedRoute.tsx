@@ -1,7 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { ErrorState } from "@/components/ErrorState";
+import { useSessionBootstrap } from "@/app/use-session-bootstrap";
 import { useAuthStore } from "@/stores/auth";
 import type { UserRole } from "@/types/user";
 
@@ -13,35 +15,11 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const refresh = useAuthStore((s) => s.refresh);
   const user = useAuthStore((s) => s.user);
-  const [isChecking, setIsChecking] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function bootstrap() {
-      // Access token não é persistido (WI-21) — todo cold load tenta renovar
-      // a sessão a partir do cookie httpOnly de refresh, que é a única fonte
-      // de verdade sobre autenticação.
-      if (!isAuthenticated) {
-        const ok = await refresh();
-        if (!cancelled && !ok) {
-          setIsChecking(false);
-        }
-        return;
-      }
-      if (!cancelled) {
-        setIsChecking(false);
-      }
-    }
-    bootstrap();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, refresh]);
+  const { status, retry } = useSessionBootstrap();
 
   const isForbidden =
-    !isChecking &&
+    status === "ready" &&
     isAuthenticated &&
     Boolean(requiredRole) &&
     user?.role !== requiredRole;
@@ -52,10 +30,22 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     }
   }, [isForbidden]);
 
-  if (isChecking) {
+  if (status === "checking") {
     return (
       <div className="flex-1 min-h-screen flex items-center justify-center bg-brand-bg">
         <Loader2 size={32} className="text-brand-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (status === "unavailable") {
+    return (
+      <div className="flex-1 min-h-screen flex items-center justify-center bg-brand-bg">
+        <ErrorState
+          title="Não foi possível restaurar sua sessão"
+          message="O servidor está recebendo muitas requisições no momento. Sua sessão foi mantida; tente novamente."
+          onRetry={retry}
+        />
       </div>
     );
   }
