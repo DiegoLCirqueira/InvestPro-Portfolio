@@ -26,6 +26,9 @@ model User {
   passwordResetTokens PasswordResetToken[]
   topUpsReceived      BalanceTopUp[]       @relation("TopUpReceiver")
   topUpsActed         BalanceTopUp[]       @relation("TopUpActor")
+  savingsBox          SavingsBox?
+  currencyHoldings    CurrencyHolding[]
+  currencyExchanges   CurrencyExchange[]
 }
 
 // Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
@@ -55,6 +58,24 @@ model Position {
   portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Restrict)
 
   @@unique([portfolioId, ticker])
+}
+
+// Caixinha (rendimento fixo simulado, demo): saldo separado do Portfolio.balance,
+// 1:1 com User igual Portfolio. Mesmo tratamento de retenção financeira do ADR
+// 0001 (Restrict + deletedAt) — é dinheiro do usuário, mesma categoria de
+// Portfolio/Position, só que num "pote" separado. Modelo próprio em vez de um
+// campo em Portfolio para não conflar dois saldos com semânticas diferentes na
+// mesma linha e já deixar isolado pra uma futura tabela de auditoria de
+// depósito/resgate/rendimento (mesmo padrão de BalanceTopUp), sem precisar
+// migrar de coluna solta pra tabela depois.
+model SavingsBox {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  balance   Decimal   @default(0) @db.Decimal(15, 2)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
 }
 
 model RefreshToken {
@@ -164,6 +185,45 @@ model BalanceTopUp {
   @@index([userId, createdAt])
 }
 
+// Carteira de moedas: quanto o usuário tem de cada moeda estrangeira, fora do
+// Portfolio.balance (que é sempre BRL). Mesmo tratamento de retenção financeira
+// do ADR 0001 (Restrict + deletedAt) — é holding de ativo, mesma categoria de
+// Position. unique(userId, currency) já serve de índice pra "todas as moedas
+// do usuário" (prefixo esquerdo), sem precisar de @@index([userId]) redundante.
+model CurrencyHolding {
+  id        String    @id @default(uuid())
+  userId    String
+  currency  Currency
+  balance   Decimal   @default(0) @db.Decimal(15, 2)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, currency])
+}
+
+// Auditoria de cada execução de câmbio (debita fromCurrency, credita
+// toCurrency) — mesmo padrão de BalanceTopUp: registro append-only, direto em
+// User (não em CurrencyHolding), porque uma execução mexe em duas contas ao
+// mesmo tempo (Portfolio.balance ou outro CurrencyHolding de origem + o
+// CurrencyHolding de destino). rate em Decimal(15,8): taxa de câmbio precisa de
+// mais casas que valor monetário puro (mesma razão de Position.quantity).
+model CurrencyExchange {
+  id              String   @id @default(uuid())
+  userId          String
+  fromCurrency    Currency
+  toCurrency      Currency
+  amount          Decimal  @db.Decimal(15, 2)
+  convertedAmount Decimal  @db.Decimal(15, 2)
+  rate            Decimal  @db.Decimal(15, 8)
+  fee             Decimal  @db.Decimal(15, 2)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
 enum OrderSide {
   BUY
   SELL
@@ -200,6 +260,20 @@ enum AssetType {
   CRYPTO
   STOCK
   FIXED_INCOME
+}
+
+// Espelha CURRENCIES em packages/shared/src/types/enums.ts — mesmo padrão de
+// sincronia manual já usado por TransferType/OrderStatus/AssetType.
+enum Currency {
+  BRL
+  USD
+  EUR
+  GBP
+  JPY
+  CHF
+  CAD
+  AUD
+  CNY
 }
 
 enum Role {
