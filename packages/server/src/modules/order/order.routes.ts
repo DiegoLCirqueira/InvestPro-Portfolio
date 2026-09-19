@@ -9,6 +9,7 @@ import {
   createOrderInputSchema,
   orderListSchema,
   orderSchema,
+  sellableAssetListSchema,
 } from "@investpro/shared";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { readRateLimit, writeRateLimit } from "../../shared/middleware/rateLimit.js";
@@ -67,6 +68,28 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const user = request.user as { id: string };
       return orderService.listOrders(user.id, request.query.page, request.query.limit);
+    }
+  );
+
+  r.get(
+    "/api/v1/orders/sellable-assets",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Orders"],
+        summary: "Ativos disponíveis para venda",
+        description:
+          "Lista os tickers que o usuário autenticado tem em posição (quantity > 0) — não o catálogo completo de mercado.",
+        security: [{ BearerAuth: [] }],
+        response: {
+          200: sellableAssetListSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return orderService.listSellableAssets(user.id);
     }
   );
 }

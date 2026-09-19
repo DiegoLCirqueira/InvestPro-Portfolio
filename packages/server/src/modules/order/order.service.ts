@@ -10,6 +10,7 @@ import type {
   CreateOrderInput,
   Order,
   OrderList,
+  SellableAssetList,
 } from '@investpro/shared'
 import { prisma } from '../../config/database.js'
 import { getAssetMeta, getQuote } from '../market/market.service.js'
@@ -17,6 +18,7 @@ import { AppError } from '../auth/auth.service.js'
 import {
   applyBuyFill,
   applySellFill,
+  calculateOrderFee,
   canSell,
   evaluateOrder,
   resolveAsset,
@@ -32,19 +34,43 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
+// Fee derivada do preço/quantidade já persistidos (não é uma coluna própria):
+// 1% do valor executado (quantity * price), só quando a ordem de fato preencheu.
+// Usar `price` (preço desta execução), não `avgPrice` (média da Position, que
+// mistura fills anteriores em compras incrementais).
+function orderFee(status: string, quantity: number, price: number | null): number | null {
+  if (status !== 'FILLED' || price === null) return null
+  return round2(calculateOrderFee(quantity * price))
+}
+
+// Ordem cujo total arredonda pra R$ 0,00 não move saldo mas ainda criaria
+// posição/registro — é sempre um valor inválido, não uma ordem pequena.
+function assertTotalIsNotNegligible(total: number): void {
+  if (total > 0) return
+  throw new AppError(
+    'ORDER_TOTAL_TOO_SMALL',
+    'Valor total da ordem é pequeno demais (arredonda para R$ 0,00)',
+    400
+  )
+}
+
 function toOrder(record: PrismaOrder): Order {
+  const quantity = record.quantity.toNumber()
+  const price = record.price ? record.price.toNumber() : null
+
   return {
     id: record.id,
     assetId: record.assetId,
     ticker: record.ticker,
     side: record.side as Order['side'],
     type: record.type as Order['type'],
-    quantity: record.quantity.toNumber(),
-    price: record.price ? record.price.toNumber() : null,
+    quantity,
+    price,
     status: record.status as Order['status'],
     createdAt: record.createdAt.toISOString(),
     executedAt: record.executedAt ? record.executedAt.toISOString() : null,
     avgPrice: record.avgPrice ? record.avgPrice.toNumber() : null,
+    fee: orderFee(record.status, quantity, price),
   }
 }
 
@@ -75,6 +101,8 @@ async function executeOrderTx(
   }
 
   const fillPrice = evaluation.fillPrice as number
+  const total = round2(input.quantity * fillPrice)
+  assertTotalIsNotNegligible(total)
 
   const portfolio = await tx.portfolio.findUnique({ where: { userId } })
   if (!portfolio) {
@@ -90,6 +118,16 @@ async function executeOrderTx(
   let orderAvgPrice: number | null = null
 
   if (input.side === 'BUY') {
+    const cost = round2(total + calculateOrderFee(total))
+
+    if (portfolio.balance.toNumber() < cost) {
+      throw new AppError(
+        'ORDER_INSUFFICIENT_BALANCE',
+        'Saldo insuficiente para executar esta ordem',
+        400
+      )
+    }
+
     const fill = applyBuyFill(current, input.quantity, fillPrice)
 
     const meta = await getAssetMeta(asset.ticker)
@@ -119,9 +157,11 @@ async function executeOrderTx(
       },
     })
 
+    // Fee soma ao custo (você paga o valor da ordem + a taxa); não entra no
+    // avgPrice/currentValue da Position, que refletem o preço de execução puro.
     await tx.portfolio.update({
       where: { id: portfolio.id },
-      data: { balance: { decrement: round2(input.quantity * fillPrice) } },
+      data: { balance: { decrement: cost } },
     })
 
     orderAvgPrice = round2(fill.avgPrice)
@@ -149,9 +189,13 @@ async function executeOrderTx(
       await tx.position.delete({ where: positionWhere })
     }
 
+    // Fee desconta do valor recebido (você recebe o valor da ordem - a taxa).
+    // SELL nunca deixa o balance negativo: só incrementa.
+    const proceeds = round2(total - calculateOrderFee(total))
+
     await tx.portfolio.update({
       where: { id: portfolio.id },
-      data: { balance: { increment: round2(input.quantity * fillPrice) } },
+      data: { balance: { increment: proceeds } },
     })
 
     orderAvgPrice = null
@@ -165,7 +209,7 @@ async function executeOrderTx(
       side: input.side,
       type: input.type,
       quantity: input.quantity,
-      price: input.price ?? fillPrice,
+      price: fillPrice, // preço de execução (o limite/gatilho só vale enquanto OPEN)
       status: 'FILLED',
       avgPrice: orderAvgPrice,
       executedAt: new Date(),
@@ -242,5 +286,27 @@ export async function listOrders(
     total,
     page,
     limit,
+  }
+}
+
+// Ativos que o usuário pode vender agora: só tickers com Position ativa
+// (quantity > 0), diferente do catálogo completo de /market/assets.
+export async function listSellableAssets(userId: string): Promise<SellableAssetList> {
+  const portfolio = await prisma.portfolio.findUnique({
+    where: { userId, deletedAt: null },
+    select: {
+      positions: {
+        where: { deletedAt: null, quantity: { gt: 0 } },
+        select: { ticker: true, quantity: true },
+        orderBy: { ticker: 'asc' },
+      },
+    },
+  })
+
+  return {
+    items: (portfolio?.positions ?? []).map((p) => ({
+      ticker: p.ticker,
+      quantity: p.quantity.toNumber(),
+    })),
   }
 }

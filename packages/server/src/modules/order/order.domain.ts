@@ -14,7 +14,8 @@ export type OrderType = (typeof ORDER_TYPES)[number]
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 // Ordem MARKET é executada sempre; LIMIT executa quando o preço de mercado
-// atinge o limite; STOP executa quando o preço cruza o gatilho.
+// atinge o limite; STOP executa quando o preço cruza o gatilho (sempre a preço
+// de mercado — ver evaluateOrder).
 export function requiresPrice(type: OrderType): boolean {
   return type === 'LIMIT' || type === 'STOP'
 }
@@ -69,14 +70,17 @@ export function isExecutableAt(
   return side === 'BUY' ? marketPrice >= limitPrice : marketPrice <= limitPrice
 }
 
+// O preço informado (limite/gatilho) só decide SE a ordem executa; a execução é
+// sempre a preço de mercado. Usá-lo como preço de execução deixava o usuário
+// escolher o próprio preço (STOP BUY a 0,01 sempre dispara e compra a 0,01).
+// Em LIMIT, executar a mercado já é o melhor preço dentro do limite: só
+// executa quando o mercado está no limite ou melhor (BUY: min(limite, mercado)
+// e SELL: max(limite, mercado) resultam sempre em mercado).
 export function evaluateOrder(input: CreateOrderInput, marketPrice: number): OrderEvaluation {
-  if (input.type === 'MARKET') {
-    return { status: 'FILLED', fillPrice: marketPrice, total: input.quantity * marketPrice }
+  if (!isExecutableAt(input.type, input.side, input.price, marketPrice)) {
+    return { status: 'OPEN', fillPrice: null, total: null }
   }
-  if (input.price !== undefined && isExecutableAt(input.type, input.side, input.price, marketPrice)) {
-    return { status: 'FILLED', fillPrice: input.price, total: input.quantity * input.price }
-  }
-  return { status: 'OPEN', fillPrice: null, total: null }
+  return { status: 'FILLED', fillPrice: marketPrice, total: input.quantity * marketPrice }
 }
 
 // Preço médio ponderado após nova compra:
@@ -96,6 +100,16 @@ export function newAveragePrice(
 
 export function computeTotal(quantity: number, fillPrice: number): number {
   return quantity * fillPrice
+}
+
+// Fee da InvestPro sobre o valor executado da ordem — mesmo padrão de
+// exchange.domain.ts (1% sobre o valor bruto). Cobrada em cima do total (BUY
+// soma ao custo, SELL desconta do valor recebido); não afeta avgPrice/quantity
+// da Position, que continuam refletindo o preço de execução puro.
+export const ORDER_FEE_RATE = 0.01
+
+export function calculateOrderFee(total: number): number {
+  return total * ORDER_FEE_RATE
 }
 
 export interface PositionSnapshot {

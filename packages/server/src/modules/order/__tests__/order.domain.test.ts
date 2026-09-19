@@ -3,11 +3,13 @@ import type { CreateOrderInput } from '@investpro/shared'
 import {
   applyBuyFill,
   applySellFill,
+  calculateOrderFee,
   canSell,
   computeTotal,
   evaluateOrder,
   isExecutableAt,
   newAveragePrice,
+  ORDER_FEE_RATE,
   requiresPrice,
   resolveAsset,
   validateOrder,
@@ -84,10 +86,12 @@ describe('evaluateOrder', () => {
     expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 25, total: 250 })
   })
 
-  it('LIMIT de compra executa quando mercado <= limite', () => {
+  // O limite só decide SE executa; o preço de execução é o de mercado (melhor
+  // preço pro usuário dentro do limite). Este teste antes esperava fillPrice 30
+  // (o limite), o que codificava o bug: o usuário pagava mais que o mercado.
+  it('LIMIT de compra executa quando mercado <= limite, a preço de mercado', () => {
     const evaluation = evaluateOrder(baseOrder({ type: 'LIMIT', price: 30 }), 25)
-    expect(evaluation.status).toBe('FILLED')
-    expect(evaluation.fillPrice).toBe(30)
+    expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 25, total: 250 })
   })
 
   it('LIMIT de compra fica OPEN quando mercado acima do limite', () => {
@@ -101,15 +105,30 @@ describe('evaluateOrder', () => {
       baseOrder({ side: 'SELL', type: 'LIMIT', price: 20 }),
       25
     )
-    expect(evaluation.status).toBe('FILLED')
+    expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 25, total: 250 })
   })
 
-  it('STOP de compra executa quando mercado cruza o gatilho para cima', () => {
+  it('STOP de compra executa quando mercado cruza o gatilho para cima, a preço de mercado', () => {
     const evaluation = evaluateOrder(
       baseOrder({ type: 'STOP', price: 30 }),
       32
     )
-    expect(evaluation.status).toBe('FILLED')
+    expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 32, total: 320 })
+  })
+
+  it('STOP BUY com gatilho barato (0,01) dispara mas executa a mercado, não a 0,01', () => {
+    const evaluation = evaluateOrder(baseOrder({ type: 'STOP', price: 0.01 }), 25)
+    expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 25, total: 250 })
+  })
+
+  it('STOP SELL com gatilho absurdo (1.000.000) dispara mas executa a mercado, não a 1e6', () => {
+    const evaluation = evaluateOrder(baseOrder({ side: 'SELL', type: 'STOP', price: 1_000_000 }), 25)
+    expect(evaluation).toEqual({ status: 'FILLED', fillPrice: 25, total: 250 })
+  })
+
+  it('STOP fica OPEN enquanto o gatilho não é cruzado', () => {
+    expect(evaluateOrder(baseOrder({ type: 'STOP', price: 30 }), 25).status).toBe('OPEN')
+    expect(evaluateOrder(baseOrder({ side: 'SELL', type: 'STOP', price: 20 }), 25).status).toBe('OPEN')
   })
 })
 
@@ -126,6 +145,14 @@ describe('newAveragePrice', () => {
 describe('computeTotal', () => {
   it('multiplica quantidade pelo preço', () => {
     expect(computeTotal(10, 25.5)).toBe(255)
+  })
+})
+
+describe('calculateOrderFee', () => {
+  it('cobra 1% do valor total', () => {
+    expect(ORDER_FEE_RATE).toBe(0.01)
+    expect(calculateOrderFee(200)).toBe(2)
+    expect(calculateOrderFee(0)).toBe(0)
   })
 })
 
