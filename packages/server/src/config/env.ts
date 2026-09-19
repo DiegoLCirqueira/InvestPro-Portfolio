@@ -1,3 +1,5 @@
+import { parseTrustProxy } from "./trustProxy.js";
+
 const DEV_JWT_SECRET = "investpro-dev-secret-change-in-production";
 const DEV_JWT_REFRESH_SECRET = "investpro-dev-refresh-secret-change-in-production";
 
@@ -36,4 +38,5 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
   BRAPI_API_KEY: process.env.BRAPI_API_KEY ?? "",
+  TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY, isProduction),
 } as const;

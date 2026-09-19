@@ -93,12 +93,43 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `PORT` | Opcional — o Railway injeta a própria `PORT` automaticamente |
 | `FRONTEND_URL` | URL do frontend no Vercel — usada para montar o link de reset de senha (WI-20). Mesmo valor de `CORS_ORIGIN` na prática. |
 | `RESEND_API_KEY` | Chave da API do [Resend](https://resend.com) (WI-20, email transacional). **Precisa ser criada manualmente no painel do Resend** — não há acesso automatizado a isso. |
+| `TRUST_PROXY` | Opcional — de quais peers o `X-Forwarded-For` é aceito pro IP do cliente; padrão em produção: rede interna do proxy da Railway. Ver "IP do cliente atrás do proxy" abaixo. |
 | `RESEND_FROM_EMAIL` | Remetente dos emails (ex.: `InvestPro <no-reply@investpro.app>`). Requer domínio verificado no Resend em produção — sem isso, usar o default `onboarding@resend.dev` (limitado, não recomendado pra produção real). |
 
 > **Importante:** a aplicação **falha na inicialização** se `NODE_ENV=production`
 > e `CORS_ORIGIN` não for definida explicitamente (proteção do plugin CORS em
 > `packages/server/src/plugins/cors.ts`). O valor **não** pode ser o default
 > `http://localhost:5173`.
+
+### IP do cliente atrás do proxy (`TRUST_PROXY`)
+
+O rate limit por IP (`/auth/*`: 5/min) depende de `request.ip`. Atrás do proxy da
+Railway o socket é o IP do proxy, então, sem configuração, o limite não agrupa o
+mesmo cliente e clientes distintos podem dividir um balde. `TRUST_PROXY` é a
+lista (separada por vírgula) de IPs/CIDRs (ou `loopback`, `linklocal`,
+`uniquelocal`) de **peers** em que o Fastify confia para ler o IP real do
+`X-Forwarded-For`:
+
+- **Padrão:** com `NODE_ENV=production`, `100.64.0.0/10,uniquelocal` (a rede
+  interna dos proxies da Railway); nos demais ambientes, ninguém (desenvolvimento
+  e testes ignoram `X-Forwarded-For`). `TRUST_PROXY=false` desliga explicitamente.
+- **Por que faixas de rede e não `true` nem número de saltos:** `true` confia em
+  todo `X-Forwarded-For` (o cliente forjaria o header para ganhar um balde novo a
+  cada request). O número de saltos (`trustProxy: 1`) é **desativado no Fastify 5**
+  por não validar o par imediato. Com faixas, uma conexão direta da internet
+  (IP público) tem o header ignorado, e atrás do proxy vale o IP mais à direita
+  fora da rede confiável, então entradas forjadas à esquerda não contam e
+  qualquer número de saltos internos da Railway é absorvido.
+- **Origem do `100.64.0.0/10`:** relatos da comunidade Railway, não a
+  documentação oficial (que não descreve o `X-Forwarded-For`). A equipe da
+  Railway afirma que reescreve o header na borda, com o IP real como primeiro
+  valor, e que pode haver um salto interno extra. Se, após o deploy, o IP visto
+  não for o do cliente, ajuste `TRUST_PROXY` para a faixa real dos proxies. Se um
+  CDN (ex.: Cloudflare) ficar na frente, inclua também as faixas dele.
+- **Como validar após o deploy:** `x-ratelimit-remaining` de logins errados
+  seguidos do mesmo cliente deve decrescer (4, 3, 2, 1, 0) e a 6ª tentativa dar
+  `429`. Saltos aleatórios (4, 4, 3, 4…) indicam que o proxy está fora da faixa
+  confiável (cada IP de proxy vira um balde).
 
 Para o **frontend (Vercel)**, definir `VITE_API_URL` aponta para a URL pública do
 serviço backend (ex.: `https://api.investpro.up.railway.app/api/v1`).

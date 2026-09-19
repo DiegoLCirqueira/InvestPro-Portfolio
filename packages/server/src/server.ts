@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import { env } from "./config/env.js";
+import type { TrustProxySetting } from "./config/trustProxy.js";
 import { registerSwagger } from "./plugins/swagger.js";
 import { registerCors } from "./plugins/cors.js";
 import { registerSecurity } from "./plugins/security.js";
@@ -17,8 +18,14 @@ import { exchangeRoutes } from "./modules/exchange/exchange.routes.js";
 import { transferRoutes } from "./modules/transfer/transfer.routes.js";
 import { savingsBoxRoutes } from "./modules/savings-box/savings-box.routes.js";
 
-export async function buildServer() {
+export interface BuildServerOptions {
+  // Sobrescreve env.TRUST_PROXY (usado pra testar o comportamento de produção).
+  trustProxy?: TrustProxySetting;
+}
+
+export async function buildServer(options: BuildServerOptions = {}) {
   const app = Fastify({
+    trustProxy: options.trustProxy ?? env.TRUST_PROXY,
     logger: {
       level: env.NODE_ENV === "production" ? "info" : "debug",
       // Defesa em profundidade: hoje o serializer padrão do Fastify não inclui
