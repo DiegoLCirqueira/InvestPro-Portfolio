@@ -69,7 +69,7 @@ export function Sidebar() {
       <div className="p-8">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-            <span className="text-black font-black text-xl italic">I</span>
+            <span className="text-primary-foreground font-black text-xl italic">I</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight">InvestPro</h1>
         </div>

@@ -32,7 +32,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-black text-sm font-bold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-opacity"
+          className="min-h-11 px-4 py-2 rounded-xl bg-brand-primary text-primary-foreground text-sm font-bold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-opacity"
         >
           {retryLabel}
         </button>

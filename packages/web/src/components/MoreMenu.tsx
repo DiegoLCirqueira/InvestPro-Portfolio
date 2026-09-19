@@ -52,17 +52,16 @@ interface MoreMenuProps {
 }
 
 export function MoreMenu({ active }: MoreMenuProps) {
-  const [open, setOpen] = React.useState(false);
   const location = useLocation();
+  // O menu fecha sozinho ao navegar: ele só conta como aberto na rota em que foi aberto.
+  const [openedAtPath, setOpenedAtPath] = React.useState<string | null>(null);
+  const open = openedAtPath === location.pathname;
+  const setOpen = (next: boolean) => setOpenedAtPath(next ? location.pathname : null);
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isAdmin = user?.role === "ADMIN";
   const items = isAdmin ? [...MORE_ITEMS, ADMIN_ITEM] : MORE_ITEMS;
-
-  React.useEffect(() => {
-    setOpen(false);
-  }, [location.pathname]);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>

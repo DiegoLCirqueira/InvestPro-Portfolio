@@ -116,7 +116,7 @@ export function Dashboard() {
                     onClick={() => setPeriod(option.value)}
                     className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                       period === option.value
-                        ? "bg-brand-primary text-black"
+                        ? "bg-brand-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >

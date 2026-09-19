@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Info, LogIn, Receipt } from "lucide-react";
@@ -13,6 +12,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useCreateTransfer, useTransfers } from "@/hooks/useTransfers";
+import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
+import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
+import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
@@ -72,13 +74,10 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
 export function Transfers() {
   const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useTransfers();
+  const handleFinancialError = useFinancialErrorHandler(["TRANSFER_INSUFFICIENT_BALANCE"]);
   const createTransfer = useCreateTransfer({
     onSuccess: () => toast.success("Transferência iniciada com sucesso!"),
     onError: (err) => {
-      if (err instanceof ApiError && err.status === 401) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
       if (err instanceof ApiError && err.code === "CPF_REQUIRED") {
         toast.error(
           "Você precisa completar seu CPF no perfil para fazer transferências.",
@@ -91,12 +90,12 @@ export function Transfers() {
         );
         return;
       }
-      toast.error(err.message);
+      handleFinancialError(err);
     },
   });
 
   const [type, setType] = useState<TransferType>("PIX");
-  const [amount, setAmount] = useState("");
+  const amountInput = useCurrencyDigitsInput();
   const [description, setDescription] = useState("");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
@@ -106,24 +105,15 @@ export function Transfers() {
 
   const history = data?.items ?? [];
 
-  const handleNumeric = (value: string) => {
-    const cleaned = value.replace(",", ".");
-    if (cleaned === "" || /^\d*\.?\d*$/.test(cleaned)) {
-      setAmount(cleaned);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) {
+  const submitTransfer = async () => {
+    if (amountInput.amount <= 0) {
       toast.error("Informe um valor válido.");
       return;
     }
     try {
       await createTransfer.mutate({
         type,
-        amount: value,
+        amount: amountInput.amount,
         description: description.trim() || undefined,
         toAccount:
           bank.trim() && account.trim()
@@ -134,12 +124,14 @@ export function Transfers() {
     } catch {
       return;
     }
-    setAmount("");
+    amountInput.reset();
     setDescription("");
     setBank("");
     setAccount("");
     void refetch();
   };
+
+  const handleSubmit = useSubmitOnce(submitTransfer);
 
   if (isLoading) {
     return (
@@ -212,7 +204,7 @@ export function Transfers() {
                         help ? "pr-7" : ""
                       } ${
                         type === option.value
-                          ? "bg-brand-primary text-black border-brand-primary"
+                          ? "bg-brand-primary text-primary-foreground border-brand-primary"
                           : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
                       }`}
                     >
@@ -244,11 +236,11 @@ export function Transfers() {
             <label className="text-sm text-muted-foreground">Valor</label>
             <input
               type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => handleNumeric(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
+              inputMode="numeric"
+              value={amountInput.displayValue}
+              onChange={amountInput.onChange}
+              aria-label="Valor da transferência"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
             />
           </div>
 
@@ -302,7 +294,7 @@ export function Transfers() {
           <button
             type="submit"
             disabled={createTransfer.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
           </button>

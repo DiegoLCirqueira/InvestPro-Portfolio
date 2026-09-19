@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, CalendarDays, LogOut, Moon, Search, Sun, X } from "lucide-react";
+import { Bell, User, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -17,7 +17,6 @@ export function Header() {
   const user = useAuthStore((s) => s.user);
   const isDashboard = location.pathname === "/";
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const { isDark, toggle: toggleTheme } = useTheme();
 
@@ -57,11 +56,10 @@ export function Header() {
   }, [isNotificationsOpen]);
 
   return (
-    <>
     <header className="flex items-center gap-4 nav:gap-6 mb-6 nav:mb-10">
       <div className="flex items-center gap-2 nav:hidden">
         <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-          <span className="text-black font-black text-xl italic">I</span>
+          <span className="text-primary-foreground font-black text-xl italic">I</span>
         </div>
         <span className="text-lg font-bold tracking-tight">InvestPro</span>
       </div>
@@ -75,52 +73,19 @@ export function Header() {
         </div>
 
         {isDashboard ? (
-          <>
-            <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
-              {greeting},{" "}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-foreground to-muted-foreground">
-                {user?.fullName?.split(" ")[0] || "Investidor"}
-              </span>
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
-              <p className="text-muted-foreground text-xs font-medium">
-                Seu portfólio rendeu{" "}
-                <span className="text-brand-primary">+2.28%</span> nas últimas
-                24h.
-              </p>
-            </div>
-          </>
+          <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
+            {greeting},{" "}
+            <span className="text-brand-primary">
+              {user?.fullName?.split(" ")[0] || "Investidor"}
+            </span>
+          </h2>
         ) : null}
-      </div>
-
-      <div className="hidden nav:flex w-full max-w-xs">
-        <div className="relative w-full">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="search"
-            placeholder="Buscar..."
-            className="w-full rounded-xl border border-border bg-surface-1 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
       </div>
 
       <div
         className="flex items-center gap-3 nav:gap-5 relative ml-auto"
         ref={notificationsRef}
       >
-        <button
-          type="button"
-          onClick={() => setIsSearchOpen(true)}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all nav:hidden"
-          aria-label="Buscar"
-        >
-          <Search size={20} />
-        </button>
-
         <button
           type="button"
           onClick={toggleTheme}
@@ -210,33 +175,5 @@ export function Header() {
         </div>
       </div>
     </header>
-
-    {isSearchOpen ? (
-      <div className="fixed inset-0 z-50 flex flex-col bg-background nav:hidden">
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <div className="relative flex-1">
-            <Search
-              size={18}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              autoFocus
-              type="search"
-              placeholder="Buscar..."
-              className="w-full rounded-xl border border-border bg-surface-1 py-2.5 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsSearchOpen(false)}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground"
-            aria-label="Fechar busca"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      </div>
-    ) : null}
-    </>
   );
 }

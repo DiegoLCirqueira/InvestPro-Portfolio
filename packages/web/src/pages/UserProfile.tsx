@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { ChevronLeft, ShieldCheck, Wallet, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,6 +7,9 @@ import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import type { UpdateProfileInput } from "@/hooks/use-profile";
 import { usePortfolioPositions, useTopUpPortfolio } from "@/hooks/usePortfolio";
+import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
+import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
+import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,32 +62,31 @@ function ProfileFieldsSkeleton() {
 
 function TopUpCard() {
   const { balance, isLoading, refetch } = usePortfolioPositions();
-  // Dígitos digitados, tratados como centavos (padrão de input de moeda
-  // "da direita pra esquerda", ex.: apps bancários BR). "500" = R$ 5,00.
-  const [digits, setDigits] = useState("");
-  const amountValue = Number(digits || "0") / 100;
+  const amountInput = useCurrencyDigitsInput();
 
+  const handleTopUpError = useFinancialErrorHandler();
   const topUp = useTopUpPortfolio({
     onSuccess: () => {
       toast.success("Saldo adicionado com sucesso!");
-      setDigits("");
+      amountInput.reset();
       void refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: handleTopUpError,
   });
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (amountValue <= 0) {
+  const submitTopUp = async () => {
+    if (amountInput.amount <= 0) {
       toast.error("Informe um valor válido.");
       return;
     }
     try {
-      await topUp.mutate(amountValue);
+      await topUp.mutate(amountInput.amount);
     } catch {
       // erro já tratado via onError
     }
   };
+
+  const handleSubmit = useSubmitOnce(submitTopUp);
 
   return (
     <div className="p-4 rounded-xl border border-border bg-surface-2 space-y-3">
@@ -109,15 +111,15 @@ function TopUpCard() {
         <input
           type="text"
           inputMode="numeric"
-          value={formatCurrency(amountValue)}
-          onChange={(e) => setDigits(e.target.value.replace(/\D/g, ""))}
+          value={amountInput.displayValue}
+          onChange={amountInput.onChange}
           aria-label="Valor a adicionar"
           className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
         />
         <button
           type="submit"
           disabled={topUp.isPending}
-          className="min-h-11 shrink-0 px-4 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="min-h-11 shrink-0 px-4 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
         </button>
@@ -136,13 +138,13 @@ export function UserProfile() {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-
-  useEffect(() => {
-    if (profile) {
-      setFullName(profile.fullName);
-      setPhone(profile.phone ?? "");
-    }
-  }, [profile]);
+  // Copia o perfil carregado para o formulário (uma vez por versão do perfil).
+  const [syncedProfile, setSyncedProfile] = useState(profile);
+  if (profile && profile !== syncedProfile) {
+    setSyncedProfile(profile);
+    setFullName(profile.fullName);
+    setPhone(profile.phone ?? "");
+  }
 
   const updateProfile = useUpdateProfile({
     onSuccess: (updated) => {
@@ -216,7 +218,7 @@ export function UserProfile() {
         <button
           type="submit"
           disabled={updateProfile.isPending}
-          className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-white font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
         </button>
