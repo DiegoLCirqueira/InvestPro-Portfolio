@@ -53,16 +53,16 @@ function AssetCard({ asset }: { asset: MarketAsset }) {
   const sentiment = sentimentFor(asset);
   return (
     <div className="p-4 rounded-xl border border-border bg-surface-2">
-      <div className="flex items-center justify-between gap-3 mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{asset.ticker}</span>
           <StatusBadge
             label={ASSET_TYPE_LABELS[asset.type]}
             tone={ASSET_TYPE_TONES[asset.type]}
-            fixedWidth
+            uniformWidth
           />
         </div>
-        <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} fixedWidth />
+        <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />
       </div>
       <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
         {asset.name}
@@ -134,14 +134,14 @@ export function MarketAnalysis() {
           Análise de Mercado
         </h2>
 
-        <div className="flex gap-2 overflow-x-auto -mx-4 px-4 nav:mx-0 nav:px-0 nav:overflow-visible custom-scrollbar">
+        <div className="flex gap-2 overflow-x-auto nav:overflow-visible custom-scrollbar">
           {TYPE_FILTERS.map((filterOption) => (
             <button
               key={filterOption.value}
               onClick={() => setFilter(filterOption.value)}
               className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 filter === filterOption.value
-                  ? "bg-brand-primary text-primary-foreground border-brand-primary"
+                  ? "bg-primary-solid text-primary-foreground border-brand-primary"
                   : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
               }`}
             >
@@ -252,7 +252,7 @@ export function MarketAnalysis() {
                           <StatusBadge
                             label={ASSET_TYPE_LABELS[asset.type]}
                             tone={ASSET_TYPE_TONES[asset.type]}
-                            fixedWidth
+                            uniformWidth
                           />
                         </td>
                         <td
@@ -263,7 +263,7 @@ export function MarketAnalysis() {
                           {formatPercent(asset.changePercent)}
                         </td>
                         <td className="py-3 pr-4 rounded-r-xl text-right border-y border-r border-transparent">
-                          <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} fixedWidth />
+                          <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />
                         </td>
                       </tr>
                     );

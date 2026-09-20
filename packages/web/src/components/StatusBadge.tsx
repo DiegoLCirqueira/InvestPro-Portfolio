@@ -15,19 +15,25 @@ const TONE_CLASSES: Record<StatusTone, string> = {
   purple: "bg-purple-500/15 text-purple-400",
 };
 
+// A decoração é medida em em: padding e largura acompanham a fonte fluida, então o
+// texto sempre cabe dentro dela, em qualquer viewport.
+const BASE_CLASSES =
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md px-[0.7em] py-[0.4em] text-[clamp(0.625rem,0.58rem+0.2vw,0.6875rem)] font-black uppercase tracking-tighter";
+
+// "Oportunidade" (o rótulo mais longo) ocupa ~7,5em + 1,4em de padding.
+const UNIFORM_WIDTH_CLASS = "min-w-[9em]";
+
 interface StatusBadgeProps {
   label: string;
   tone: StatusTone;
-  /** Largura fixa (w-[72px]) e texto centralizado — usar quando labels vizinhos variam de tamanho (ex.: colunas de tabela). */
-  fixedWidth?: boolean;
+  /** Largura mínima uniforme entre badges vizinhos (ex.: colunas de tabela); nunca corta o texto. */
+  uniformWidth?: boolean;
 }
 
-export function StatusBadge({ label, tone, fixedWidth = false }: StatusBadgeProps) {
+export function StatusBadge({ label, tone, uniformWidth = false }: StatusBadgeProps) {
   return (
     <span
-      className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${TONE_CLASSES[tone]} ${
-        fixedWidth ? "w-[72px] inline-flex items-center justify-center text-center" : ""
-      }`}
+      className={`${BASE_CLASSES} ${TONE_CLASSES[tone]} ${uniformWidth ? UNIFORM_WIDTH_CLASS : ""}`}
     >
       {label}
     </span>
