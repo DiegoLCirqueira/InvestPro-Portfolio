@@ -94,7 +94,7 @@ export function News() {
             }}
             className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               filter === option.value
-                ? "bg-brand-primary text-primary-foreground border-brand-primary"
+                ? "bg-primary-solid text-primary-foreground border-brand-primary"
                 : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
             }`}
           >

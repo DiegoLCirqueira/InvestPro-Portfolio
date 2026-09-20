@@ -16,7 +16,7 @@ interface EmptyStateProps {
 }
 
 const ACTION_CLASSNAME =
-  "mt-1 min-h-11 inline-flex items-center px-4 py-2 rounded-xl bg-brand-primary text-primary-foreground text-sm font-bold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-opacity";
+  "mt-1 min-h-11 inline-flex items-center px-4 py-2 rounded-xl bg-primary-solid text-primary-foreground text-sm font-bold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-opacity";
 
 export function EmptyState({
   icon: Icon = Inbox,

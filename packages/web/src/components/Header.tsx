@@ -56,9 +56,9 @@ export function Header() {
   }, [isNotificationsOpen]);
 
   return (
-    <header className="flex items-center gap-4 nav:gap-6 mb-6 nav:mb-10">
+    <header className="flex items-center gap-4 nav:gap-6 mb-3 nav:mb-10">
       <div className="flex items-center gap-2 nav:hidden">
-        <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-primary-solid rounded-lg flex items-center justify-center">
           <span className="text-primary-foreground font-black text-xl italic">I</span>
         </div>
         <span className="text-lg font-bold tracking-tight">InvestPro</span>

@@ -18,7 +18,7 @@ describe("Button", () => {
   it("aplica classes de estilo da variante", () => {
     render(<Button variant="destructive">Excluir</Button>);
     const button = screen.getByRole("button", { name: "Excluir" });
-    expect(button).toHaveClass("bg-destructive");
+    expect(button).toHaveClass("bg-destructive-solid");
   });
 
   it("desabilita o botão quando a prop disabled é passada", () => {

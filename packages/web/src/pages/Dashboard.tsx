@@ -106,7 +106,7 @@ export function Dashboard() {
           <SummaryCard balance={balance} change={change} />
 
           <div className="p-6 rounded-2xl border border-border nav:flex-1 flex flex-col nav:min-h-0">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
               <h3 className="text-lg font-bold">Evolução do Patrimônio</h3>
 
               <div className="flex bg-secondary p-1 rounded-lg border border-border">
@@ -116,7 +116,7 @@ export function Dashboard() {
                     onClick={() => setPeriod(option.value)}
                     className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                       period === option.value
-                        ? "bg-brand-primary text-primary-foreground"
+                        ? "bg-primary-solid text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >

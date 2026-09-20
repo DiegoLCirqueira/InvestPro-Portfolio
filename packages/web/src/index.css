@@ -39,6 +39,9 @@
   /* Verde do claro: >= 4,6:1 como texto sobre qualquer superfície clara e 5,8:1 sob o texto branco dos itens selecionados. */
   --color-primary: #077455;
   --color-primary-foreground: #ffffff;
+  /* Fundo de botão/item preenchido (com texto branco por cima). No claro é o próprio verde; no escuro
+     é um tom mais fundo, porque o verde de destaque não dá 4,5:1 com branco. */
+  --color-primary-solid: #077455;
 
   /* ── Secondary ───────────────────────────────── */
   --color-secondary: #f0f0ee;
@@ -47,6 +50,7 @@
   /* ── Destructive ─────────────────────────────── */
   --color-destructive: #b23944;
   --color-destructive-foreground: #ffffff;
+  --color-destructive-solid: #b23944;
 
   /* ── Accent (Blue / Info) ────────────────────── */
   --color-accent: #3760d8;
@@ -92,6 +96,11 @@
 
   /* ── Spacing ─────────────────────────────────── */
   --spacing-75: 18.75rem;
+}
+
+/* Altura da barra de navegação inferior (mobile); o layout reserva esse espaço para o conteúdo não ficar atrás dela. */
+:root {
+  --bottom-nav-height: 3.5rem;
 }
 
 /*
@@ -157,13 +166,15 @@
   --color-border-strong: #333b47;
 
   --color-primary: #25c68d;
-  --color-primary-foreground: #0e1013;
+  --color-primary-foreground: #ffffff;
+  --color-primary-solid: #0a8460;
 
   --color-secondary: #1c212a;
   --color-secondary-foreground: #eef0f3;
 
   --color-destructive: #f0616d;
   --color-destructive-foreground: #ffffff;
+  --color-destructive-solid: #c1404c;
 
   --color-accent: #5b8df6;
   --color-accent-foreground: #ffffff;
@@ -199,7 +210,7 @@
   --popover-foreground: 216 17% 94%;
 
   --primary: 159 68% 46%;
-  --primary-foreground: 216 15% 6%;
+  --primary-foreground: 0 0% 100%;
 
   --secondary: 219 20% 14%;
   --secondary-foreground: 216 17% 94%;

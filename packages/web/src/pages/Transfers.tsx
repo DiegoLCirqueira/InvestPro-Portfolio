@@ -204,7 +204,7 @@ export function Transfers() {
                         help ? "pr-7" : ""
                       } ${
                         type === option.value
-                          ? "bg-brand-primary text-primary-foreground border-brand-primary"
+                          ? "bg-primary-solid text-primary-foreground border-brand-primary"
                           : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
                       }`}
                     >
@@ -294,7 +294,7 @@ export function Transfers() {
           <button
             type="submit"
             disabled={createTransfer.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-brand-primary hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
           </button>

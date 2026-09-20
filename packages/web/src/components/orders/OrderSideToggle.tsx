@@ -6,8 +6,8 @@ const SIDE_OPTIONS: { value: OrderSide; label: string }[] = [
 ];
 
 const SELECTED_CLASS: Record<OrderSide, string> = {
-  BUY: "bg-brand-primary text-primary-foreground border-brand-primary",
-  SELL: "bg-destructive text-destructive-foreground border-destructive",
+  BUY: "bg-primary-solid text-primary-foreground border-brand-primary",
+  SELL: "bg-destructive-solid text-destructive-foreground border-destructive",
 };
 
 const UNSELECTED_CLASS =

@@ -75,7 +75,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary hover:opacity-90 transition-opacity text-primary-foreground text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-solid hover:opacity-90 transition-opacity text-primary-foreground text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <Home size={14} />
                 Voltar ao início
