@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, LineChart, BookOpen, DollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { MoreMenu, MORE_MENU_ROUTES } from "./MoreMenu";
-import { cn } from "@/lib/utils";
+import { bottomNavItemClassName } from "./bottom-nav-item";
 
 interface NavItem {
   to: string;
@@ -25,7 +25,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex nav:hidden border-t border-border bg-surface-1/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 flex nav:hidden shadow-[0_-1px_0_0_var(--color-border)] bg-surface-1/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegação principal"
     >
       {NAV_ITEMS.map((item) => (
@@ -33,12 +33,7 @@ export function BottomNav() {
           key={item.to}
           to={item.to}
           end={item.to === "/"}
-          className={({ isActive }) =>
-            cn(
-              "flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] font-medium transition-colors",
-              isActive ? "text-primary" : "text-muted-foreground",
-            )
-          }
+          className={({ isActive }) => bottomNavItemClassName(isActive)}
         >
           <item.icon size={22} />
           <span>{item.label}</span>

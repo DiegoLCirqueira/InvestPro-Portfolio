@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Layout } from "@/app/Layout";
+
+function renderLayout() {
+  return render(
+    <MemoryRouter initialEntries={["/teste"]}>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/teste" element={<p>Conteúdo da página</p>} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+describe("Layout", () => {
+  it("o rodapé compacto do mobile vive DENTRO do container rolável, depois do conteúdo", () => {
+    const { container } = renderLayout();
+    const scrollArea = container.querySelector("#main-content") as HTMLElement;
+
+    const page = within(scrollArea).getByText("Conteúdo da página");
+    const mobileFooter = within(scrollArea).getByRole("contentinfo");
+
+    expect(mobileFooter).toHaveTextContent(/InvestPro/);
+    expect(within(mobileFooter).getByRole("link", { name: "Contato" })).toHaveAttribute(
+      "href",
+      "mailto:contato@investpro.com.br",
+    );
+    expect(page.compareDocumentPosition(mobileFooter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("o rodapé completo do desktop fica fora do container rolável", () => {
+    const { container } = renderLayout();
+    const scrollArea = container.querySelector("#main-content") as HTMLElement;
+
+    const footers = screen.getAllByRole("contentinfo", { hidden: true });
+    const desktopFooter = footers.find((footer) => !scrollArea.contains(footer));
+
+    expect(desktopFooter).toBeDefined();
+    expect(desktopFooter).toHaveTextContent("Empresa");
+  });
+
+  it("a barra inferior de navegação está presente e nomeada", () => {
+    renderLayout();
+
+    expect(screen.getByRole("navigation", { name: "Navegação principal", hidden: true })).toBeInTheDocument();
+  });
+});

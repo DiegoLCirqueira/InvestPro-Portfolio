@@ -2,7 +2,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border/50 pt-2 pb-2 px-6">
+    <footer className="hidden nav:block mt-auto border-t border-border/50 pt-2 pb-2 px-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-4 text-[10px]">
         <div className="space-y-1">
           <h4 className="text-foreground font-bold text-[11px] uppercase tracking-wider">

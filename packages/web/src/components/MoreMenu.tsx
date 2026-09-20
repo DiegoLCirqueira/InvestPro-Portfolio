@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
+import { bottomNavItemClassName } from "./bottom-nav-item";
 import { cn } from "@/lib/utils";
 
 interface MoreMenuItem {
@@ -68,10 +69,7 @@ export function MoreMenu({ active }: MoreMenuProps) {
       <DialogPrimitive.Trigger asChild>
         <button
           type="button"
-          className={cn(
-            "flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] font-medium transition-colors",
-            active ? "text-primary" : "text-muted-foreground",
-          )}
+          className={bottomNavItemClassName(Boolean(active))}
           aria-label="Mais opções"
         >
           <Menu size={22} />

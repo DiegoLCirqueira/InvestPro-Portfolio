@@ -68,7 +68,7 @@ export function Orders() {
           {orders.length === 0 ? (
             <EmptyState icon={ClipboardList} message="Nenhuma ordem registrada ainda." />
           ) : (
-            <div className="flex flex-col gap-3 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex flex-col gap-3 nav:max-h-[560px] nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (
                 <OrderRow key={order.id} order={order} />
               ))}
