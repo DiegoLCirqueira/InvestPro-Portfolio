@@ -60,8 +60,8 @@ const RECOMMENDATIONS: Recommendation[] = [
 
 const TAG_STYLES: Record<TagColor, string> = {
   "brand-secondary": "bg-brand-secondary/80 text-white",
-  "brand-primary": "bg-brand-primary/80 text-white",
-  "brand-danger": "bg-brand-danger/80 text-white",
+  "brand-primary": "bg-primary-solid text-primary-foreground",
+  "brand-danger": "bg-destructive-solid text-destructive-foreground",
 };
 
 export function Recommendations() {

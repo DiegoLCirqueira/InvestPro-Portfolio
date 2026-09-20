@@ -196,7 +196,7 @@ export function Register() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-11 bg-brand-primary text-brand-bg hover:bg-brand-primary/90 font-semibold"
+                className="w-full h-11 font-semibold"
               >
                 {isSubmitting ? (
                   <Loader2 size={18} className="animate-spin" />

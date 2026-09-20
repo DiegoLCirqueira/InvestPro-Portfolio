@@ -78,7 +78,7 @@ export function ResetPassword() {
                 </p>
                 <Button
                   asChild
-                  className="w-full h-11 bg-brand-primary text-brand-bg hover:bg-brand-primary/90 font-semibold"
+                  className="w-full h-11 font-semibold"
                 >
                   <Link to="/login">Ir para o login</Link>
                 </Button>
@@ -181,7 +181,7 @@ export function ResetPassword() {
                 <Button
                   type="submit"
                   disabled={isPending}
-                  className="w-full h-11 bg-brand-primary text-brand-bg hover:bg-brand-primary/90 font-semibold"
+                  className="w-full h-11 font-semibold"
                 >
                   {isPending ? (
                     <Loader2 size={18} className="animate-spin" />
