@@ -1,16 +1,31 @@
 import type { ReactNode } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDateTime, formatExchangeRate } from "@/lib/format";
-import type { ExecuteExchangeResponse } from "@/types/exchange";
+import type { ExchangeSummary } from "@/types/exchange";
 
-function ResultRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+export type ExchangeResultVariant = "simulation" | "confirmation";
+
+const VARIANT_TEXT: Record<
+  ExchangeResultVariant,
+  { title: string; sends: string; receives: string; date: string }
+> = {
+  simulation: {
+    title: "Simulação",
+    sends: "Você enviará",
+    receives: "Você receberá (estimado)",
+    date: "Cotação de",
+  },
+  confirmation: {
+    title: "Conversão realizada",
+    sends: "Você enviou",
+    receives: "Você recebeu",
+    date: "Data",
+  },
+};
+
+function ResultRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center justify-between gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
       {children}
     </div>
@@ -19,53 +34,54 @@ function ResultRow({
 
 const detailValueClassName = "text-foreground font-semibold tabular-nums";
 
-export function ExchangeResultCard({
-  result,
-}: {
-  result: ExecuteExchangeResponse | undefined;
-}) {
+interface ExchangeResultCardProps {
+  variant: ExchangeResultVariant;
+  summary: ExchangeSummary;
+  children?: ReactNode;
+}
+
+export function ExchangeResultCard({ variant, summary, children }: ExchangeResultCardProps) {
+  const text = VARIANT_TEXT[variant];
+
   return (
     <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-      <h3 className="text-base font-bold text-foreground">Resultado</h3>
+      <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
+        {variant === "confirmation" && (
+          <CheckCircle2 size={18} className="text-brand-primary" aria-hidden="true" />
+        )}
+        {text.title}
+      </h3>
 
-      {!result ? (
-        <p className="text-sm text-muted-foreground text-center py-16">
-          Preencha o valor e clique em Converter para ver o resultado.
-        </p>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            <ResultRow label="Você envia">
-              <span className="text-foreground font-bold tabular-nums">
-                {formatCurrency(result.amount, result.fromCurrency)}
-              </span>
-            </ResultRow>
-            <ResultRow label="Você recebe">
-              <span className="text-2xl font-bold text-brand-primary tabular-nums">
-                {formatCurrency(result.convertedAmount, result.toCurrency)}
-              </span>
-            </ResultRow>
-          </div>
+      <div className="flex flex-col gap-2">
+        <ResultRow label={text.sends}>
+          <span className="text-foreground font-bold tabular-nums">
+            {formatCurrency(summary.amount, summary.from)}
+          </span>
+        </ResultRow>
+        <ResultRow label={text.receives}>
+          <span className="text-2xl font-bold text-brand-primary tabular-nums">
+            {formatCurrency(summary.convertedAmount, summary.to)}
+          </span>
+        </ResultRow>
+      </div>
 
-          <div className="h-px bg-border" />
+      <div className="h-px bg-border" />
 
-          <div className="flex flex-col gap-2">
-            <ResultRow label={`Taxa (${result.fromCurrency} → ${result.toCurrency})`}>
-              <span className={detailValueClassName}>{formatExchangeRate(result.rate)}</span>
-            </ResultRow>
-            <ResultRow label="Taxa de serviço">
-              <span className={detailValueClassName}>
-                {formatCurrency(result.fee, result.fromCurrency)}
-              </span>
-            </ResultRow>
-            <ResultRow label="Data">
-              <span className={detailValueClassName}>
-                {formatDateTime(result.createdAt)}
-              </span>
-            </ResultRow>
-          </div>
-        </>
-      )}
+      <div className="flex flex-col gap-2">
+        <ResultRow label={`Taxa (${summary.from} → ${summary.to})`}>
+          <span className={detailValueClassName}>{formatExchangeRate(summary.rate)}</span>
+        </ResultRow>
+        <ResultRow label="Taxa de serviço">
+          <span className={detailValueClassName}>
+            {formatCurrency(summary.fee, summary.from)}
+          </span>
+        </ResultRow>
+        <ResultRow label={text.date}>
+          <span className={detailValueClassName}>{formatDateTime(summary.at)}</span>
+        </ResultRow>
+      </div>
+
+      {children}
     </div>
   );
 }

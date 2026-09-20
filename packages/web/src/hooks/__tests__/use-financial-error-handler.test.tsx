@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { toast } from "sonner";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
-import { OPERATION_CONFLICT_MESSAGE, SESSION_EXPIRED_MESSAGE } from "@/lib/financial-error";
+import {
+  OPERATION_CONFLICT_MESSAGE,
+  SERVICE_UNAVAILABLE_MESSAGE,
+  SESSION_EXPIRED_MESSAGE,
+} from "@/lib/financial-error";
 import { ApiError } from "@/services/api";
 import { useInsufficientBalanceStore } from "@/stores/insufficient-balance";
 
@@ -31,6 +35,15 @@ describe("useFinancialErrorHandler", () => {
     expect(toast.error).toHaveBeenCalledWith(OPERATION_CONFLICT_MESSAGE, expect.any(Object));
     expect(OPERATION_CONFLICT_MESSAGE).toMatch(/tente novamente/i);
     expect(useInsufficientBalanceStore.getState().isOpen).toBe(false);
+  });
+
+  it("503 (sem cotação viva) vira mensagem amigável de 'tente novamente'", () => {
+    const { result } = renderHook(() => useFinancialErrorHandler());
+
+    result.current(new ApiError(503, "upstream", "EXCHANGE_RATE_UNAVAILABLE"));
+
+    expect(toast.error).toHaveBeenCalledWith(SERVICE_UNAVAILABLE_MESSAGE, expect.any(Object));
+    expect(SERVICE_UNAVAILABLE_MESSAGE).toMatch(/tente novamente/i);
   });
 
   it("erros em sequência usam o mesmo id de toast (não empilham)", () => {

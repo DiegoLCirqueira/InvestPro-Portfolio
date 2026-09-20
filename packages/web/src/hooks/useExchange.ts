@@ -2,6 +2,8 @@ import { api } from "@/services/api";
 import { useQuery } from "@/hooks/use-query";
 import { useMutation } from "@/hooks/use-mutation";
 import type {
+  ConvertRequest,
+  ConvertResponse,
   CurrencyListResponse,
   ExecuteExchangeInput,
   ExecuteExchangeResponse,
@@ -23,6 +25,18 @@ export function useExchange() {
   };
 }
 
+export interface UseConvertExchangeOptions {
+  onError?: (error: Error) => void;
+}
+
+/** Simula o câmbio (POST /exchange/convert): calcula taxa e valor, sem debitar nada. */
+export function useConvertExchange(options: UseConvertExchangeOptions = {}) {
+  return useMutation<ConvertResponse, ConvertRequest>({
+    action: (input) => api.post<ConvertResponse>("/exchange/convert", input),
+    onError: options.onError,
+  });
+}
+
 export interface UseExecuteExchangeOptions {
   onSuccess?: (data: ExecuteExchangeResponse) => void;
   onError?: (error: Error) => void;
@@ -38,6 +52,8 @@ export function useExecuteExchange(options: UseExecuteExchangeOptions = {}) {
 }
 
 export type {
+  ConvertRequest,
+  ConvertResponse,
   CurrencyListResponse,
   ExecuteExchangeInput,
   ExecuteExchangeResponse,

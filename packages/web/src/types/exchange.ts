@@ -29,3 +29,32 @@ export interface CurrencyHolding {
 export interface CurrencyHoldingList {
   items: CurrencyHolding[];
 }
+
+export interface ConvertRequest {
+  from: string;
+  to: string;
+  amount: number;
+}
+
+// Simulação (POST /exchange/convert): nada é debitado.
+export interface ConvertResponse {
+  from: string;
+  to: string;
+  amount: number;
+  convertedAmount: number;
+  rate: number;
+  // Na moeda de origem.
+  fee: number;
+  timestamp: string;
+}
+
+// Forma única para exibir tanto a simulação quanto a conversão executada.
+export interface ExchangeSummary {
+  from: string;
+  to: string;
+  amount: number;
+  convertedAmount: number;
+  rate: number;
+  fee: number;
+  at: string;
+}
