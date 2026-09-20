@@ -36,6 +36,17 @@ export function useExchangeFlow({ input, onExecuted }: UseExchangeFlowOptions) {
   const [executed, setExecuted] = useState<ExchangeSummary | null>(null);
 
   const currentKey = quoteKey(input.from, input.to, input.amount);
+
+  // Descarta a simulação NO MOMENTO da mudança. Só comparar a chave esconderia o resultado, mas
+  // ele reapareceria (com a cotação antiga) ao voltar ao valor/De/Para anterior. Ajustar o estado
+  // durante a renderização é o padrão do React para reagir a uma mudança de props.
+  const [lastKey, setLastKey] = useState(currentKey);
+  if (lastKey !== currentKey) {
+    setLastKey(currentKey);
+    setQuote(null);
+  }
+
+  // A chave também protege a simulação em andamento: uma resposta que chega depois da mudança não vale.
   const activeQuote = quote?.key === currentKey ? quote.response : null;
 
   const findInputError = (): string | null => {

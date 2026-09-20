@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
 import { Exchange } from "@/pages/Exchange";
@@ -124,6 +124,66 @@ describe("Exchange (simular e depois realizar)", () => {
     await screen.findByRole("button", { name: "Realizar conversão" });
     fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
     expect(realizeButton()).not.toBeInTheDocument();
+  });
+
+  describe("a simulação é descartada, não só escondida", () => {
+    const expectDiscardedUntilConvertAgain = async () => {
+      expect(realizeButton()).not.toBeInTheDocument();
+      expect(screen.queryByText("Simulação")).not.toBeInTheDocument();
+      expect(postsTo("/exchange/convert")).toHaveLength(1);
+
+      clickConvert();
+      await screen.findByRole("button", { name: "Realizar conversão" });
+      expect(postsTo("/exchange/convert")).toHaveLength(2);
+    };
+
+    it("mudar o valor e voltar ao valor anterior exige 'Converter' de novo", async () => {
+      mockApi();
+      await renderExchange();
+      await simulate();
+
+      typeAmount("2000");
+      typeAmount("1000");
+
+      await expectDiscardedUntilConvertAgain();
+    });
+
+    it("trocar o Para e voltar ao mesmo exige 'Converter' de novo", async () => {
+      mockApi();
+      await renderExchange();
+      await simulate();
+
+      await chooseCurrency("exchange-to", /EUR/);
+      await chooseCurrency("exchange-to", /USD/);
+
+      await expectDiscardedUntilConvertAgain();
+    });
+
+    it("inverter De/Para duas vezes (volta ao par original) exige 'Converter' de novo", async () => {
+      mockApi();
+      await renderExchange();
+      await simulate();
+
+      fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
+      fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
+
+      await expectDiscardedUntilConvertAgain();
+    });
+
+    it("uma simulação que responde DEPOIS de o valor mudar não é exibida", async () => {
+      let answerConvert: (quote: typeof QUOTE) => void = () => {};
+      mockApi({ convert: () => new Promise((resolve) => (answerConvert = resolve)) });
+      await renderExchange();
+
+      typeAmount("1000");
+      clickConvert();
+      typeAmount("2000");
+      await act(async () => answerConvert(QUOTE));
+
+      await screen.findByRole("button", { name: "Converter" });
+      expect(realizeButton()).not.toBeInTheDocument();
+      expect(screen.queryByText("Simulação")).not.toBeInTheDocument();
+    });
   });
 
   it("três envios de 'Realizar conversão' no mesmo tick executam uma vez só", async () => {
