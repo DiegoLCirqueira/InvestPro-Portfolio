@@ -137,7 +137,7 @@ describe("CpfSection", () => {
 
     fillAndSave();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Muitas tentativas. Tente novamente em 30 s.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Muitas tentativas. Tente novamente em 30 segundos.");
     expect(passwordInput().value).toBe("");
   });
 

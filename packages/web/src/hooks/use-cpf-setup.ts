@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useUpdateProfile } from "@/hooks/use-profile";
 import { formatCpf, isValidCpf, normalizeCpf } from "@/lib/cpf";
+import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
 
 type CpfFormField = "cpf" | "currentPassword";
@@ -21,10 +22,7 @@ function serverError(error: Error): CpfFormError {
     if (error.code === "INVALID_CURRENT_PASSWORD") return { message: "Senha atual incorreta.", field: "currentPassword" };
     if (error.code === "CPF_ALREADY_SET") return { message: "Seu CPF já foi cadastrado e não pode ser alterado.", field: "cpf" };
     if (error.code === "CPF_IN_USE") return { message: "Não foi possível usar este CPF.", field: "cpf" };
-    if (error.status === 429) {
-      const wait = error.retryAfterSeconds ? ` Tente novamente em ${error.retryAfterSeconds} s.` : " Aguarde alguns instantes e tente novamente.";
-      return { message: `Muitas tentativas.${wait}`, field: "currentPassword" };
-    }
+    if (isRateLimitError(error)) return { message: rateLimitMessage(error.retryAfterSeconds), field: "currentPassword" };
     if (error.status === 400) return INVALID_CPF;
   }
   return { message: error.message, field: "cpf" };

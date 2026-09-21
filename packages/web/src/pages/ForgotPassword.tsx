@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useForgotPassword } from "@/hooks/use-password-reset";
+import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormData,
@@ -30,8 +31,12 @@ export function ForgotPassword() {
       // Backend responde 200 genérico sempre — não revela se o email existe.
       await mutate(data);
       setSubmitted(true);
-    } catch {
-      toast.error("Não foi possível enviar o link agora. Tente novamente.");
+    } catch (error) {
+      toast.error(
+        isRateLimitError(error)
+          ? rateLimitMessage(error.retryAfterSeconds)
+          : "Não foi possível enviar o link agora. Tente novamente.",
+      );
     }
   }
 

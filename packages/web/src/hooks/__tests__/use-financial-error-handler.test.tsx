@@ -57,6 +57,17 @@ describe("useFinancialErrorHandler", () => {
     expect(ids[0]).toBe(ids[1]);
   });
 
+  it("429 vira mensagem própria em pt-BR, sem o texto cru do servidor", () => {
+    const { result } = renderHook(() => useFinancialErrorHandler());
+
+    result.current(new ApiError(429, "Rate limit exceeded, retry in 12 seconds", "RATE_LIMIT_EXCEEDED", 12));
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Muitas tentativas. Tente novamente em 12 segundos.",
+      expect.any(Object),
+    );
+  });
+
   it("401 avisa que a sessão expirou; outros erros mostram a mensagem do servidor", () => {
     const { result } = renderHook(() => useFinancialErrorHandler());
 

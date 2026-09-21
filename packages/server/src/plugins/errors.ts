@@ -11,6 +11,16 @@ const VALIDATION_CODES: readonly string[] = [
   "FST_ERR_VALIDATION_TIMEOUT",
 ];
 
+// O plugin @fastify/rate-limit gera o texto em inglês; o code, o status e os headers
+// (Retry-After em segundos, x-ratelimit-*) ficam como o plugin os setou.
+function rateLimitMessage(retryAfter: number | string | string[] | undefined): string {
+  const seconds = Math.ceil(Number(retryAfter));
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "Muitas requisições. Tente novamente em alguns instantes.";
+  }
+  return `Muitas requisições. Tente novamente em ${seconds} ${seconds === 1 ? "segundo" : "segundos"}.`;
+}
+
 interface ErrorLike {
   code?: string;
   message?: string;
@@ -58,7 +68,7 @@ export async function registerErrorHandler(app: FastifyInstance): Promise<void> 
     // Rate limit atingido: o plugin @fastify/rate-limit já setou o header
     // Retry-After (e x-ratelimit-*) na reply antes de lançar o erro.
     if (statusCode === 429) {
-      return sendError(reply, 429, "RATE_LIMIT_EXCEEDED", message);
+      return sendError(reply, 429, "RATE_LIMIT_EXCEEDED", rateLimitMessage(reply.getHeader("retry-after")));
     }
 
     // Validação do schema (Zod/Fastify), parse de corpo inválido ou mídia:

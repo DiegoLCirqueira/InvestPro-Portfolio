@@ -592,8 +592,14 @@ describe('rate limit de auth', () => {
     const limited = await attempt()
     expect(limited.statusCode).toBe(429)
     expect(limited.json().error).toBe('RATE_LIMIT_EXCEEDED')
-    expect(typeof limited.json().message).toBe('string')
-    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0)
+    const retryAfterSeconds = Number(limited.headers['retry-after'])
+    expect(retryAfterSeconds).toBeGreaterThan(0)
+    // Mensagem em pt-BR (não o texto em inglês do plugin), com os mesmos segundos do Retry-After.
+    expect(limited.json().message).toBe(
+      `Muitas requisições. Tente novamente em ${retryAfterSeconds} ${retryAfterSeconds === 1 ? 'segundo' : 'segundos'}.`
+    )
+    expect(limited.json().message).not.toMatch(/rate limit|retry in/i)
+    expect(limited.headers['x-ratelimit-limit']).toBeDefined()
   }, 60000)
 })
 

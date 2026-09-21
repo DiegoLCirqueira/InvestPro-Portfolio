@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useAuthStore } from "@/stores/auth";
+import { apiErrorMessage } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
 import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
 
@@ -37,12 +38,9 @@ export function Register() {
       navigate("/");
     } catch (error) {
       if (error instanceof ApiError) {
-        toast.error(error.message);
-        if (error.code === "EMAIL_TAKEN") {
-          setError("email", { message: error.message });
-        } else {
-          setError("root", { message: error.message });
-        }
+        const message = apiErrorMessage(error);
+        toast.error(message);
+        setError(error.code === "EMAIL_TAKEN" ? "email" : "root", { message });
       } else {
         toast.error("Não foi possível criar a conta. Tente novamente.");
       }

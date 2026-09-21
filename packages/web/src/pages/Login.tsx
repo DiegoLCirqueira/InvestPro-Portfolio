@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useAuthStore } from "@/stores/auth";
+import { apiErrorMessage, isRateLimitError } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 
@@ -32,9 +33,10 @@ export function Login() {
       navigate("/");
     } catch (error) {
       if (error instanceof ApiError) {
-        toast.error(error.message);
-        if (error.code === "INVALID_CREDENTIALS") {
-          setError("root", { message: error.message });
+        const message = apiErrorMessage(error);
+        toast.error(message);
+        if (error.code === "INVALID_CREDENTIALS" || isRateLimitError(error)) {
+          setError("root", { message });
         }
       } else {
         toast.error("Não foi possível entrar. Tente novamente.");
