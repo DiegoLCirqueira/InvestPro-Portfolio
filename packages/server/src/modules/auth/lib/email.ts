@@ -3,9 +3,25 @@
 
 import { env } from '../../../config/env.js'
 import { RESET_TOKEN_EXPIRY_MINUTES } from './resetToken.js'
+import { EmailDeliveryError } from './emailDeliveryError.js'
+import { maskEmailsIn } from './maskEmail.js'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 const FETCH_TIMEOUT_MS = 10_000
+
+interface ResendErrorBody {
+  name?: string
+  message?: string
+}
+
+async function readResendError(response: Response): Promise<ResendErrorBody> {
+  const text = await response.text().catch(() => '')
+  try {
+    return JSON.parse(text) as ResendErrorBody
+  } catch {
+    return { message: text.slice(0, 200) }
+  }
+}
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   if (!env.RESEND_API_KEY) {
@@ -24,12 +40,18 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
   } catch (err) {
-    throw new Error(`Resend: falha de rede ao enviar email: ${err instanceof Error ? err.message : String(err)}`)
+    throw new EmailDeliveryError(
+      `Resend: falha de rede ao enviar email: ${err instanceof Error ? err.message : String(err)}`
+    )
   }
 
   if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`Resend: HTTP ${response.status} ao enviar email: ${body}`)
+    const { name, message } = await readResendError(response)
+    throw new EmailDeliveryError(
+      `Resend: HTTP ${response.status} (${name ?? 'sem código'}) ao enviar email: ${maskEmailsIn(message ?? '')}`,
+      response.status,
+      name
+    )
   }
 }
 

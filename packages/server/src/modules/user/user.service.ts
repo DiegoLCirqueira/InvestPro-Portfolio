@@ -7,6 +7,7 @@ import {
   isAccountRateLimited,
   registerLoginFailure,
 } from '../auth/lib/loginRateLimit.js'
+import { isUniqueViolation } from '../../shared/db/uniqueViolation.js'
 import type { UpdateUserBody } from './user.schema.js'
 
 const userSelect = {
@@ -68,10 +69,6 @@ async function setCpfOnce(tx: Prisma.TransactionClient, userId: string, cpf: str
 // CPF de outra conta: a mensagem não confirma que ele existe nem de quem é.
 function cpfInUseError(): AppError {
   return new AppError('CPF_IN_USE', 'Não foi possível usar este CPF', 409)
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002'
 }
 
 export async function updateMe(userId: string, data: UpdateUserBody) {

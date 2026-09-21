@@ -1,5 +1,6 @@
 import type { FastifyBaseLogger } from "fastify";
 import type { RefreshToken as StoredRefreshToken } from "@prisma/client";
+import { normalizeCpf } from "@investpro/shared";
 import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import type { RegisterBody, LoginBody } from "./auth.schema.js";
@@ -14,6 +15,8 @@ import { generatePasswordResetToken, hashResetToken } from "./lib/resetToken.js"
 import { isEmailRateLimited } from "./lib/emailRateLimit.js";
 import { isAccountRateLimited, registerLoginFailure, clearLoginAttempts } from "./lib/loginRateLimit.js";
 import { sendPasswordResetEmail, sendPasswordChangedEmail } from "./lib/email.js";
+import { logEmailFailure } from "./lib/emailFailureLog.js";
+import { isUniqueViolation, uniqueViolationFields } from "../../shared/db/uniqueViolation.js";
 
 interface AuthResult {
   user: { id: string; email: string; fullName: string };
@@ -27,30 +30,46 @@ function stripPassword<T extends { passwordHash?: string }>(obj: T): Omit<T, "pa
   return rest;
 }
 
+const emailTakenError = (): AppError => new AppError("EMAIL_TAKEN", "Email já está em uso", 409);
+
+// Conflito de CPF: a resposta é genérica de propósito (nem cita o CPF), pra o
+// cadastro não virar consulta de "este CPF já tem conta?".
+const registrationConflictError = (): AppError =>
+  new AppError("REGISTRATION_CONFLICT", "Não foi possível concluir o cadastro com esses dados", 409);
+
+// O findUnique de e-mail não enxerga um cadastro concorrente que ainda não
+// commitou: quem decide é o unique do banco. E-mail duplicado segue EMAIL_TAKEN;
+// qualquer outro campo (o CPF) vira o conflito genérico.
+function toRegistrationError(err: unknown): unknown {
+  if (!isUniqueViolation(err)) return err;
+  return uniqueViolationFields(err).includes("email") ? emailTakenError() : registrationConflictError();
+}
+
 export async function register(data: RegisterBody): Promise<AuthResult> {
+  // E-mail vem primeiro: com e-mail E CPF duplicados a resposta é EMAIL_TAKEN (o
+  // comportamento que já existia) e não diz nada do CPF.
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
-  if (existing) {
-    throw new AppError("EMAIL_TAKEN", "Email já está em uso", 409);
-  }
+  if (existing) throw emailTakenError();
 
   const passwordHash = await hashPassword(data.password);
+  // Guarda só os dígitos: com máscara e sem máscara o mesmo CPF colidiria no unique.
+  const cpf = data.cpf ? normalizeCpf(data.cpf) : null;
 
-  const result = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        fullName: data.fullName,
-        cpf: data.cpf ?? null,
-      },
+  const result = await prisma
+    .$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: data.email, passwordHash, fullName: data.fullName, cpf },
+      });
+
+      await tx.portfolio.create({
+        data: { userId: user.id },
+      });
+
+      return user;
+    })
+    .catch((err) => {
+      throw toRegistrationError(err);
     });
-
-    await tx.portfolio.create({
-      data: { userId: user.id },
-    });
-
-    return user;
-  });
 
   const accessToken = signAccessToken(result.id, env.JWT_SECRET);
   const { token: refreshToken, tokenHash, expiresAt } = generateRefreshToken(false);
@@ -289,7 +308,7 @@ export async function forgotPassword(email: string, log: FastifyBaseLogger): Pro
 
   const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
   void sendPasswordResetEmail(user.email, resetLink).catch((err) => {
-    log.error({ err }, "Erro ao enviar email de redefinição de senha");
+    logEmailFailure(log, "Erro ao enviar email de redefinição de senha", user.email, err);
   });
 }
 
@@ -333,7 +352,7 @@ export async function resetPassword(
   });
 
   void sendPasswordChangedEmail(user.email).catch((err) => {
-    log.error({ err }, "Erro ao enviar email de confirmação de senha alterada");
+    logEmailFailure(log, "Erro ao enviar email de confirmação de senha alterada", user.email, err);
   });
 }
 

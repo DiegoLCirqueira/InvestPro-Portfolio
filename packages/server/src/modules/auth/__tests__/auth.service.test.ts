@@ -81,9 +81,11 @@ vi.mock('../lib/emailRateLimit.js', () => ({
 }))
 
 import { randomBytes } from 'node:crypto'
+import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import type { FastifyBaseLogger } from 'fastify'
 import { register, login, refresh, logout, forgotPassword, resetPassword, AppError } from '../auth.service.js'
+import { EmailDeliveryError } from '../lib/emailDeliveryError.js'
 
 const fakeLog = { error: vi.fn() } as unknown as FastifyBaseLogger
 
@@ -136,6 +138,59 @@ describe('register', () => {
     expect(result.accessToken).toBeTruthy()
     expect(result.refreshToken).toBeTruthy()
     expect(result.user).not.toHaveProperty('passwordHash')
+  })
+
+  describe('conflito de unique no banco (P2002)', () => {
+    const uniqueViolationOn = (target: string[]) =>
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'teste',
+        meta: { target },
+      })
+
+    const registerWithTransactionFailing = (error: unknown) => {
+      mocks.findUnique.mockResolvedValue(null) // o findUnique de e-mail não enxerga a corrida
+      mocks.transaction.mockRejectedValue(error)
+      return register({ email: BASE.email, password: BASE.password, fullName: BASE.fullName, cpf: '52998224725' })
+    }
+
+    it('CPF duplicado vira 409 REGISTRATION_CONFLICT com mensagem genérica (nunca 500, nunca cita o CPF)', async () => {
+      const error = await registerWithTransactionFailing(uniqueViolationOn(['cpf'])).catch((err) => err)
+
+      expect(error).toMatchObject<Partial<AppError>>({ code: 'REGISTRATION_CONFLICT', statusCode: 409 })
+      expect(error.message).toBe('Não foi possível concluir o cadastro com esses dados')
+      expect(error.message.toLowerCase()).not.toContain('cpf')
+    })
+
+    it('e-mail duplicado numa corrida (o unique do banco decide) continua EMAIL_TAKEN', async () => {
+      await expect(registerWithTransactionFailing(uniqueViolationOn(['email']))).rejects.toMatchObject<AppError>({
+        code: 'EMAIL_TAKEN',
+        statusCode: 409,
+      })
+    })
+
+    it('erro que não é violação de unique segue propagando (é bug, não conflito)', async () => {
+      const outage = new Error('conexão perdida')
+
+      await expect(registerWithTransactionFailing(outage)).rejects.toBe(outage)
+    })
+
+    it('grava o CPF só com dígitos (com e sem máscara é o mesmo CPF pro unique)', async () => {
+      mocks.findUnique.mockResolvedValue(null)
+      mocks.transaction.mockImplementation(async (fn: unknown) =>
+        (fn as (tx: unknown) => Promise<unknown>)({
+          user: { create: mocks.userCreate },
+          portfolio: { create: mocks.portfolioCreate },
+        })
+      )
+      mocks.userCreate.mockResolvedValue(dbUser)
+      mocks.portfolioCreate.mockResolvedValue({ id: 'pf-1' })
+      mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-1' })
+
+      await register({ email: BASE.email, password: BASE.password, fullName: BASE.fullName, cpf: '529.982.247-25' })
+
+      expect(mocks.userCreate.mock.calls[0][0].data.cpf).toBe('52998224725')
+    })
   })
 
   it('lança EMAIL_TAKEN quando o email já existe', async () => {
@@ -517,6 +572,30 @@ describe('logout', () => {
   it('não lança erro quando o token não existe (deleteMany não encontra nada pra apagar)', async () => {
     mocks.refreshTokenDeleteMany.mockResolvedValue({ count: 0 })
     await expect(logout('desconhecido')).resolves.toBeUndefined()
+  })
+})
+
+describe('forgotPassword — falha no envio do e-mail', () => {
+  it('a resposta segue igual (sem lançar) e o log traz status/código do Resend, e-mail mascarado e nenhum token', async () => {
+    mocks.findUnique.mockResolvedValue(dbUser)
+    mocks.passwordResetTokenDeleteMany.mockResolvedValue({ count: 0 })
+    mocks.passwordResetTokenCreate.mockResolvedValue({ id: 'prt-1' })
+    mocks.sendPasswordResetEmail.mockRejectedValue(
+      new EmailDeliveryError('Resend: HTTP 403 (validation_error) ao enviar email', 403, 'validation_error')
+    )
+
+    await expect(forgotPassword(dbUser.email, fakeLog)).resolves.toBeUndefined()
+    await new Promise((resolve) => setImmediate(resolve)) // deixa o .catch do envio fire-and-forget rodar
+
+    const [link] = mocks.sendPasswordResetEmail.mock.calls[0].slice(1)
+    const token = new URL(link).searchParams.get('token') as string
+    expect(fakeLog.error).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'd***@i***.com', resendStatus: 403, resendError: 'validation_error' }),
+      'Erro ao enviar email de redefinição de senha'
+    )
+    const logged = JSON.stringify((fakeLog.error as ReturnType<typeof vi.fn>).mock.calls)
+    expect(logged).not.toContain(dbUser.email)
+    expect(logged).not.toContain(token)
   })
 })
 

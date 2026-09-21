@@ -7,6 +7,11 @@ const sharedTestEnv = {
   NODE_ENV: 'development',
 }
 
+// Os testes de integração falam com o Postgres remoto (registro com bcrypt, várias
+// idas e voltas por teste): o timeout padrão de 5 s estoura por latência quando a
+// suíte inteira roda em paralelo, sem que nada esteja errado.
+const sharedTimeouts = { testTimeout: 20_000, hookTimeout: 30_000 }
+
 // Módulos com transação Prisma Serializable (order, transfer, exchange,
 // portfolio/topup): sob paralelismo total de arquivos, escritas concorrentes
 // contra o mesmo Supabase esgotam o retry de conflito de serialização — 409
@@ -23,6 +28,7 @@ export default defineConfig({
       {
         test: {
           name: 'serializable-tx',
+          ...sharedTimeouts,
           environment: 'node',
           globals: true,
           include: serializableTxInclude,
@@ -33,6 +39,7 @@ export default defineConfig({
       {
         test: {
           name: 'default',
+          ...sharedTimeouts,
           environment: 'node',
           globals: true,
           include: ['src/**/*.test.ts'],
