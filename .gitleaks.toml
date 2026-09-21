@@ -1,0 +1,11 @@
+# Configuração do Gitleaks (job "secret-scan" do CI).
+# Mantém TODAS as regras padrão ligadas e libera apenas o valor exato abaixo.
+title = "InvestPro"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Senha de fixture usada só em testes automatizados (valor fictício, nunca usado fora dos testes)"
+# Casa com o valor (secret) encontrado, não com o nome do arquivo: um segredo real colado num teste continua sendo detectado.
+regexes = ['''^SenhaForte123$''']
