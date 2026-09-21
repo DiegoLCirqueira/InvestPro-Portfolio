@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, registerSchema } from "@/lib/validations/auth";
+import { forgotPasswordSchema, loginSchema, registerSchema } from "@/lib/validations/auth";
 
 const validLogin = { email: "ana@example.com", password: "senha123" };
 const validRegister = {
@@ -67,5 +67,20 @@ describe("registerSchema", () => {
     expect(
       registerSchema.safeParse({ ...validRegister, confirmPassword: "" }).success,
     ).toBe(false);
+  });
+});
+describe("email com espaços nas pontas (o servidor faz trim, o cliente não pode recusar)", () => {
+  const padded = "  ana@example.com ";
+
+  it.each([
+    ["login", () => loginSchema.parse({ ...validLogin, email: padded })],
+    ["cadastro", () => registerSchema.parse({ ...validRegister, email: padded })],
+    ["esqueci a senha", () => forgotPasswordSchema.parse({ email: padded })],
+  ])("%s aceita e envia o email sem os espaços", (_tela, parse) => {
+    expect(parse().email).toBe("ana@example.com");
+  });
+
+  it("um email só de espaços continua sendo 'obrigatório'", () => {
+    expect(loginSchema.safeParse({ ...validLogin, email: "   " }).success).toBe(false);
   });
 });

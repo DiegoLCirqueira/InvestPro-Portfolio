@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
 import { useResetPassword } from "@/hooks/use-password-reset";
+import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
+import { ApiError } from "@/services/api";
 import {
   resetPasswordSchema,
   type ResetPasswordFormData,
@@ -15,6 +18,13 @@ import {
 // Mensagem única pra token invalido/expirado/ja usado — não diferencia o motivo.
 const GENERIC_ERROR_MESSAGE =
   "Não foi possível redefinir sua senha. O link pode ser inválido, ter expirado ou já ter sido usado.";
+const UNAVAILABLE_MESSAGE = "Não foi possível redefinir sua senha agora. Tente novamente.";
+
+// Só uma resposta 4xx (que não seja limite de tentativas) diz que o link não serve mais;
+// limite de tentativas, 5xx e falha de rede deixam o formulário aberto para tentar de novo.
+function isRejectedLink(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500 && !isRateLimitError(error);
+}
 
 export function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -38,10 +48,14 @@ export function ResetPassword() {
       return;
     }
     try {
-      await mutate({ token, password: data.password });
+      await mutate({ token, newPassword: data.password });
       setStatus("success");
-    } catch {
-      setStatus("error");
+    } catch (error) {
+      if (isRejectedLink(error)) {
+        setStatus("error");
+      } else {
+        toast.error(isRateLimitError(error) ? rateLimitMessage(error.retryAfterSeconds) : UNAVAILABLE_MESSAGE);
+      }
     }
   }
 

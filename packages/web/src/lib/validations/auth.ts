@@ -1,10 +1,11 @@
 import { z } from "zod";
 
+// O servidor normaliza o email (trim + minúsculas) antes de validar; o cliente não pode ser mais
+// rígido: o teclado do celular costuma deixar um espaço no fim ao autocompletar.
+const emailField = z.string().trim().min(1, "Email é obrigatório").email("Email inválido");
+
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email é obrigatório")
-    .email("Email inválido"),
+  email: emailField,
   password: z
     .string()
     .min(1, "Senha é obrigatória")
@@ -19,10 +20,7 @@ export const registerSchema = z
       .string()
       .min(1, "Nome é obrigatório")
       .min(2, "Nome deve ter pelo menos 2 caracteres"),
-    email: z
-      .string()
-      .min(1, "Email é obrigatório")
-      .email("Email inválido"),
+    email: emailField,
     password: z
       .string()
       .min(1, "Senha é obrigatória")
@@ -39,10 +37,7 @@ export const registerSchema = z
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email é obrigatório")
-    .email("Email inválido"),
+  email: emailField,
 });
 
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

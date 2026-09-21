@@ -15,7 +15,7 @@ export function useForgotPassword(): ReturnType<
 
 export interface ResetPasswordInput {
   token: string;
-  password: string;
+  newPassword: string;
 }
 
 export function useResetPassword(): ReturnType<
