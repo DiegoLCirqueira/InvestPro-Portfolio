@@ -1,3 +1,5 @@
+import { CONTACT_MAILTO } from "@/lib/company";
+
 // Rodapé do mobile: uma faixa compacta que vive no fim do conteúdo rolável
 // (não fica fixo na tela). O rodapé completo é só do desktop (Footer).
 export function MobileFooter() {
@@ -8,15 +10,12 @@ export function MobileFooter() {
       <span className="font-bold uppercase tracking-wider text-foreground">
         InvestPro <span className="font-normal normal-case">&copy; {currentYear}</span>
       </span>
-      <nav aria-label="Rodapé" className="flex gap-4">
-        <span>Políticas</span>
-        <a
-          href="mailto:contato@investpro.com.br"
-          className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-        >
-          Contato
-        </a>
-      </nav>
+      <a
+        href={CONTACT_MAILTO}
+        className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+      >
+        Contato
+      </a>
     </footer>
   );
 }

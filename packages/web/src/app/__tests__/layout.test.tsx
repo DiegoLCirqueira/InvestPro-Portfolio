@@ -39,7 +39,23 @@ describe("Layout", () => {
     const desktopFooter = footers.find((footer) => !scrollArea.contains(footer));
 
     expect(desktopFooter).toBeDefined();
-    expect(desktopFooter).toHaveTextContent("Empresa");
+    expect(within(desktopFooter as HTMLElement).getByRole("link", { name: "contato@investpro.com.br" })).toHaveAttribute(
+      "href",
+      "mailto:contato@investpro.com.br",
+    );
+  });
+
+  it("os rodapés não têm itens institucionais sem destino", () => {
+    const { container } = renderLayout();
+    const footersText = screen
+      .getAllByRole("contentinfo", { hidden: true })
+      .map((footer) => footer.textContent)
+      .join(" ");
+
+    for (const deadItem of ["Sobre Nós", "Investidores", "Privacidade", "Compliance", "Políticas"]) {
+      expect(footersText).not.toContain(deadItem);
+    }
+    expect(container.textContent).not.toContain("Premium");
   });
 
   it("a barra inferior de navegação está presente e nomeada", () => {

@@ -48,7 +48,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { to: "/exchange", label: "Câmbio", icon: DollarSign },
       { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
-      { to: "/recommendations", label: "Assistente", icon: Lightbulb },
+      { to: "/recommendations", label: "Recomendações", icon: Lightbulb },
     ],
   },
 ];

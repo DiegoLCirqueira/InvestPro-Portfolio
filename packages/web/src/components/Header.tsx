@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
+import { User, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
+import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { useAuthStore } from "@/stores/auth";
 import { useTheme } from "@/hooks/use-theme";
-
-interface Notification {
-  id: number;
-  title: string;
-  text: string;
-}
 
 export function Header() {
   const location = useLocation();
@@ -16,8 +10,6 @@ export function Header() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const isDashboard = location.pathname === "/";
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const notificationsRef = useRef<HTMLDivElement>(null);
   const { isDark, toggle: toggleTheme } = useTheme();
 
   const hour = new Date().getHours();
@@ -29,31 +21,6 @@ export function Header() {
     day: "2-digit",
     month: "long",
   });
-
-  const notifications: Notification[] = [
-    { id: 1, title: "Alerta de mercado", text: "IBOVESPA subiu +1.24% hoje." },
-    {
-      id: 2,
-      title: "Recomendação de IA",
-      text: "Nova oportunidade em ações de tecnologia.",
-    },
-    {
-      id: 3,
-      title: "Lembrete",
-      text: "Revise sua diversificação este mês.",
-    },
-  ];
-
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (!isNotificationsOpen) return;
-      if (!notificationsRef.current) return;
-      if (notificationsRef.current.contains(e.target as Node)) return;
-      setIsNotificationsOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [isNotificationsOpen]);
 
   return (
     <header className="flex items-center gap-4 nav:gap-6 mb-3 nav:mb-10">
@@ -82,10 +49,7 @@ export function Header() {
         ) : null}
       </div>
 
-      <div
-        className="flex items-center gap-3 nav:gap-5 relative ml-auto"
-        ref={notificationsRef}
-      >
+      <div className="flex items-center gap-3 nav:gap-5 ml-auto">
         <button
           type="button"
           onClick={toggleTheme}
@@ -95,57 +59,13 @@ export function Header() {
           {isDark ? <Moon size={20} /> : <Sun size={20} />}
         </button>
 
-        <button
-          onClick={() => setIsNotificationsOpen((v) => !v)}
-          className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-all relative group"
-          type="button"
-          aria-label="Notificações"
-        >
-          <Bell size={20} />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-brand-primary rounded-full border-2 border-brand-bg group-hover:scale-110 transition-transform"></span>
-        </button>
-
-        {isNotificationsOpen ? (
-          <div className="absolute right-0 top-12 w-80 rounded-2xl border border-border bg-surface-1 shadow-2xl overflow-hidden z-30">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
-                Notificações
-              </span>
-              <button
-                className="text-[10px] text-muted-foreground hover:text-foreground font-semibold"
-                type="button"
-                onClick={() => setIsNotificationsOpen(false)}
-              >
-                Fechar
-              </button>
-            </div>
-
-            <div className="max-h-72 overflow-y-auto">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className="px-4 py-3 border-b border-border/70 last:border-0 hover:bg-secondary/60 transition-colors"
-                >
-                  <p className="text-xs font-bold text-foreground mb-1">{n.title}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {n.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <NotificationsMenu />
 
         <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-border">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-foreground leading-none">
               {user?.fullName || "Investidor"}
             </p>
-            <div className="flex items-center justify-end gap-1.5 mt-1">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
-                Premium Account
-              </p>
-            </div>
           </div>
 
           <div

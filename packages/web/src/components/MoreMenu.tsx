@@ -28,7 +28,7 @@ const MORE_ITEMS: MoreMenuItem[] = [
   { to: "/diversification", label: "Diversificação", icon: PieChart },
   { to: "/risk", label: "Risco", icon: Shield },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
-  { to: "/recommendations", label: "Assistente", icon: Lightbulb },
+  { to: "/recommendations", label: "Recomendações", icon: Lightbulb },
 ];
 
 const ADMIN_ITEM: MoreMenuItem = {
@@ -101,14 +101,9 @@ export function MoreMenu({ active }: MoreMenuProps) {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-primary">
               <User size={22} />
             </div>
-            <div>
-              <p className="text-sm font-bold leading-none text-foreground">
-                {user?.fullName || "Investidor"}
-              </p>
-              <p className="mt-1.5 text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">
-                Premium Account
-              </p>
-            </div>
+            <p className="text-sm font-bold text-foreground">
+              {user?.fullName || "Investidor"}
+            </p>
           </button>
 
           <div className="h-px bg-border" />

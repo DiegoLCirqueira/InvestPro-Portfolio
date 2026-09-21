@@ -1,4 +1,5 @@
-import { Sparkles } from "lucide-react";
+import { Lightbulb } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
 
 type TagColor = "brand-secondary" | "brand-primary" | "brand-danger";
 
@@ -7,18 +8,16 @@ interface Recommendation {
   title: string;
   description: string;
   category: string;
-  score: number;
   tagColor: TagColor;
 }
 
-const RECOMMENDATIONS: Recommendation[] = [
+// Conteúdo ILUSTRATIVO: não vem de nenhuma análise nem do perfil do usuário.
+const EXAMPLE_RECOMMENDATIONS: Recommendation[] = [
   {
     id: 1,
     title: "Considere diversificar em REITs",
-    description:
-      "Baseado no seu perfil, fundos imobiliários podem equilibrar seu portfólio",
+    description: "Fundos imobiliários podem equilibrar um portfólio concentrado em poucos ativos",
     category: "Diversificação",
-    score: 85,
     tagColor: "brand-secondary",
   },
   {
@@ -26,34 +25,27 @@ const RECOMMENDATIONS: Recommendation[] = [
     title: "Momento favorável para ações de tecnologia",
     description: "Análise técnica indica tendência de alta no setor",
     category: "Oportunidade",
-    score: 72,
     tagColor: "brand-primary",
   },
   {
     id: 3,
     title: "Reduzir exposição em commodities",
-    description:
-      "Volatilidade elevada prevista para os próximos meses",
+    description: "Volatilidade elevada prevista para os próximos meses",
     category: "Risco",
-    score: 68,
     tagColor: "brand-danger",
   },
   {
     id: 4,
     title: "Títulos do Tesouro para reserva de emergência",
-    description:
-      "Rentabilidade em alta e liquidez diária adequada ao seu perfil",
+    description: "Rentabilidade em alta e liquidez diária costumam combinar com uma reserva de emergência",
     category: "Oportunidade",
-    score: 78,
     tagColor: "brand-primary",
   },
   {
     id: 5,
     title: "Considerar ETFs internacionais para proteção cambial",
-    description:
-      "Exposição ao dólar pode proteger seu patrimônio em cenário de incerteza",
+    description: "Exposição ao dólar pode proteger o patrimônio em cenário de incerteza",
     category: "Diversificação",
-    score: 82,
     tagColor: "brand-secondary",
   },
 ];
@@ -68,40 +60,37 @@ export function Recommendations() {
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
       <header className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles size={24} className="text-brand-primary" />
-          <h2 className="text-2xl font-bold text-foreground">
-            Recomendações de IA
-          </h2>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Lightbulb size={24} className="text-brand-primary" />
+            <h2 className="text-2xl font-bold text-foreground">Exemplos de recomendações</h2>
+          </div>
+          <StatusBadge label="Exemplo" tone="warning" />
         </div>
-        <p className="text-muted-foreground text-sm">
-          Sugestões personalizadas geradas pela inteligência artificial do
-          InvestPro com base no seu perfil e no mercado.
+        <p role="note" className="text-muted-foreground text-sm">
+          Conteúdo ilustrativo, para mostrar como as recomendações aparecerão. Não é uma recomendação
+          personalizada nem uma recomendação de investimento.
         </p>
       </header>
 
       <div className="space-y-4">
-        {RECOMMENDATIONS.map((rec) => (
-          <div
+        {EXAMPLE_RECOMMENDATIONS.map((rec) => (
+          <article
             key={rec.id}
-            className="bg-surface-1 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all cursor-pointer group"
+            className="bg-surface-1 border border-border p-5 rounded-2xl"
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-brand-primary transition-colors">
-                  {rec.title}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {rec.description}
-                </p>
+                <h3 className="text-lg font-bold text-foreground mb-2">{rec.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{rec.description}</p>
               </div>
               <span
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${TAG_STYLES[rec.tagColor]}`}
               >
-                {rec.category} {rec.score}%
+                {rec.category}
               </span>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </div>
