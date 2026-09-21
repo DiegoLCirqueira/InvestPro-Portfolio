@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
+import { isEstimatedPrice } from "@/lib/market";
 import { computeOrderSettlement } from "@/lib/order-fee";
 import {
   buildTickerOptions,
@@ -132,6 +133,7 @@ export function useOrderForm({
     ownedQuantity,
     quantityError,
     settlement,
+    isPriceEstimated: selectedAsset !== undefined && isEstimatedPrice(selectedAsset),
     findSubmitError,
     buildInput,
     reset,

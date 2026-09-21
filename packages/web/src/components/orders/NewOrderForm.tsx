@@ -131,7 +131,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         )}
       </FormField>
 
-      <OrderSummary side={form.side} settlement={form.settlement} />
+      <OrderSummary side={form.side} settlement={form.settlement} isPriceEstimated={form.isPriceEstimated} />
 
       {form.needsPrice && (
         <FormField label="Preço" htmlFor="order-price">

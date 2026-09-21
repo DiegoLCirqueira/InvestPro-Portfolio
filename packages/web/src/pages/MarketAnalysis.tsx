@@ -3,9 +3,12 @@ import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { EstimatedPriceTag } from "@/components/market/EstimatedPriceTag";
+import { EstimatedPricesBanner } from "@/components/market/EstimatedPricesBanner";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useMarketAssets } from "@/hooks/use-market-assets";
 import { formatCurrency, formatPercent as formatPercentValue } from "@/lib/format";
+import { isEstimatedPrice } from "@/lib/market";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
 
 const ASSET_TYPE_LABELS: Record<MarketAssetType, string> = {
@@ -68,8 +71,11 @@ function AssetCard({ asset }: { asset: MarketAsset }) {
         {asset.name}
       </p>
       <div className="flex items-center justify-between">
-        <span className="text-lg font-bold tabular-nums text-foreground">
-          {formatPrice(asset.price)}
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-lg font-bold tabular-nums text-foreground">
+            {formatPrice(asset.price)}
+          </span>
+          {isEstimatedPrice(asset) && <EstimatedPriceTag />}
         </span>
         <span
           className={`text-sm font-bold tabular-nums ${
@@ -97,6 +103,7 @@ export function MarketAnalysis() {
 
   const assets = data?.items ?? [];
 
+  const hasEstimatedPrices = assets.some(isEstimatedPrice);
   const highlights = [...assets]
     .sort((a, b) => (b.changePercent ?? b.change24h) - (a.changePercent ?? a.change24h))
     .slice(0, 3);
@@ -151,6 +158,8 @@ export function MarketAnalysis() {
         </div>
       </div>
 
+      {hasEstimatedPrices && <EstimatedPricesBanner />}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {highlights.map((index) => {
           const isUp = (index.changePercent ?? index.change24h) >= 0;
@@ -167,9 +176,12 @@ export function MarketAnalysis() {
               </h4>
 
               <div className="space-y-1">
-                <span className="text-3xl font-bold block tabular-nums text-foreground">
-                  {formatPrice(index.price)}
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-3xl font-bold tabular-nums text-foreground">
+                    {formatPrice(index.price)}
+                  </span>
+                  {isEstimatedPrice(index) && <EstimatedPriceTag />}
+                </div>
                 <div
                   className={`flex items-center gap-2 text-sm font-semibold ${
                     isUp ? "text-brand-primary" : "text-destructive"
@@ -245,8 +257,11 @@ export function MarketAnalysis() {
                             </span>
                           </div>
                         </td>
-                        <td className="py-3 text-sm font-medium tabular-nums truncate">
-                          {formatPrice(asset.price)}
+                        <td className="py-3 text-sm font-medium tabular-nums">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span>{formatPrice(asset.price)}</span>
+                            {isEstimatedPrice(asset) && <EstimatedPriceTag />}
+                          </div>
                         </td>
                         <td className="py-3">
                           <StatusBadge

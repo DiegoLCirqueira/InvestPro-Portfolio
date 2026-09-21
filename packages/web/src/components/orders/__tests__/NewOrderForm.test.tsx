@@ -10,6 +10,15 @@ const mockSellable = vi.hoisted(() => ({
   isLoading: false,
 }));
 
+// PETR4 sem priceSource (= ao vivo), BTC estimado ("seed"), ITUB4 explicitamente ao vivo.
+const mockMarket = vi.hoisted(() => ({
+  items: [
+    { id: "1", ticker: "PETR4", name: "Petrobras", type: "STOCK", price: 30, change24h: 0 },
+    { id: "2", ticker: "BTC", name: "Bitcoin", type: "CRYPTO", price: 100, change24h: 0, priceSource: "seed" },
+    { id: "3", ticker: "ITUB4", name: "Itaú", type: "STOCK", price: 40, change24h: 0, priceSource: "live" },
+  ],
+}));
+
 const mockCreateOrder = vi.hoisted(() => ({
   mutate: vi.fn(),
   onError: undefined as undefined | ((error: Error) => void),
@@ -17,12 +26,7 @@ const mockCreateOrder = vi.hoisted(() => ({
 
 vi.mock("@/hooks/use-market-assets", () => ({
   useMarketAssets: () => ({
-    data: {
-      items: [
-        { id: "1", ticker: "PETR4", name: "Petrobras", type: "STOCK", price: 30, change24h: 0 },
-        { id: "2", ticker: "BTC", name: "Bitcoin", type: "CRYPTO", price: 100, change24h: 0 },
-      ],
-    },
+    data: { items: mockMarket.items },
     isLoading: false,
   }),
 }));
@@ -62,6 +66,20 @@ describe("NewOrderForm", () => {
     expect(screen.getByText("Taxa InvestPro (1%)")).toBeTruthy();
     expect(screen.getByText("Você pagará")).toBeTruthy();
     expect(screen.getByText(/1\.010,00/)).toBeTruthy();
+  });
+
+  it("ativo com preço 'seed' mostra a nota de preço estimado sob o Valor total; ao vivo não", () => {
+    render(<NewOrderForm onCreated={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Quantidade"), { target: { value: "1" } });
+
+    typeTicker("BTC");
+    expect(screen.getByText("Preço estimado; o valor executado pode diferir.")).toBeInTheDocument();
+
+    typeTicker("PETR4");
+    expect(screen.queryByText(/Preço estimado/)).not.toBeInTheDocument();
+
+    typeTicker("ITUB4");
+    expect(screen.queryByText(/Preço estimado/)).not.toBeInTheDocument();
   });
 
   it("venda sem posições mostra o estado vazio e bloqueia o envio", () => {

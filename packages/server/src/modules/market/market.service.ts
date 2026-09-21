@@ -7,6 +7,7 @@ import type {
   AssetList,
   AssetQuery,
   PriceHistory,
+  PriceSource,
   Quote,
 } from '@investpro/shared'
 import { AppError } from '../auth/auth.service.js'
@@ -50,27 +51,33 @@ function findAsset(ticker: string): SeedAsset | undefined {
   return baseAssets.find((a) => a.ticker === ticker.toUpperCase())
 }
 
-function toAsset(seed: SeedAsset): Asset {
-  const quote = cacheGet<MarketQuote>(quoteCacheKey(seed.ticker))
-  if (quote) {
-    return {
-      id: seed.id,
-      ticker: seed.ticker,
-      name: quote.name,
-      type: seed.type,
-      price: quote.price,
-      change24h: quote.change24h,
-      changePercent: quote.changePercent,
-    }
-  }
+// Preço estático de referência, marcado como seed pra o cliente poder avisar que
+// não é cotação viva.
+function seedAsQuote(seed: SeedAsset): MarketQuote {
   return {
-    id: seed.id,
     ticker: seed.ticker,
     name: seed.name,
     type: seed.type,
     price: seed.price,
     change24h: seed.change24h,
     changePercent: seed.changePercent,
+    priceSource: 'seed',
+  }
+}
+
+const priceSourceOf = (quote: MarketQuote): PriceSource => quote.priceSource ?? 'live'
+
+function toAsset(seed: SeedAsset): Asset {
+  const quote = cacheGet<MarketQuote>(quoteCacheKey(seed.ticker)) ?? seedAsQuote(seed)
+  return {
+    id: seed.id,
+    ticker: seed.ticker,
+    name: quote.name,
+    type: seed.type,
+    price: quote.price,
+    change24h: quote.change24h,
+    changePercent: quote.changePercent,
+    priceSource: priceSourceOf(quote),
   }
 }
 
@@ -80,6 +87,7 @@ function toQuote(quote: MarketQuote): Quote {
     price: quote.price,
     change: quote.change24h,
     changePercent: quote.changePercent,
+    priceSource: priceSourceOf(quote),
   }
 }
 
@@ -149,14 +157,7 @@ export async function getQuote(ticker: string): Promise<Quote> {
     logError(`Sem adapter para a fonte ${seed.source} de ${normalized}; usando fallback`)
   }
 
-  const fallback: MarketQuote = {
-    ticker: seed.ticker,
-    name: seed.name,
-    type: seed.type,
-    price: seed.price,
-    change24h: seed.change24h,
-    changePercent: seed.changePercent,
-  }
+  const fallback = seedAsQuote(seed)
   cacheSet(cacheKey, fallback, QUOTE_TTL_MS)
   return toQuote(fallback)
 }

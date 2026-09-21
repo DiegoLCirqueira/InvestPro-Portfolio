@@ -26,6 +26,7 @@ vi.mock('../adapters/awesomeapi.js', () => ({
 
 import { AppError } from '../auth/auth.service.js'
 import { getAssets, getHistory, getQuote } from '../market.service.js'
+import { cacheClear } from '../cache.js'
 import type { SourceAsset } from '../adapters/types.js'
 
 // Brapi: sucesso para todos os ativos, exceto VALE3 (reservado para o teste de fallback).
@@ -112,6 +113,39 @@ describe('getQuote', () => {
     const quote = await getQuote('VALE3')
     expect(quote.ticker).toBe('VALE3')
     expect(quote.price).toBe(62.75)
+  })
+})
+
+// priceSource: 'live' = cotação da fonte externa (ou do cache dela); 'seed' = preço
+// estático de referência (fonte falhou ou ainda não houve cotação). O frontend usa
+// isso pra avisar que o preço não é uma cotação viva.
+describe('priceSource', () => {
+  it("getQuote: 'live' quando a fonte responde, 'seed' quando cai no fallback estático", async () => {
+    cacheClear()
+
+    expect((await getQuote('PETR4')).priceSource).toBe('live')
+    expect((await getQuote('VALE3')).priceSource).toBe('seed') // brapi mockada falha só pra VALE3
+  })
+
+  it("o fallback fica marcado como 'seed' também nas leituras seguintes, vindas do cache", async () => {
+    cacheClear()
+    await getQuote('VALE3')
+
+    expect((await getQuote('VALE3')).priceSource).toBe('seed')
+  })
+
+  it("getAssets: 'live' pro que tem cotação viva em cache; 'seed' pro fallback e pro que nunca foi cotado", async () => {
+    cacheClear()
+    await getQuote('PETR4') // live
+    await getQuote('VALE3') // fallback (seed)
+
+    const { items } = await getAssets({ page: 1, limit: 100 })
+    const sourceOf = (ticker: string) => items.find((a) => a.ticker === ticker)?.priceSource
+
+    expect(sourceOf('PETR4')).toBe('live')
+    expect(sourceOf('VALE3')).toBe('seed')
+    expect(sourceOf('BOVA11')).toBe('seed') // nenhuma cotação ainda: preço de seed
+    expect(items.every((a) => a.priceSource === 'live' || a.priceSource === 'seed')).toBe(true)
   })
 })
 

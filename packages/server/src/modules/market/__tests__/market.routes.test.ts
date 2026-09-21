@@ -28,6 +28,12 @@ describe('GET /api/v1/market/assets', () => {
     expect(body).toHaveProperty('limit')
   })
 
+  it("cada item traz priceSource ('live' ou 'seed')", async () => {
+    const res = await app!.inject({ method: 'GET', url: '/api/v1/market/assets' })
+    const items: Array<{ priceSource?: string }> = res.json().items
+    expect(items.every((a) => a.priceSource === 'live' || a.priceSource === 'seed')).toBe(true)
+  })
+
   it('filtra por tipo CRYPTO', async () => {
     const res = await app!.inject({ method: 'GET', url: '/api/v1/market/assets?type=CRYPTO' })
     expect(res.statusCode).toBe(200)
@@ -50,6 +56,7 @@ describe('GET /api/v1/market/quotes/:ticker', () => {
     const body = res.json()
     expect(body.ticker).toBe('PETR4')
     expect(body.price).toBeGreaterThan(0)
+    expect(['live', 'seed']).toContain(body.priceSource)
   })
 
   it('retorna 404 para ticker desconhecido', async () => {

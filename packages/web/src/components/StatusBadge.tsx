@@ -28,11 +28,13 @@ interface StatusBadgeProps {
   tone: StatusTone;
   /** Largura mínima uniforme entre badges vizinhos (ex.: colunas de tabela); nunca corta o texto. */
   uniformWidth?: boolean;
+  title?: string;
 }
 
-export function StatusBadge({ label, tone, uniformWidth = false }: StatusBadgeProps) {
+export function StatusBadge({ label, tone, uniformWidth = false, title }: StatusBadgeProps) {
   return (
     <span
+      title={title}
       className={`${BASE_CLASSES} ${TONE_CLASSES[tone]} ${uniformWidth ? UNIFORM_WIDTH_CLASS : ""}`}
     >
       {label}

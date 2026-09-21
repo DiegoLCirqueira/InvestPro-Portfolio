@@ -4,6 +4,11 @@
 import { z } from 'zod';
 import { ASSET_TYPES } from '../types/enums.js';
 
+// live: cotação viva da fonte externa (ou do cache dela). seed: preço estático de
+// referência, usado quando a fonte falha — serve pra exibir, não como cotação.
+// Opcional no contrato: campo aditivo, o servidor sempre o preenche.
+export const priceSourceSchema = z.enum(['live', 'seed']);
+
 export const assetSchema = z.object({
   id: z.string(),
   ticker: z.string(),
@@ -12,6 +17,7 @@ export const assetSchema = z.object({
   price: z.number().nonnegative(),
   change24h: z.number(),
   changePercent: z.number().optional(),
+  priceSource: priceSourceSchema.optional(),
 });
 
 export const quoteSchema = z.object({
@@ -20,6 +26,7 @@ export const quoteSchema = z.object({
   change: z.number(),
   changePercent: z.number().optional(),
   volume: z.number().nonnegative().optional(),
+  priceSource: priceSourceSchema.optional(),
 });
 
 export const assetQuerySchema = z.object({
@@ -52,6 +59,7 @@ export const priceHistorySchema = z.object({
   points: z.array(priceHistoryPointSchema),
 });
 
+export type PriceSource = z.infer<typeof priceSourceSchema>;
 export type Asset = z.infer<typeof assetSchema>;
 export type Quote = z.infer<typeof quoteSchema>;
 export type AssetQuery = z.infer<typeof assetQuerySchema>;

@@ -1,6 +1,8 @@
 // @investpro/server
 // Tipos comuns das fontes de dados de mercado.
 
+import type { PriceSource } from '@investpro/shared'
+
 export type MarketAssetType = 'CRYPTO' | 'STOCK' | 'FIXED_INCOME'
 
 /** Ativo de referência que uma fonte deve cotar. */
@@ -28,6 +30,8 @@ export interface MarketQuote {
   price: number
   change24h: number
   changePercent?: number
+  /** Ausente = cotação viva (o que um adapter devolve); 'seed' marca o fallback estático. */
+  priceSource?: PriceSource
 }
 
 /** Contrato comum de uma fonte de dados de mercado (Brapi/CoinGecko/AwesomeAPI). */
