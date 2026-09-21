@@ -16,6 +16,9 @@ export interface UserProfile {
 export interface UpdateProfileInput {
   fullName?: string;
   phone?: string;
+  // Só pode ser definido uma vez (o servidor recusa se já existir) e exige a senha atual.
+  cpf?: string;
+  currentPassword?: string;
 }
 
 export interface UseProfileOptions {

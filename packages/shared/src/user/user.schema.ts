@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { USER_ROLES } from '../types/enums.js';
+import { isValidCpf, normalizeCpf } from './cpf.js';
 
 const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/;
 
@@ -11,10 +12,28 @@ export const cpfSchema = z.string().regex(
   'CPF inválido (use XXX.XXX.XXX-XX ou 11 dígitos)'
 );
 
+// CPF definido pelo perfil: formato + dígitos verificadores, entregue já
+// normalizado (11 dígitos). O cadastro segue com o cpfSchema só de formato.
+export const cpfInputSchema = cpfSchema
+  .refine((value) => isValidCpf(normalizeCpf(value)), 'CPF inválido')
+  .transform(normalizeCpf);
+
+// Definir o CPF (identidade financeira) exige reconfirmar a senha atual no mesmo
+// pedido: um access token roubado sozinho não basta pra fixar o CPF da conta.
+export const CPF_REQUIRES_PASSWORD_MESSAGE = 'Informe a senha atual para definir o CPF';
+
+export function hasPasswordWhenSettingCpf(data: { cpf?: string; currentPassword?: string }): boolean {
+  return data.cpf === undefined || Boolean(data.currentPassword);
+}
+
 export const updateUserInputSchema = z.object({
   fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
   phone: z.string().regex(/^\+?\d{10,15}$/, 'Telefone inválido').optional(),
-  cpf: cpfSchema.optional(),
+  cpf: cpfInputSchema.optional(),
+  currentPassword: z.string().min(1).optional(),
+}).refine(hasPasswordWhenSettingCpf, {
+  message: CPF_REQUIRES_PASSWORD_MESSAGE,
+  path: ['currentPassword'],
 });
 
 export const userMeResponseSchema = z.object({

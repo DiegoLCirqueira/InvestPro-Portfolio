@@ -32,7 +32,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
       // req.body no log (confirmado pelo AppSec), mas se algum log futuro vier
       // a expor a request completa, senha e CPF nunca aparecem em texto puro.
       redact: {
-        paths: ["req.body.password", "req.body.cpf"],
+        paths: ["req.body.password", "req.body.currentPassword", "req.body.cpf"],
         remove: true,
       },
       transport:

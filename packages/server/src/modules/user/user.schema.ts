@@ -1,14 +1,29 @@
 import { z } from 'zod'
+import {
+  CPF_REQUIRES_PASSWORD_MESSAGE,
+  cpfInputSchema,
+  hasPasswordWhenSettingCpf,
+} from '@investpro/shared'
 
-// CPF é definido no cadastro (auth.schema.ts) e não pode ser alterado pelo
-// usuário via perfil — .strict() garante 400 explícito se o campo for enviado,
-// em vez de descartá-lo silenciosamente.
+// CPF pode ser definido pelo perfil UMA vez: transferir exige CPF (BACEN) e o
+// cadastro não o pede, então sem isso uma conta nova nunca transferiria. Depois
+// de salvo fica travado (identidade financeira): o service responde 409
+// CPF_ALREADY_SET. Definir o CPF exige currentPassword no mesmo body (400 se
+// faltar; a senha em si é conferida no service). O schema já entrega o CPF
+// normalizado (11 dígitos) e com dígitos verificadores válidos. .strict() dá 400
+// explícito a campos desconhecidos em vez de descartá-los silenciosamente.
 export const updateUserBodySchema = z
   .object({
     fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
     phone: z.string().regex(/^\+?\d{10,15}$/, 'Telefone inválido').optional(),
+    cpf: cpfInputSchema.optional(),
+    currentPassword: z.string().min(1).optional(),
   })
   .strict()
+  .refine(hasPasswordWhenSettingCpf, {
+    message: CPF_REQUIRES_PASSWORD_MESSAGE,
+    path: ['currentPassword'],
+  })
 
 export const userMeResponseSchema = z.object({
   id: z.string(),

@@ -51,14 +51,17 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         tags: ['User'],
         summary: 'Atualizar perfil do usuário',
-        description: 'Atualiza os dados do perfil do usuário autenticado.',
+        description:
+          'Atualiza os dados do perfil do usuário autenticado. Definir o CPF (uma única vez) exige currentPassword: senha errada = 403 INVALID_CURRENT_PASSWORD.',
         security: [{ BearerAuth: [] }],
         body: updateUserBodySchema,
         response: {
           200: updateUserResponseSchema,
           400: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
+          429: errorResponseSchema,
         },
       },
     },

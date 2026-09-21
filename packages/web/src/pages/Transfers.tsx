@@ -84,7 +84,7 @@ export function Transfers() {
           {
             action: {
               label: "Completar CPF",
-              onClick: () => navigate("/profile"),
+              onClick: () => navigate("/profile#cpf"),
             },
           },
         );

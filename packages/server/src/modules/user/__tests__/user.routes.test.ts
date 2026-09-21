@@ -86,7 +86,7 @@ describe('PATCH /api/v1/users/me', () => {
     expect(res.json().fullName).toBe('QA Atualizado')
   })
 
-  it('rejeita tentativa de alterar CPF (somente leitura) com 400', async () => {
+  it('rejeita CPF com dígitos verificadores inválidos com 400', async () => {
     const res = await app!.inject({
       method: 'PATCH',
       url: '/api/v1/users/me',

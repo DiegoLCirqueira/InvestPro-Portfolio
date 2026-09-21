@@ -12,6 +12,7 @@ export * from './types/user.js';
 export * from './client/apiClient.js';
 
 export * from './auth/auth.schema.js';
+export * from './user/cpf.js';
 export * from './user/user.schema.js';
 export * from './portfolio/portfolio.schema.js';
 export * from './market/market.schema.js';

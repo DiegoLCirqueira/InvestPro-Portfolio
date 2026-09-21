@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ChevronLeft, ShieldCheck, Wallet, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
@@ -11,41 +11,13 @@ import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { EmptyState } from "@/components/EmptyState";
+import { CpfSection } from "@/components/profile/CpfSection";
+import { ProfileField } from "@/components/profile/ProfileField";
 import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 
 const PHONE_REGEX = /^\+?\d{10,15}$/;
-
-interface FieldProps {
-  label: string;
-  value: string;
-  onChange?: (value: string) => void;
-  editable?: boolean;
-  muted?: boolean;
-  placeholder?: string;
-}
-
-function Field({ label, value, onChange, editable = false, muted = false, placeholder }: FieldProps) {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-semibold text-muted-foreground">
-        {label}
-      </label>
-      <input
-        value={value}
-        placeholder={placeholder}
-        onChange={editable && onChange ? (e) => onChange(e.target.value) : undefined}
-        disabled={!editable}
-        className={`w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-sm transition-colors duration-200 ${
-          editable
-            ? "focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            : "focus:outline-none"
-        } ${muted ? "opacity-40" : ""}`}
-      />
-    </div>
-  );
-}
 
 function ProfileFieldsSkeleton() {
   return (
@@ -130,6 +102,7 @@ function TopUpCard() {
 
 export function UserProfile() {
   const navigate = useNavigate();
+  const shouldFocusCpf = useLocation().hash === "#cpf";
   const authUser = useAuthStore((s) => s.user);
   const setAuthUser = useAuthStore((s) => s.setUser);
   const isAdmin = authUser?.role === "ADMIN";
@@ -204,16 +177,15 @@ export function UserProfile() {
   ) : (
     <>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Field label="Nome Completo" value={fullName} onChange={setFullName} editable />
-        <Field label="Email" value={profile.email} />
-        <Field
+        <ProfileField label="Nome Completo" value={fullName} onChange={setFullName} editable />
+        <ProfileField label="Email" value={profile.email} />
+        <ProfileField
           label="Telefone"
           value={phone}
           onChange={setPhone}
           editable
           placeholder="+5511999999999"
         />
-        <Field label="CPF" value={profile.cpf ?? "Não informado"} muted />
 
         <button
           type="submit"
@@ -223,6 +195,10 @@ export function UserProfile() {
           {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
         </button>
       </form>
+
+      <div className="mt-6">
+        <CpfSection savedCpf={profile.cpf} onAlreadySet={refetch} shouldFocus={shouldFocusCpf} />
+      </div>
 
       <div className="mt-6 space-y-3">
         <TopUpCard />
@@ -242,34 +218,30 @@ export function UserProfile() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500 overflow-hidden">
-      {/* Abaixo de nav: página cheia, sem moldura de card, navegação padrão de voltar */}
-      <div className="nav:hidden flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1 min-h-11 -ml-2 px-2 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <ChevronLeft size={20} />
-          Voltar
-        </button>
-        <h2 className="text-2xl font-bold text-foreground mb-6">Perfil do Usuário</h2>
-        {body}
-      </div>
+      <div className="flex-1 flex nav:items-start nav:justify-center min-h-0 overflow-y-auto custom-scrollbar">
+        {/* Mobile: página cheia, sem moldura. Desktop (nav): card centralizado. */}
+        <div className="w-full flex flex-col nav:max-w-xl nav:rounded-2xl nav:border nav:border-border nav:bg-surface-1 nav:p-8 nav:shadow-2xl">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="nav:hidden flex items-center gap-1 min-h-11 -ml-2 px-2 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ChevronLeft size={20} />
+            Voltar
+          </button>
 
-      {/* A partir de nav: card centralizado */}
-      <div className="hidden nav:flex flex-1 items-start justify-center min-h-0 overflow-y-auto custom-scrollbar">
-        <div className="w-full max-w-xl rounded-2xl border border-border bg-surface-1 p-8 shadow-2xl">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 nav:mb-8">
             <h2 className="text-2xl font-bold text-foreground">Perfil do Usuário</h2>
             <button
               onClick={() => navigate("/")}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="hidden nav:block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label="Fechar"
               type="button"
             >
               <X size={18} />
             </button>
           </div>
+
           {body}
         </div>
       </div>

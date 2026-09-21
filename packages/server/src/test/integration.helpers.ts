@@ -2,7 +2,9 @@
 // Helpers de integração para testes de rota autenticada contra o PostgreSQL real.
 // Não faz parte da suíte de testes (sem sufixo .test.ts) — apenas utilitários.
 
+import { randomInt } from 'node:crypto'
 import jwt from 'jsonwebtoken'
+import { buildCpfFromBase, isValidCpf } from '@investpro/shared'
 import type { FastifyInstance } from 'fastify'
 import { buildServer } from '../server.js'
 import { prisma } from '../config/database.js'
@@ -21,6 +23,15 @@ export function uniqueIp(): string {
   seq += 1
   const n = (seq % 240) + 1
   return `10.200.0.${n}`
+}
+
+/** CPF com dígitos verificadores válidos, aleatório (11 dígitos): pro fluxo que valida o CPF de verdade. */
+export function uniqueValidCpf(): string {
+  let cpf = ''
+  do {
+    cpf = buildCpfFromBase(String(randomInt(0, 1_000_000_000)).padStart(9, '0'))
+  } while (!isValidCpf(cpf))
+  return cpf
 }
 
 /** CPF único (só formato, sem dígito verificador real) para cada usuário de teste. */
