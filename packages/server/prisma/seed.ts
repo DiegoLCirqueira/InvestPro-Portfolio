@@ -1,18 +1,36 @@
 import { PrismaClient } from '@prisma/client'
-import { hashSync } from 'bcryptjs'
+import { hashPassword } from '../src/modules/auth/lib/password.js'
+import { assertSeedAllowed, describeAccountPassword, resolveSeedPassword } from './seed-credentials.js'
 
 const prisma = new PrismaClient()
 
+const DEMO_EMAIL = 'diego@investpro.com'
+const ADMIN_EMAIL = 'admin@investpro.com'
+const DEMO_PASSWORD_ENV = 'SEED_USER_PASSWORD'
+const ADMIN_PASSWORD_ENV = 'SEED_ADMIN_PASSWORD'
+
+async function accountExists(email: string): Promise<boolean> {
+  return (await prisma.user.findUnique({ where: { email }, select: { id: true } })) !== null
+}
+
 async function main() {
+  // Antes de qualquer acesso ao banco: recusa produção sem autorização e valida
+  // as senhas das envs (sem senha fixa no código: ver seed-credentials.ts).
+  assertSeedAllowed()
+  const demoPassword = resolveSeedPassword(DEMO_PASSWORD_ENV)
+  const adminPassword = resolveSeedPassword(ADMIN_PASSWORD_ENV)
+
   console.log('Iniciando seed do banco de dados...')
 
-  const passwordHash = hashSync('123456', 10)
+  const demoExisted = await accountExists(DEMO_EMAIL)
+  // A senha só vale pra conta NOVA: o update do upsert nunca inclui passwordHash.
+  const passwordHash = await hashPassword(demoPassword.password)
 
   const user = await prisma.user.upsert({
-    where: { email: 'diego@investpro.com' },
+    where: { email: DEMO_EMAIL },
     update: {},
     create: {
-      email: 'diego@investpro.com',
+      email: DEMO_EMAIL,
       passwordHash,
       fullName: 'Diego',
       phone: '(11) 99999-9999',
@@ -21,14 +39,16 @@ async function main() {
   })
 
   console.log('Usuário criado:', user.email)
+  console.log(describeAccountPassword(DEMO_EMAIL, demoExisted, demoPassword, DEMO_PASSWORD_ENV))
 
-  const adminPasswordHash = hashSync('admin123456', 10)
+  const adminExisted = await accountExists(ADMIN_EMAIL)
+  const adminPasswordHash = await hashPassword(adminPassword.password)
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@investpro.com' },
+    where: { email: ADMIN_EMAIL },
     update: { role: 'ADMIN' },
     create: {
-      email: 'admin@investpro.com',
+      email: ADMIN_EMAIL,
       passwordHash: adminPasswordHash,
       fullName: 'Admin InvestPro',
       role: 'ADMIN',
@@ -45,6 +65,7 @@ async function main() {
   })
 
   console.log('Usuário admin criado:', admin.email)
+  console.log(describeAccountPassword(ADMIN_EMAIL, adminExisted, adminPassword, ADMIN_PASSWORD_ENV))
 
   const portfolio = await prisma.portfolio.upsert({
     where: { userId: user.id },

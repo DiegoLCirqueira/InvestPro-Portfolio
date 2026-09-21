@@ -59,6 +59,16 @@ npm run dev
 
 Acesse `http://localhost:5173` no navegador.
 
+### Contas iniciais (seed) — só em desenvolvimento
+
+`npm run prisma:seed --workspace=packages/server` cria a conta de demonstração
+(`diego@investpro.com`) e o admin (`admin@investpro.com`). **Não existe senha fixa
+no repositório**: defina `SEED_USER_PASSWORD` e `SEED_ADMIN_PASSWORD` (mínimo 12
+caracteres) no ambiente ou em `packages/server/.env`, ou deixe vazio e o seed gera uma
+senha aleatória e a mostra **uma única vez** no console, só quando cria a conta. Conta
+que já existe não tem a senha alterada. **Nunca rode o seed em produção**: ele recusa
+com `NODE_ENV=production` (o `prisma migrate reset` também o executa, só em dev).
+
 ---
 
 ## 📝 Licença

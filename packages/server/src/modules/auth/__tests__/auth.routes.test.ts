@@ -11,8 +11,10 @@ import { prisma } from '../../../config/database.js'
 import { hashResetToken } from '../lib/resetToken.js'
 import { hashRefreshToken } from '../lib/refreshToken.js'
 
-const SEED_EMAIL = 'diego@investpro.com'
-const SEED_PASSWORD = '123456'
+// Conta própria por execução (e-mail e senha aleatórios): o teste de login não
+// depende do seed nem de nenhuma senha fixa no repositório.
+const LOGIN_EMAIL = uniqueEmail('login')
+const LOGIN_PASSWORD = randomBytes(18).toString('base64url')
 
 let app: FastifyInstance | undefined
 
@@ -35,9 +37,16 @@ async function ageRotationOf(refreshTokenValue: string): Promise<void> {
 
 beforeAll(async () => {
   app = await startApp()
-})
+  await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/register',
+    remoteAddress: uniqueIp(),
+    payload: { email: LOGIN_EMAIL, password: LOGIN_PASSWORD, fullName: 'QA Login' },
+  })
+}, 30000)
 
 afterAll(async () => {
+  await deleteUser(LOGIN_EMAIL)
   await stopApp(app)
 })
 
@@ -118,11 +127,11 @@ describe('POST /api/v1/auth/login', () => {
       method: 'POST',
       url: '/api/v1/auth/login',
       remoteAddress: uniqueIp(),
-      payload: { email: SEED_EMAIL, password: SEED_PASSWORD },
+      payload: { email: LOGIN_EMAIL, password: LOGIN_PASSWORD },
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()
-    expect(body.user.email).toBe(SEED_EMAIL)
+    expect(body.user.email).toBe(LOGIN_EMAIL)
     expect(body.accessToken).toBeTruthy()
   })
 
@@ -131,10 +140,10 @@ describe('POST /api/v1/auth/login', () => {
       method: 'POST',
       url: '/api/v1/auth/login',
       remoteAddress: uniqueIp(),
-      payload: { email: `  ${SEED_EMAIL.toUpperCase()}  `, password: SEED_PASSWORD },
+      payload: { email: `  ${LOGIN_EMAIL.toUpperCase()}  `, password: LOGIN_PASSWORD },
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json().user.email).toBe(SEED_EMAIL)
+    expect(res.json().user.email).toBe(LOGIN_EMAIL)
   })
 
   it('senha incorreta retorna 401 INVALID_CREDENTIALS', async () => {
@@ -142,7 +151,7 @@ describe('POST /api/v1/auth/login', () => {
       method: 'POST',
       url: '/api/v1/auth/login',
       remoteAddress: uniqueIp(),
-      payload: { email: SEED_EMAIL, password: 'senha-errada' },
+      payload: { email: LOGIN_EMAIL, password: 'senha-errada' },
     })
     expect(res.statusCode).toBe(401)
     expect(res.json().error).toBe('INVALID_CREDENTIALS')

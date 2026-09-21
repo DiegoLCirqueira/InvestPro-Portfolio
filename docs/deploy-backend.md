@@ -183,6 +183,26 @@ sem trocar de provedor):
   pro log (`refresh_token_reuse_detected`, com ids e contagem, nunca o token).
 - Logout, token expirado e revogação por reuso real nunca entram nas janelas acima.
 
+### Seed: nunca em produção (e rotação das senhas antigas)
+
+- O `prisma/seed.ts` cria uma conta de demonstração (com saldo e posições) e um ADMIN.
+  Ele **não é chamado por nenhum script de start/deploy** (`railway.json`, `Dockerfile`,
+  scripts do `package.json`; `prisma migrate deploy` não semeia) e **recusa rodar** com
+  `NODE_ENV=production`, salvo `SEED_ALLOW_PRODUCTION=true` explícito (não recomendado).
+  Só o CI o executa, contra o Postgres descartável do job, com senhas geradas na hora.
+- Senhas do seed: `SEED_ADMIN_PASSWORD` / `SEED_USER_PASSWORD` (mínimo 12 caracteres) ou,
+  se ausentes, uma senha aleatória mostrada uma única vez no console ao criar a conta.
+  Conta existente nunca tem a senha alterada.
+- **Admin em produção:** não use o seed. Cadastre a conta normalmente e promova o papel
+  (`role = 'ADMIN'`) com um `UPDATE` controlado, com a senha vinda de um gerenciador de
+  segredos.
+- **Incidente (senhas antigas no histórico):** o seed antigo tinha as senhas do admin e da
+  conta demo em texto puro, e o repositório é público — o valor **fica no histórico do
+  git para sempre** (não reescrevemos histórico). Mitigação: **rotacione as duas senhas em
+  todo lugar onde possam ter sido usadas (desenvolvimento e produção)**; se o seed já rodou
+  em produção, trate as contas como comprometidas: troque a senha (ou desative a conta),
+  revogue os refresh tokens e revise o que o ADMIN pode ter feito.
+
 Para o **frontend (Vercel)**, definir `VITE_API_URL` aponta para a URL pública do
 serviço backend (ex.: `https://api.investpro.up.railway.app/api/v1`).
 

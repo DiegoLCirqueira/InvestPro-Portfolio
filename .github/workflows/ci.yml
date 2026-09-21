@@ -66,7 +66,12 @@ jobs:
         working-directory: packages/server
 
       - name: Seed database
-        run: npx tsx prisma/seed.ts
+        # Banco descartável do job; senhas geradas aqui, sem valor fixo no repositório.
+        # Definidas por env, o seed não as imprime (o log do CI é público).
+        run: |
+          SEED_USER_PASSWORD="$(openssl rand -base64 24)" \
+          SEED_ADMIN_PASSWORD="$(openssl rand -base64 24)" \
+          npx tsx prisma/seed.ts
         working-directory: packages/server
 
       - name: Test server

@@ -80,15 +80,17 @@ vi.mock('../lib/emailRateLimit.js', () => ({
   isEmailRateLimited: mocks.isEmailRateLimited,
 }))
 
+import { randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { FastifyBaseLogger } from 'fastify'
 import { register, login, refresh, logout, forgotPassword, resetPassword, AppError } from '../auth.service.js'
 
 const fakeLog = { error: vi.fn() } as unknown as FastifyBaseLogger
 
+// Senha de fixture aleatória por execução: nenhum valor fixo de senha no repositório.
 const BASE = {
   email: 'diego@investpro.com',
-  password: '123456',
+  password: randomBytes(12).toString('base64url'),
   fullName: 'Diego',
 }
 
