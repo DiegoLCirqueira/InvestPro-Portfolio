@@ -6,24 +6,15 @@ import { env } from "../config/env.js";
 // aqui (fora os básicos): sem isso o frontend não lê o Retry-After de um 429.
 const EXPOSED_HEADERS = ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"];
 
-export async function registerCors(app: FastifyInstance): Promise<void> {
-  if (env.NODE_ENV === "production") {
-    if (env.CORS_ORIGIN === "http://localhost:5173") {
-      throw new Error(
-        "CORS_ORIGIN must be explicitly set in production. " +
-          "Do not use the default localhost origin."
-      );
-    }
-    if (env.CORS_ORIGIN === "*") {
-      throw new Error(
-        "CORS_ORIGIN cannot be a wildcard ('*') in production when credentials: true. " +
-          "Set the exact frontend origin (e.g. https://investpro.example.com)."
-      );
-    }
-  }
-
+// As origens já vêm validadas (config/corsOrigins.ts). Uma só segue como string,
+// como sempre foi; com mais de uma, o plugin devolve em access-control-allow-origin
+// apenas a origem que chamou (nunca a lista) e nenhum header pra quem não está nela.
+export async function registerCors(
+  app: FastifyInstance,
+  origins: readonly string[] = env.CORS_ORIGINS
+): Promise<void> {
   await app.register(cors, {
-    origin: env.CORS_ORIGIN,
+    origin: origins.length === 1 ? origins[0] : [...origins],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: EXPOSED_HEADERS,

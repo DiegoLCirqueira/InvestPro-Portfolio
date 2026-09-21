@@ -89,9 +89,9 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `JWT_SECRET` | Longa e aleatória — ex.: gerada com `openssl rand -hex 64` |
 | `JWT_REFRESH_SECRET` | Longa e aleatória — ex.: gerada com `openssl rand -hex 64` |
 | `NODE_ENV` | `production` |
-| `CORS_ORIGIN` | URL do frontend no Vercel (ex.: `https://investpro1-five.vercel.app`) |
+| `CORS_ORIGIN` | Origem do frontend (ex.: `https://investpro1-five.vercel.app`) ou **várias, separadas por vírgula** (ver "Formato de `CORS_ORIGIN`" abaixo). |
 | `PORT` | Opcional — o Railway injeta a própria `PORT` automaticamente |
-| `FRONTEND_URL` | URL do frontend no Vercel — usada para montar o link de reset de senha (WI-20). Mesmo valor de `CORS_ORIGIN` na prática. |
+| `FRONTEND_URL` | URL do frontend — usada para montar o link de reset de senha (WI-20). **Uma só URL**: a origem principal (com várias em `CORS_ORIGIN`, use a que deve aparecer nos e-mails). |
 | `RESEND_API_KEY` | Chave da API do [Resend](https://resend.com) (WI-20, email transacional). **Precisa ser criada manualmente no painel do Resend** — não há acesso automatizado a isso. |
 | `TRUST_PROXY` | Opcional — de quais peers o `X-Forwarded-For` é aceito pro IP do cliente; padrão em produção: rede interna do proxy da Railway. Ver "IP do cliente atrás do proxy" abaixo. |
 | `EXCHANGE_RATE_FRESH_TTL_SECONDS` | Opcional — segundos em que a cotação de câmbio é reaproveitada sem chamar a AwesomeAPI. Padrão `30` (faixa 0-300). Ver "Cotação de câmbio" abaixo. |
@@ -103,9 +103,25 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `RESEND_FROM_EMAIL` | Remetente dos emails (ex.: `InvestPro <no-reply@investpro.app>`). Requer domínio verificado no Resend em produção — sem isso, usar o default `onboarding@resend.dev` (limitado, não recomendado pra produção real). |
 
 > **Importante:** a aplicação **falha na inicialização** se `NODE_ENV=production`
-> e `CORS_ORIGIN` não for definida explicitamente (proteção do plugin CORS em
-> `packages/server/src/plugins/cors.ts`). O valor **não** pode ser o default
-> `http://localhost:5173`.
+> e `CORS_ORIGIN` não for definida explicitamente, ou se ela for inválida (validação em
+> `packages/server/src/config/corsOrigins.ts`). O valor **não** pode ser o default
+> `http://localhost:5173` nem conter `*`.
+
+### Formato de `CORS_ORIGIN` (uma ou mais origens)
+
+- **Uma origem:** `CORS_ORIGIN=https://investpro.dev.br` (comportamento de sempre).
+- **Várias:** separadas por vírgula; espaços, itens vazios e duplicatas são ignorados.
+  Ex.: `CORS_ORIGIN=https://investpro1-five.vercel.app,https://investpro.dev.br`.
+- **Cada item é uma origem exata**, como o navegador a envia no header `Origin`:
+  esquema `http`/`https` + host [+ porta]. São recusados no boot: barra final
+  (`https://x.com/`), caminho, credenciais na URL, porta padrão explícita
+  (`:443`/`:80`), maiúsculas no host, esquema diferente de http/https e qualquer
+  curinga (`*`, `https://*.x.com`). A mensagem de erro cita a posição do item, nunca o valor.
+- **Resposta:** com mais de uma origem, `access-control-allow-origin` devolve **só a
+  origem que chamou** (nunca a lista) e `access-control-allow-credentials: true`; uma
+  origem fora da lista não recebe `allow-origin` e o navegador bloqueia.
+- Fora de produção, `*` sozinho continua aceito (só desenvolvimento); misturado a outras
+  origens é recusado.
 
 ### IP do cliente atrás do proxy (`TRUST_PROXY`)
 
@@ -203,6 +219,42 @@ sem trocar de provedor):
   em produção, trate as contas como comprometidas: troque a senha (ou desative a conta),
   revogue os refresh tokens e revise o que o ADMIN pode ter feito.
 
+### Domínio próprio (investpro.dev.br)
+
+Plano: **app** em `https://investpro.dev.br` e **API** em `https://api.investpro.dev.br`,
+com os endereços antigos (`https://investpro1-five.vercel.app` e a API na `railway.app`)
+**funcionando durante a migração**.
+
+Variáveis da Railway na virada (só mude quando chegar no passo correspondente):
+
+| Variável | Durante a transição | Depois de retirar o domínio antigo |
+|---|---|---|
+| `CORS_ORIGIN` | `https://investpro1-five.vercel.app,https://investpro.dev.br` | `https://investpro.dev.br` |
+| `FRONTEND_URL` | `https://investpro.dev.br` (link do e-mail de reset) | igual |
+| `RESEND_FROM_EMAIL` | `InvestPro <no-reply@investpro.dev.br>`, **só depois de verificar o domínio no Resend** (senão o Resend responde 403 `validation_error`) | igual |
+
+Ordem segura:
+
+1. **DNS:** registros do app (Vercel) e da API (`api.investpro.dev.br` → Railway) e, para o
+   e-mail, os registros de verificação do Resend (SPF/DKIM).
+2. **Verificação:** domínio verificado e certificado TLS ativo na Vercel, na Railway e no
+   Resend (nada disso mexe no app antigo).
+3. **CORS aceitando os dois:** `CORS_ORIGIN` com a origem antiga **e** a nova (e
+   `FRONTEND_URL`/`RESEND_FROM_EMAIL` conforme a tabela). Redeploy da API.
+4. **Troca da `VITE_API_URL` na Vercel** para `https://api.investpro.dev.br/api/v1`
+   (e novo deploy do frontend). O cookie de refresh é do host da API: quem já estava logado
+   precisa entrar de novo uma vez.
+5. **Validação:** login, renovação de sessão (refresh), cadastro, redefinição de senha (o
+   e-mail chega e o link abre em `investpro.dev.br`) e uma chamada com a origem antiga.
+6. **Retirar a origem antiga** de `CORS_ORIGIN` (e desligar os endereços antigos quando
+   não houver mais uso).
+
+**Cookie (não alterado agora):** em produção o cookie de refresh usa `SameSite=None; Secure`
+porque app e API estão em sites diferentes (`vercel.app` × `railway.app`). Depois de
+retirar o domínio antigo, `investpro.dev.br` e `api.investpro.dev.br` são o **mesmo site**
+(mesmo domínio registrável), e o cookie pode passar a `Lax`/`Strict`. Essa troca é uma
+decisão à parte, para depois da migração.
+
 Para o **frontend (Vercel)**, definir `VITE_API_URL` aponta para a URL pública do
 serviço backend (ex.: `https://api.investpro.up.railway.app/api/v1`).
 
@@ -289,7 +341,7 @@ railway logs --latest --lines 200
 | Sintoma | Causa provável | Solução |
 |---|---|---|
 | `P1001` / conexão recusada | `DATABASE_URL` sem `sslmode=require` ou apontando pro host errado (ex.: resquício do Railway Postgres antigo) | Confirme o host do pooler do Supabase e o `sslmode=require` |
-| Boot falha com erro de CORS | `NODE_ENV=production` sem `CORS_ORIGIN` explícita | Defina `CORS_ORIGIN` com a URL do Vercel |
+| Boot falha com erro de CORS | `NODE_ENV=production` sem `CORS_ORIGIN` explícita, ou lista inválida (barra final, caminho, curinga, item malformado) | Defina `CORS_ORIGIN` com origens exatas separadas por vírgula (a mensagem indica o item) |
 | `prisma migrate deploy` não encontrado | CLI `prisma` removida no runtime | Mantenha `prisma` em `dependencies` (já ajustado) |
 | Deploy disparado sem alterar backend | Watch paths ausentes | Use `watchPatterns` do `railway.json` |
 | Engine `linux-musl` faltando | Runtime Alpine sem binary target | `binaryTargets` já cobre no schema |

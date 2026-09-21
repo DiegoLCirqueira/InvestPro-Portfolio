@@ -27,7 +27,7 @@ function getCurrenciesFrom(origin: string) {
 
 describe('CORS', () => {
   it('expõe Retry-After e x-ratelimit-* ao frontend', async () => {
-    const res = await getCurrenciesFrom(env.CORS_ORIGIN)
+    const res = await getCurrenciesFrom(env.CORS_ORIGINS[0])
 
     const exposed = String(res.headers['access-control-expose-headers']).toLowerCase()
     expect(exposed.split(/\s*,\s*/)).toEqual(

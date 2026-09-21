@@ -1,6 +1,7 @@
 import { parseSecondsInRange } from "./duration.js";
 import { parseIntegerInRange } from "./integerSetting.js";
 import { ACCESS_TOKEN_TTL_SECONDS } from "./tokenLifetimes.js";
+import { parseCorsOrigins } from "./corsOrigins.js";
 import { parseTrustProxy } from "./trustProxy.js";
 
 const DEV_JWT_SECRET = "investpro-dev-secret-change-in-production";
@@ -69,7 +70,8 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://localhost:5432/investpro?schema=public",
   JWT_SECRET: jwtSecret,
   JWT_REFRESH_SECRET: jwtRefreshSecret,
-  CORS_ORIGIN: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  // Uma ou mais origens do frontend (CORS_ORIGIN separada por vírgula), já validadas.
+  CORS_ORIGINS: parseCorsOrigins(process.env.CORS_ORIGIN, isProduction),
   FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:5173",
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
