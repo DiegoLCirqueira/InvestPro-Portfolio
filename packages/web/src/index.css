@@ -160,7 +160,8 @@
 
   --color-foreground: #eef0f3;
   --color-muted: #9aa0ac;
-  --color-muted-foreground: #666d7a;
+  /* Texto secundário: >= 4,5:1 (AA) sobre qualquer superfície escura, e ainda mais discreto que --color-muted. */
+  --color-muted-foreground: #8a91a0;
 
   --color-border: #262c35;
   --color-border-strong: #333b47;

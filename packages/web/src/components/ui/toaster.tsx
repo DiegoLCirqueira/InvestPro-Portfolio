@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 function useDocumentTheme(): "dark" | "light" {
   const [theme, setTheme] = useState<"dark" | "light">(() =>
@@ -20,13 +21,24 @@ function useDocumentTheme(): "dark" | "light" {
   return theme;
 }
 
+// Abaixo do breakpoint `nav` (1120 px) existe a barra de navegação inferior, fixa: o toast sobe acima dela.
+const BOTTOM_NAV_VISIBLE_QUERY = "(max-width: 1119.98px)";
+const ABOVE_BOTTOM_NAV = {
+  bottom: "calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem)",
+};
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = useDocumentTheme();
+  const isBottomNavVisible = useMediaQuery(BOTTOM_NAV_VISIBLE_QUERY);
+  // O Sonner usa `mobileOffset` até 600 px e `offset` acima disso: os dois cobrem a faixa da barra.
+  const offset = isBottomNavVisible ? ABOVE_BOTTOM_NAV : undefined;
 
   return (
     <Sonner
       theme={theme}
       className="toaster group"
+      offset={offset}
+      mobileOffset={offset}
       toastOptions={{
         classNames: {
           toast:
