@@ -1,4 +1,5 @@
 import type { FastifyBaseLogger } from "fastify";
+import type { RefreshToken as StoredRefreshToken } from "@prisma/client";
 import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import type { RegisterBody, LoginBody } from "./auth.schema.js";
@@ -117,59 +118,151 @@ export async function login(data: LoginBody): Promise<AuthResult> {
   };
 }
 
-export async function refresh(
-  token: string
-): Promise<{ accessToken: string; refreshToken: string; rememberMe: boolean }> {
-  const tokenHash = hashRefreshToken(token);
-  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+// `refreshToken` ausente = a resposta NÃO deve trocar o cookie: o token atual
+// ainda vale (não elegível à rotação, ver isDueForRotation) ou o cliente já tem o
+// sucessor (ver refreshWithinReuseGrace).
+export interface RefreshResult {
+  accessToken: string;
+  refreshToken?: string;
+  rememberMe: boolean;
+}
+
+type RevokedRefreshToken = StoredRefreshToken & { revokedAt: Date };
+
+// Revoga só a FAMÍLIA do token reapresentado (os descendentes daquele login): quem
+// roubou/reusou um token perde a sessão comprometida, mas as outras sessões do
+// usuário (outros logins/dispositivos) seguem válidas. O evento vai pro log de
+// segurança sem o token (só ids e contagem).
+async function revokeFamilyOnReuse(stored: RevokedRefreshToken, log?: FastifyBaseLogger): Promise<never> {
+  const { count } = await prisma.refreshToken.updateMany({
+    where: { familyId: stored.familyId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  log?.warn(
+    {
+      event: "refresh_token_reuse_detected",
+      userId: stored.userId,
+      familyId: stored.familyId,
+      reusedTokenId: stored.id,
+      rotatedSecondsAgo: Math.round((Date.now() - stored.revokedAt.getTime()) / 1000),
+      revokedActiveTokens: count,
+    },
+    "Reuso de refresh token detectado: família revogada"
+  );
+  throw new AppError(
+    "REFRESH_TOKEN_REUSE_DETECTED",
+    "Sessão comprometida, faça login novamente",
+    401
+  );
+}
+
+// Só a família com token ativo ainda é uma sessão viva: logout, troca de senha e
+// revogação por reuso real deixam a família sem nenhum token ativo.
+async function familyHasActiveToken(familyId: string): Promise<boolean> {
+  const active = await prisma.refreshToken.count({
+    where: { familyId, revokedAt: null, expiresAt: { gt: new Date() } },
+  });
+  return active > 0;
+}
+
+async function isWithinReuseGrace(stored: RevokedRefreshToken): Promise<boolean> {
+  const graceMs = env.REFRESH_REUSE_GRACE_SECONDS * 1000;
+  const revokedAgoMs = Date.now() - stored.revokedAt.getTime();
+  const isRecentlyRotated = graceMs > 0 && revokedAgoMs <= graceMs;
+  if (!isRecentlyRotated || new Date() > stored.expiresAt) return false;
+
+  return familyHasActiveToken(stored.familyId);
+}
+
+// Tolerância de reuso: duas abas (ou recarga + renovação) mandam o MESMO cookie
+// quase juntas, e a segunda reapresenta um token que a primeira acabou de
+// rotacionar. Dentro de uma janela curta isso não é replay: devolve só um access
+// token novo, SEM emitir outro refresh token nem tocar na família. O cookie do
+// navegador já foi trocado pela primeira resposta (o jar é compartilhado entre
+// abas), então nada de credencial persistente sai de uma reapresentação — quem
+// copiou o token só ganha um access token de vida curta. Fora da janela, ou com a
+// família já sem token ativo (logout/reuso real), vale o comportamento estrito.
+async function refreshWithinReuseGrace(
+  stored: RevokedRefreshToken,
+  log?: FastifyBaseLogger
+): Promise<RefreshResult> {
+  if (!(await isWithinReuseGrace(stored))) return revokeFamilyOnReuse(stored, log);
+
+  return {
+    accessToken: signAccessToken(stored.userId, env.JWT_SECRET),
+    rememberMe: stored.rememberMe,
+  };
+}
+
+// Rotação atômica: o `revokedAt: null` no WHERE deixa só UMA de duas requisições
+// simultâneas revogar o token e criar o sucessor; a outra recebe null.
+async function rotateRefreshToken(stored: StoredRefreshToken): Promise<RefreshResult | null> {
+  const { token: newRefreshToken, tokenHash, expiresAt } = generateRefreshToken(stored.rememberMe);
+
+  const rotated = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    if (count === 0) return false;
+
+    await tx.refreshToken.create({
+      data: {
+        userId: stored.userId,
+        tokenHash,
+        familyId: stored.familyId,
+        rememberMe: stored.rememberMe,
+        expiresAt,
+      },
+    });
+    return true;
+  });
+
+  if (!rotated) return null;
+  return {
+    accessToken: signAccessToken(stored.userId, env.JWT_SECRET),
+    refreshToken: newRefreshToken,
+    rememberMe: stored.rememberMe,
+  };
+}
+
+// Rotação preguiçosa: só troca o refresh token depois de REFRESH_ROTATE_AFTER_SECONDS.
+// Recarregar a página várias vezes seguidas reusa o mesmo cookie, então abortar uma
+// resposta não deixa o navegador com um cookie que o servidor já rotacionou.
+function isDueForRotation(stored: StoredRefreshToken): boolean {
+  return Date.now() - stored.createdAt.getTime() >= env.REFRESH_ROTATE_AFTER_SECONDS * 1000;
+}
+
+export async function refresh(token: string, log?: FastifyBaseLogger): Promise<RefreshResult> {
+  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashRefreshToken(token) } });
 
   if (!stored) {
     throw new AppError("INVALID_REFRESH_TOKEN", "Refresh token inválido ou expirado", 401);
   }
 
-  // Token já rotacionado/revogado sendo reapresentado: sinal de replay (token
-  // roubado copiado antes da rotação). Revoga TODOS os refresh tokens ativos
-  // do usuário (não só a família), forçando novo login em todo dispositivo.
+  // Token já rotacionado/revogado sendo reapresentado: replay (token roubado
+  // copiado antes da rotação) ou corrida entre abas (ver refreshWithinReuseGrace).
   if (stored.revokedAt) {
-    await prisma.refreshToken.updateMany({
-      where: { userId: stored.userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-    throw new AppError(
-      "REFRESH_TOKEN_REUSE_DETECTED",
-      "Sessão comprometida, faça login novamente",
-      401
-    );
+    return refreshWithinReuseGrace({ ...stored, revokedAt: stored.revokedAt }, log);
   }
 
   if (new Date() > stored.expiresAt) {
     throw new AppError("REFRESH_TOKEN_EXPIRED", "Refresh token expirado", 401);
   }
 
-  const accessToken = signAccessToken(stored.userId, env.JWT_SECRET);
-  const {
-    token: newRefreshToken,
-    tokenHash: newTokenHash,
-    expiresAt,
-  } = generateRefreshToken(stored.rememberMe);
+  if (!isDueForRotation(stored)) {
+    return { accessToken: signAccessToken(stored.userId, env.JWT_SECRET), rememberMe: stored.rememberMe };
+  }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date() },
-    });
-    await tx.refreshToken.create({
-      data: {
-        userId: stored.userId,
-        tokenHash: newTokenHash,
-        familyId: stored.familyId,
-        rememberMe: stored.rememberMe,
-        expiresAt,
-      },
-    });
-  });
+  const rotated = await rotateRefreshToken(stored);
+  if (rotated) return rotated;
 
-  return { accessToken, refreshToken: newRefreshToken, rememberMe: stored.rememberMe };
+  // Perdeu a corrida: outra requisição rotacionou este token agora há pouco.
+  const current = await prisma.refreshToken.findUnique({ where: { id: stored.id } });
+  if (!current?.revokedAt) {
+    throw new AppError("INVALID_REFRESH_TOKEN", "Refresh token inválido ou expirado", 401);
+  }
+  return refreshWithinReuseGrace({ ...current, revokedAt: current.revokedAt }, log);
 }
 
 export async function logout(token: string): Promise<void> {

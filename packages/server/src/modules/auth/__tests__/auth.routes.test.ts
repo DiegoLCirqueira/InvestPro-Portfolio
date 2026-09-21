@@ -9,11 +9,29 @@ import { randomBytes } from 'node:crypto'
 import { deleteUser, startApp, stopApp, uniqueEmail, uniqueIp } from '../../../test/integration.helpers.js'
 import { prisma } from '../../../config/database.js'
 import { hashResetToken } from '../lib/resetToken.js'
+import { hashRefreshToken } from '../lib/refreshToken.js'
 
 const SEED_EMAIL = 'diego@investpro.com'
 const SEED_PASSWORD = '123456'
 
 let app: FastifyInstance | undefined
+
+// A rotação é preguiçosa: um token novo só é trocado depois de REFRESH_ROTATE_AFTER_SECONDS
+// (padrão 10 min). Envelhece o token pra o próximo refresh de fato rotacionar.
+async function makeDueForRotation(refreshTokenValue: string): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash: hashRefreshToken(refreshTokenValue) },
+    data: { createdAt: new Date(Date.now() - 11 * 60_000) },
+  })
+}
+
+// Empurra a rotação do token pra fora da janela de tolerância de reuso (10 s).
+async function ageRotationOf(refreshTokenValue: string): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash: hashRefreshToken(refreshTokenValue) },
+    data: { revokedAt: new Date(Date.now() - 60_000) },
+  })
+}
 
 beforeAll(async () => {
   app = await startApp()
@@ -195,7 +213,7 @@ describe('POST /api/v1/auth/refresh', () => {
     expect(res.json().error).toBe('MISSING_REFRESH_TOKEN')
   })
 
-  it('reapresentar um refresh token já rotacionado é detectado como reuso e revoga a sessão inteira (WI-27)', async () => {
+  it('reapresentar um refresh token já rotacionado, fora da janela, é reuso: 401 e revoga a família da sessão (WI-27)', async () => {
     const reuseEmail = uniqueEmail('refresh-reuse')
     const registerRes = await app!.inject({
       method: 'POST',
@@ -204,6 +222,7 @@ describe('POST /api/v1/auth/refresh', () => {
       payload: { email: reuseEmail, password: 'SenhaForte123', fullName: 'QA Reuse' },
     })
     const firstCookie = registerRes.cookies.find((c) => c.name === 'investpro_refresh_token')
+    await makeDueForRotation(firstCookie?.value ?? '')
 
     const rotated = await app!.inject({
       method: 'POST',
@@ -213,6 +232,10 @@ describe('POST /api/v1/auth/refresh', () => {
     })
     expect(rotated.statusCode).toBe(200)
     const secondCookie = rotated.cookies.find((c) => c.name === 'investpro_refresh_token')
+
+    // Fora da janela de tolerância (10 s): sem envelhecer a rotação, a
+    // reapresentação imediata seria a corrida entre abas, não replay.
+    await ageRotationOf(firstCookie?.value ?? '')
 
     // Reapresenta o token JÁ rotacionado (firstCookie) — sinal de replay.
     const reused = await app!.inject({
@@ -455,7 +478,7 @@ describe('POST /api/v1/auth/reset-password', () => {
     })
     expect(refreshAfterReset.statusCode).toBe(401)
     expect(refreshAfterReset.json().error).toBe('INVALID_REFRESH_TOKEN')
-  })
+  }, 30000) // 4 logins/reset com bcrypt contra o Postgres remoto: acima dos 5s padrão
 
   it('token expirado retorna 400 INVALID_RESET_TOKEN (mensagem genérica)', async () => {
     const token = await createResetToken({ expiresAt: new Date(Date.now() - 1000) })
@@ -562,5 +585,208 @@ describe('rate limit de auth', () => {
     expect(limited.json().error).toBe('RATE_LIMIT_EXCEEDED')
     expect(typeof limited.json().message).toBe('string')
     expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0)
+  }, 60000)
+})
+
+// Tolerância de reuso do refresh token (REFRESH_REUSE_GRACE_SECONDS, padrão 10 s):
+// duas abas mandando o mesmo cookie quase juntas não derrubam a sessão.
+describe('POST /api/v1/auth/refresh — janela de tolerância de reuso', () => {
+  const REFRESH_COOKIE = 'investpro_refresh_token'
+  const emails: string[] = []
+
+  async function registerWithCookie(
+    prefix: string
+  ): Promise<{ cookie: string; userId: string; email: string }> {
+    const email = uniqueEmail(prefix)
+    emails.push(email)
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email, password: 'SenhaForte123', fullName: 'QA Grace' },
+    })
+    return {
+      cookie: res.cookies.find((c) => c.name === REFRESH_COOKIE)?.value ?? '',
+      userId: res.json().user.id as string,
+      email,
+    }
+  }
+
+  async function loginCookie(email: string): Promise<string> {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      remoteAddress: uniqueIp(),
+      payload: { email, password: 'SenhaForte123' },
+    })
+    return res.cookies.find((c) => c.name === REFRESH_COOKIE)?.value ?? ''
+  }
+
+  function refreshWith(cookie: string) {
+    return app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      remoteAddress: uniqueIp(),
+      cookies: { [REFRESH_COOKIE]: cookie },
+    })
+  }
+
+  function logoutWith(cookie: string) {
+    return app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      remoteAddress: uniqueIp(),
+      cookies: { [REFRESH_COOKIE]: cookie },
+    })
+  }
+
+  const newCookieOf = (res: { cookies: Array<{ name: string; value: string }> }) =>
+    res.cookies.find((c) => c.name === REFRESH_COOKIE)?.value
+
+  async function activeTokenCountOf(userId: string): Promise<number> {
+    return prisma.refreshToken.count({ where: { userId, revokedAt: null } })
+  }
+
+  afterAll(async () => {
+    await Promise.all(emails.map(deleteUser))
+  }, 60000)
+
+  it('reapresentar o token recém-rotacionado (dentro da janela): 200 só com access token, sem Set-Cookie e sem revogar nada', async () => {
+    const { cookie: first, userId } = await registerWithCookie('grace-ok')
+    await makeDueForRotation(first)
+    const second = newCookieOf(await refreshWith(first))!
+
+    const reused = await refreshWith(first)
+
+    expect(reused.statusCode).toBe(200)
+    expect(reused.json().accessToken).toBeTruthy()
+    expect(newCookieOf(reused)).toBeUndefined() // não pode sobrescrever o cookie já trocado
+    expect(await activeTokenCountOf(userId)).toBe(1) // só o sucessor; nada foi emitido nem revogado
+
+    // O sucessor segue válido: a sessão não caiu.
+    expect((await refreshWith(second)).statusCode).toBe(200)
+  }, 30000)
+
+  it('depois da janela o reuso é replay: 401 REFRESH_TOKEN_REUSE_DETECTED e a sessão inteira é revogada', async () => {
+    const { cookie: first, userId } = await registerWithCookie('grace-expired')
+    await makeDueForRotation(first)
+    const second = newCookieOf(await refreshWith(first))!
+    await ageRotationOf(first) // simula a janela já ter passado
+
+    const reused = await refreshWith(first)
+
+    expect(reused.statusCode).toBe(401)
+    expect(reused.json().error).toBe('REFRESH_TOKEN_REUSE_DETECTED')
+    expect(await activeTokenCountOf(userId)).toBe(0)
+    expect((await refreshWith(second)).statusCode).toBe(401)
+  }, 30000)
+
+  it('token de logout continua 401 (INVALID_REFRESH_TOKEN), mesmo logo depois', async () => {
+    const { cookie } = await registerWithCookie('grace-logout')
+    await logoutWith(cookie)
+
+    const res = await refreshWith(cookie)
+
+    expect(res.statusCode).toBe(401)
+    expect(res.json().error).toBe('INVALID_REFRESH_TOKEN')
+  }, 30000)
+
+  it('token rotacionado + logout do sucessor: a família morreu, o token antigo NÃO ganha a janela', async () => {
+    const { cookie: first } = await registerWithCookie('grace-logout-family')
+    await makeDueForRotation(first)
+    const second = newCookieOf(await refreshWith(first))!
+    await logoutWith(second)
+
+    const res = await refreshWith(first) // ainda dentro dos 10 s da rotação
+
+    expect(res.statusCode).toBe(401)
+    expect(res.json().error).toBe('REFRESH_TOKEN_REUSE_DETECTED')
+  }, 30000)
+
+  it('token expirado continua 401 REFRESH_TOKEN_EXPIRED, e rotacionado+expirado não entra na janela', async () => {
+    const { cookie: first, userId } = await registerWithCookie('grace-expiry')
+    await prisma.refreshToken.updateMany({
+      where: { userId },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    })
+
+    const expired = await refreshWith(first)
+    expect(expired.statusCode).toBe(401)
+    expect(expired.json().error).toBe('REFRESH_TOKEN_EXPIRED')
+
+    // Rotacionado agora (dentro dos 10 s) mas já vencido: não vale a tolerância.
+    await prisma.refreshToken.updateMany({ where: { userId }, data: { revokedAt: new Date() } })
+    const rotatedAndExpired = await refreshWith(first)
+    expect(rotatedAndExpired.statusCode).toBe(401)
+    expect(rotatedAndExpired.json().error).toBe('REFRESH_TOKEN_REUSE_DETECTED')
+  }, 30000)
+
+  it('2 refresh concorrentes elegíveis à rotação com o mesmo cookie: ambos 200, só UM rotaciona (Set-Cookie) e a sessão segue viva', async () => {
+    const { cookie, userId } = await registerWithCookie('grace-concurrent')
+    await makeDueForRotation(cookie)
+
+    const [a, b] = await Promise.all([refreshWith(cookie), refreshWith(cookie)])
+
+    expect([a.statusCode, b.statusCode]).toEqual([200, 200])
+    const newCookies = [newCookieOf(a), newCookieOf(b)].filter((value): value is string => Boolean(value))
+    expect(newCookies).toHaveLength(1) // a perdedora da corrida não emite outro refresh token
+    expect(await activeTokenCountOf(userId)).toBe(1)
+    expect((await refreshWith(newCookies[0])).statusCode).toBe(200)
+  }, 30000)
+
+  it('rotação preguiçosa: N refreshes seguidos com o mesmo cookie => todos 200, sem Set-Cookie e sem rotacionar', async () => {
+    const { cookie, userId } = await registerWithCookie('lazy-same-cookie')
+
+    for (let i = 0; i < 6; i++) {
+      const res = await refreshWith(cookie)
+      expect(res.statusCode).toBe(200)
+      expect(res.json().accessToken).toBeTruthy()
+      expect(newCookieOf(res)).toBeUndefined() // o cookie do navegador fica como está
+    }
+
+    expect(await activeTokenCountOf(userId)).toBe(1)
+    expect(await prisma.refreshToken.count({ where: { userId, revokedAt: { not: null } } })).toBe(0)
+  }, 60000)
+
+  it('rotação preguiçosa: 2 refresh concorrentes dentro da janela de rotação => ambos 200, nenhum rotaciona', async () => {
+    const { cookie, userId } = await registerWithCookie('lazy-concurrent')
+
+    const [a, b] = await Promise.all([refreshWith(cookie), refreshWith(cookie)])
+
+    expect([a.statusCode, b.statusCode]).toEqual([200, 200])
+    expect([newCookieOf(a), newCookieOf(b)]).toEqual([undefined, undefined])
+    expect(await activeTokenCountOf(userId)).toBe(1)
+  }, 30000)
+
+  it('passado REFRESH_ROTATE_AFTER_SECONDS o refresh rotaciona: Set-Cookie novo e o token antigo fica revogado', async () => {
+    const { cookie, userId } = await registerWithCookie('lazy-rotates')
+    await makeDueForRotation(cookie)
+
+    const res = await refreshWith(cookie)
+
+    const rotated = newCookieOf(res)
+    expect(res.statusCode).toBe(200)
+    expect(rotated).toBeTruthy()
+    expect(rotated).not.toBe(cookie)
+    expect(await activeTokenCountOf(userId)).toBe(1) // só o sucessor
+    const old = await prisma.refreshToken.findUnique({ where: { tokenHash: hashRefreshToken(cookie) } })
+    expect(old?.revokedAt).not.toBeNull()
+  }, 30000)
+
+  it('reuso real (fora da janela) revoga SÓ a família: a segunda sessão do mesmo usuário, de outro login, segue válida', async () => {
+    const { cookie: sessionA, userId, email } = await registerWithCookie('family-only')
+    const sessionB = await loginCookie(email) // outro login = outra família
+    await makeDueForRotation(sessionA)
+    const rotatedA = newCookieOf(await refreshWith(sessionA))!
+    await ageRotationOf(sessionA)
+
+    const reused = await refreshWith(sessionA)
+
+    expect(reused.statusCode).toBe(401)
+    expect(reused.json().error).toBe('REFRESH_TOKEN_REUSE_DETECTED')
+    expect((await refreshWith(rotatedA)).statusCode).toBe(401) // descendente da mesma família: revogado
+    const bStillValid = await refreshWith(sessionB)
+    expect(bStillValid.statusCode).toBe(200) // outra sessão: intacta
+    expect(await activeTokenCountOf(userId)).toBe(1) // só a do login B
   }, 60000)
 })

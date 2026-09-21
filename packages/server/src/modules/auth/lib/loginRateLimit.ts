@@ -1,8 +1,9 @@
 // @investpro/server
-// Rate limit em memória por conta/email para /auth/login (AppSec, checkup de
+// Rate limit em memória por conta para /auth/login (AppSec, checkup de
 // 2026-09-16): complementa o limite por IP do @fastify/rate-limit (5/min),
 // que sozinho não impede um ataque de credential stuffing distribuído entre
-// vários IPs contra a MESMA conta.
+// vários IPs contra a MESMA conta. A chave é livre (e-mail no login; outra chave
+// por fluxo que confere senha, ex. definir o CPF), cada uma com o seu contador.
 
 const WINDOW_MS = 15 * 60_000
 const MAX_FAILED_ATTEMPTS = 10
@@ -14,12 +15,12 @@ interface AttemptRecord {
 
 const attempts = new Map<string, AttemptRecord>()
 
-function normalize(email: string): string {
-  return email.trim().toLowerCase()
+function normalize(accountKey: string): string {
+  return accountKey.trim().toLowerCase()
 }
 
-export function isAccountRateLimited(email: string): boolean {
-  const key = normalize(email)
+export function isAccountRateLimited(accountKey: string): boolean {
+  const key = normalize(accountKey)
   const record = attempts.get(key)
   if (!record) return false
 
@@ -31,8 +32,8 @@ export function isAccountRateLimited(email: string): boolean {
   return record.count >= MAX_FAILED_ATTEMPTS
 }
 
-export function registerLoginFailure(email: string): void {
-  const key = normalize(email)
+export function registerLoginFailure(accountKey: string): void {
+  const key = normalize(accountKey)
   const now = Date.now()
   const record = attempts.get(key)
 
@@ -44,6 +45,6 @@ export function registerLoginFailure(email: string): void {
   record.count += 1
 }
 
-export function clearLoginAttempts(email: string): void {
-  attempts.delete(normalize(email))
+export function clearLoginAttempts(accountKey: string): void {
+  attempts.delete(normalize(accountKey))
 }

@@ -141,8 +141,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         throw new authService.AppError("MISSING_REFRESH_TOKEN", "Refresh token ausente", 401);
       }
 
-      const result = await authService.refresh(token);
-      setRefreshCookie(reply, result.refreshToken, result.rememberMe);
+      const result = await authService.refresh(token, request.log);
+      // Sem refreshToken = token ainda não elegível à rotação, ou reapresentação
+      // dentro da janela de tolerância: o cookie atual segue valendo e não pode ser
+      // sobrescrito.
+      if (result.refreshToken) setRefreshCookie(reply, result.refreshToken, result.rememberMe);
       return { accessToken: result.accessToken };
     }
   );

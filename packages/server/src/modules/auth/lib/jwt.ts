@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
-
-const ACCESS_TOKEN_EXPIRY = '15m'
+import { ACCESS_TOKEN_TTL_SECONDS } from '../../../config/tokenLifetimes.js'
 
 export interface TokenPayload {
   sub?: string
@@ -8,7 +7,7 @@ export interface TokenPayload {
 }
 
 export function signAccessToken(userId: string, secret: string): string {
-  return jwt.sign({ sub: userId }, secret, { expiresIn: ACCESS_TOKEN_EXPIRY })
+  return jwt.sign({ sub: userId }, secret, { expiresIn: ACCESS_TOKEN_TTL_SECONDS })
 }
 
 export function verifyToken(token: string, secret: string): TokenPayload {
