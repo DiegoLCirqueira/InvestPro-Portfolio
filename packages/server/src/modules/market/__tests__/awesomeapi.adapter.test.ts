@@ -5,6 +5,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { awesomeapiSource } from '../adapters/awesomeapi.js'
+import { parseRetryAfterMs, UpstreamRateLimitedError } from '../adapters/errors.js'
 import type { SourceAsset } from '../adapters/types.js'
 
 const usdBrl: SourceAsset = {
@@ -42,4 +43,40 @@ describe('awesomeapiSource.fetchQuotes', () => {
       )
     }
   )
+})
+
+describe('awesomeapiSource.fetchQuotes — HTTP 429', () => {
+  function stubRateLimited(retryAfter?: string): void {
+    const headers = retryAfter === undefined ? {} : { 'retry-after': retryAfter }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 429, headers })))
+  }
+
+  it('lança UpstreamRateLimitedError com o Retry-After (segundos) convertido pra ms', async () => {
+    stubRateLimited('45')
+    const error = await awesomeapiSource.fetchQuotes([usdBrl]).catch((err) => err)
+    expect(error).toBeInstanceOf(UpstreamRateLimitedError)
+    expect(error.retryAfterMs).toBe(45_000)
+  })
+
+  it('sem Retry-After usa a espera padrão de 30 s', async () => {
+    stubRateLimited()
+    const error = await awesomeapiSource.fetchQuotes([usdBrl]).catch((err) => err)
+    expect(error.retryAfterMs).toBe(30_000)
+  })
+})
+
+describe('parseRetryAfterMs', () => {
+  const now = Date.parse('2026-09-20T12:00:00Z')
+
+  it('aceita segundos inteiros e data HTTP', () => {
+    expect(parseRetryAfterMs('10', now)).toBe(10_000)
+    expect(parseRetryAfterMs('Sun, 20 Sep 2026 12:00:20 GMT', now)).toBe(20_000)
+  })
+
+  it('limita a 5 min e cai no padrão (30 s) com valor ausente, inválido ou no passado', () => {
+    expect(parseRetryAfterMs('999999', now)).toBe(300_000)
+    expect(parseRetryAfterMs(null, now)).toBe(30_000)
+    expect(parseRetryAfterMs('depois', now)).toBe(30_000)
+    expect(parseRetryAfterMs('Sun, 20 Sep 2026 11:00:00 GMT', now)).toBe(30_000)
+  })
 })

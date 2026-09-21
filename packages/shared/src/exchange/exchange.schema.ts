@@ -9,10 +9,13 @@ export type Currency = (typeof CURRENCIES)[number];
 
 export const currencySchema = z.enum(CURRENCIES);
 
+// approximate: true quando a taxa é a estática de referência (fonte indisponível):
+// serve pra simulação, não pra executar câmbio.
 export const exchangeRateSchema = z.object({
   from: currencySchema,
   to: currencySchema,
   rate: z.number().positive(),
+  approximate: z.boolean().optional(),
   timestamp: z.string(),
 });
 
@@ -29,6 +32,7 @@ export const convertResponseSchema = z.object({
   convertedAmount: z.number().nonnegative(),
   rate: z.number().positive(),
   fee: z.number().nonnegative(),
+  approximate: z.boolean().optional(),
   timestamp: z.string(),
 });
 

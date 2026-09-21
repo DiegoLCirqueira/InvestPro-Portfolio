@@ -1,7 +1,8 @@
 // @investpro/server
-// Service de câmbio. Obtém a taxa real via AwesomeAPI (reuso do adapter do
-// market) para o par from→to e calcula a conversão com fee. Se a fonte falhar,
-// usa fallback de taxas estáticas documentadas (BRL como base).
+// Service de câmbio. A taxa viva (AwesomeAPI, com cache curto — ver
+// exchange.rates.ts) alimenta o câmbio executado, que nunca usa taxa estática.
+// A simulação (/rates e /convert), se a fonte falhar, cai em taxas estáticas
+// documentadas (BRL como base), marcadas como aproximadas.
 
 import type { Prisma, CurrencyExchange as PrismaCurrencyExchange } from '@prisma/client'
 import type {
@@ -14,7 +15,6 @@ import type {
   ExecutableCurrency,
   ExecuteExchangeResponse,
 } from '@investpro/shared'
-import { awesomeapiSource } from '../market/adapters/awesomeapi.js'
 import { AppError } from '../auth/auth.service.js'
 import { prisma } from '../../config/database.js'
 import { runSerializableTx } from '../../shared/db/serializableTransaction.js'
@@ -27,6 +27,11 @@ import {
   sanitizeCurrency,
   type RoundingMode,
 } from './exchange.domain.js'
+import { env } from '../../config/env.js'
+import { liveRates } from './exchange.rates.js'
+
+// Idade máxima da cotação pra EXECUTAR câmbio: mais curta que a da simulação.
+const EXECUTE_MAX_RATE_AGE_MS = env.EXCHANGE_EXECUTE_MAX_AGE_SECONDS * 1000
 
 // Fallback estático (BRL base) usado se a AwesomeAPI estiver indisponível.
 // Taxas aproximadas de referência — DOCUMENTADO como aproximação.
@@ -45,37 +50,6 @@ function brlToCurrency(code: string): number {
   return FALLBACK_RATES[code] ?? 1
 }
 
-// Taxa de from→to usando AwesomeAPI (par `${from}-${to}`, formato exigido pela
-// URL da API). Se o par direto não existir, tenta o inverso e inverte. Lança
-// erro se indisponível.
-async function fetchLiveRate(from: string, to: string): Promise<number> {
-  const pairs = [`${from}-${to}`, `${to}-${from}`]
-  let lastError: unknown
-
-  for (let i = 0; i < pairs.length; i++) {
-    const pair = pairs[i]
-    const asset = {
-      id: pair,
-      ticker: pair,
-      name: pair,
-      type: 'FIXED_INCOME' as const,
-      remoteId: pair,
-    }
-    try {
-      const quotes = await awesomeapiSource.fetchQuotes([asset])
-      const price = quotes[0]?.price
-      if (price !== undefined && price > 0) {
-        // No par direto `${from}${to}` o preço já é from→to; no inverso inverte.
-        return i === 0 ? price : 1 / price
-      }
-    } catch (err) {
-      lastError = err
-    }
-  }
-
-  throw lastError ?? new Error('AwesomeAPI: par indisponível')
-}
-
 function fallbackRate(from: string, to: string): number {
   if (from === to) return 1
   if (to === 'BRL') return brlToCurrency(from)
@@ -85,17 +59,18 @@ function fallbackRate(from: string, to: string): number {
   return toBRL > 0 ? fromBRL / toBRL : 1
 }
 
-export async function getRate(from: Currency, to: Currency): Promise<ExchangeRate> {
-  const rate =
-    from === to
-      ? 1
-      : await fetchLiveRate(from, to).catch(() => fallbackRate(from, to))
+function toExchangeRate(from: Currency, to: Currency, rate: number, approximate: boolean): ExchangeRate {
+  return { from, to, rate, approximate, timestamp: new Date().toISOString() }
+}
 
-  return {
-    from,
-    to,
-    rate,
-    timestamp: new Date().toISOString(),
+// Simulação: prefere a cotação viva/cacheada, mas aceita a estática (approximate).
+export async function getRate(from: Currency, to: Currency): Promise<ExchangeRate> {
+  if (from === to) return toExchangeRate(from, to, 1, false)
+
+  try {
+    return toExchangeRate(from, to, await liveRates.getRate(from, to), false)
+  } catch {
+    return toExchangeRate(from, to, fallbackRate(from, to), true)
   }
 }
 
@@ -123,8 +98,8 @@ export async function convert(
   to: Currency,
   amount: number
 ): Promise<ConvertResponse> {
-  const { rate } = await getRate(from, to)
-  return buildConversion(from, to, amount, rate)
+  const { rate, approximate } = await getRate(from, to)
+  return { ...buildConversion(from, to, amount, rate), approximate }
 }
 
 export function listCurrencies(base: Currency = 'BRL'): CurrencyListResponse {
@@ -253,19 +228,6 @@ async function executeExchangeTx(
   })
 }
 
-// Câmbio executado só vale com cotação viva: o fallback estático (aproximação
-// de /rates e /convert) deixaria o usuário trocar dinheiro real a uma taxa
-// inventada, então sem fonte responde 503 em vez de cair no fallback.
-async function getLiveRateOrFail(from: Currency, to: Currency): Promise<number> {
-  return fetchLiveRate(from, to).catch((): never => {
-    throw new AppError(
-      'EXCHANGE_RATE_UNAVAILABLE',
-      'Cotação indisponível no momento; tente novamente em instantes',
-      503
-    )
-  })
-}
-
 // Crédito que arredonda pra zero (valor pequeno demais pra moeda de destino)
 // não pode debitar a origem sem entregar nada.
 function assertConvertedAmountIsPositive(convertedAmount: number): void {
@@ -278,8 +240,10 @@ function assertConvertedAmountIsPositive(convertedAmount: number): void {
 }
 
 // Câmbio de verdade (debita/credita saldo real), diferente de `convert` (só
-// calcula). Cotação/fee são resolvidos fora da transação (rede pra AwesomeAPI),
-// com o crédito arredondado pra baixo; a escrita em si roda em transação
+// calcula). A cotação é sempre viva (ou do cache dentro da idade máxima; sem
+// isso, 503 EXCHANGE_RATE_UNAVAILABLE): o fallback estático deixaria o usuário
+// trocar dinheiro real a uma taxa inventada. Cotação/fee são resolvidos fora da
+// transação (rede pra AwesomeAPI), com o crédito arredondado pra baixo; a escrita em si roda em transação
 // Serializable com retry — mesmo padrão de order/transfer/savings-box (lê
 // saldo, decide, escreve).
 export async function executeExchange(
@@ -296,7 +260,7 @@ export async function executeExchange(
     )
   }
 
-  const rate = await getLiveRateOrFail(from, to)
+  const rate = await liveRates.getRate(from, to, { maxAgeMs: EXECUTE_MAX_RATE_AGE_MS })
   const { convertedAmount, fee } = buildConversion(from, to, amount, rate, 'down')
   assertConvertedAmountIsPositive(convertedAmount)
 

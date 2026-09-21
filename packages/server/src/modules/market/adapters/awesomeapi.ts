@@ -6,6 +6,7 @@
 // Decisões v1.1 designam AwesomeAPI como fonte de câmbio/fixed income.
 
 import type { MarketDataSource, MarketQuote, SourceAsset } from './types.js'
+import { parseRetryAfterMs, UpstreamRateLimitedError } from './errors.js'
 
 const BASE_URL = 'https://economia.awesomeapi.com.br/json/last'
 const FETCH_TIMEOUT_MS = 5000
@@ -21,6 +22,13 @@ async function fetchJson(url: string): Promise<Record<string, AwesomeApiEntry>> 
     response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   } catch (err) {
     throw new Error(`AwesomeAPI: falha de rede para ${url}: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  if (response.status === 429) {
+    throw new UpstreamRateLimitedError(
+      `AwesomeAPI: HTTP 429 (limite de requisições) para ${url}`,
+      parseRetryAfterMs(response.headers.get('retry-after'))
+    )
   }
 
   if (!response.ok) {

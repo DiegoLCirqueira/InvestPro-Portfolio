@@ -1,11 +1,12 @@
 // @investpro/server
-// Testes do exchange.service: getRate, convert, listCurrencies.
+// Testes do exchange.service: getRate, convert, executeExchange (só o caminho sem
+// cotação viva), listCurrencies.
 // A AwesomeAPI (adapter reusado do market) é mockada para a suite rodar
 // determinística e offline. USD/BRL exercita o caminho "ao vivo" (par
 // suportado no mock, inclusive a inversão do par reverso); EUR/BRL exercita
-// o fallback estático (par não suportado no mock, força fetchLiveRate a falhar).
+// o fallback estático (par não suportado no mock, força a cotação viva a falhar).
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { awesomeapiFetchQuotesMock } = vi.hoisted(() => ({
   awesomeapiFetchQuotesMock: vi.fn(),
@@ -15,7 +16,9 @@ vi.mock('../../market/adapters/awesomeapi.js', () => ({
   awesomeapiSource: { source: 'awesomeapi', fetchQuotes: awesomeapiFetchQuotesMock },
 }))
 
-import { convert, getRate, listCurrencies } from '../exchange.service.js'
+import { convert, executeExchange, getRate, listCurrencies } from '../exchange.service.js'
+import { liveRates } from '../exchange.rates.js'
+import { UpstreamRateLimitedError } from '../../market/adapters/errors.js'
 import type { SourceAsset } from '../../market/adapters/types.js'
 
 // Só o par USD-BRL é "suportado" pelo mock; os demais lançam erro, forçando o
@@ -40,6 +43,13 @@ awesomeapiFetchQuotesMock.mockImplementation(async (assets: SourceAsset[]) => {
   }))
 })
 
+const defaultQuoteImplementation = awesomeapiFetchQuotesMock.getMockImplementation()!
+
+// O cache de cotação é do módulo: zera pra um teste não enxergar o outro.
+beforeEach(() => {
+  liveRates.reset()
+})
+
 describe('getRate', () => {
   it('retorna taxa 1 quando from === to', async () => {
     const result = await getRate('BRL', 'BRL')
@@ -54,6 +64,13 @@ describe('getRate', () => {
     expect(result.rate).toBeGreaterThan(0)
     expect(result.from).toBe('USD')
     expect(result.to).toBe('BRL')
+    expect(result.approximate).toBe(false)
+  })
+
+  it('sem cotação viva (EUR→BRL) cai na taxa estática, marcada como aproximada', async () => {
+    const result = await getRate('EUR', 'BRL')
+    expect(result.rate).toBe(5.4)
+    expect(result.approximate).toBe(true)
   })
 
   it('retorna taxa positiva para par reverso (BRL→USD)', async () => {
@@ -76,6 +93,56 @@ describe('convert', () => {
     const result = await convert('EUR', 'BRL', 50)
     expect(result.convertedAmount).toBeGreaterThanOrEqual(0)
     expect(result.rate).toBeGreaterThan(0)
+  })
+})
+
+describe('simulação durante o backoff de 429', () => {
+  it('serve SÓ do cache (não chama a fonte) e, sem cache, cai na taxa estática marcada como aproximada', async () => {
+    await getRate('USD', 'BRL') // cotação viva em cache (5,05)
+    awesomeapiFetchQuotesMock.mockRejectedValueOnce(new UpstreamRateLimitedError('429', 60_000))
+    expect((await getRate('EUR', 'BRL')).approximate).toBe(true) // o 429 abre o backoff
+    awesomeapiFetchQuotesMock.mockClear()
+
+    const cached = await getRate('USD', 'BRL')
+    const uncached = await getRate('GBP', 'BRL')
+    const converted = await convert('CAD', 'BRL', 10)
+
+    expect(cached).toMatchObject({ rate: 5.05, approximate: false })
+    expect(uncached.approximate).toBe(true)
+    expect(converted.approximate).toBe(true)
+    expect(awesomeapiFetchQuotesMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('executeExchange: idade máxima da cotação', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    awesomeapiFetchQuotesMock.mockImplementation(defaultQuoteImplementation) // desfaz o mockRejectedValue
+  })
+
+  it('cotação em cache com mais de 60 s (fonte indisponível) => 503; a simulação ainda a usa (<= 120 s)', async () => {
+    await getRate('USD', 'BRL') // cotação viva em cache (5,05) em t = 0
+    awesomeapiFetchQuotesMock.mockRejectedValue(new Error('fonte fora do ar'))
+    vi.advanceTimersByTime(61_000)
+
+    await expect(executeExchange('usuario-inexistente', 'BRL', 'USD', 10)).rejects.toMatchObject({
+      code: 'EXCHANGE_RATE_UNAVAILABLE',
+      statusCode: 503,
+    })
+    expect(await getRate('USD', 'BRL')).toMatchObject({ rate: 5.05, approximate: false })
+  })
+})
+
+describe('executeExchange sem cotação viva', () => {
+  it('rejeita com 503 EXCHANGE_RATE_UNAVAILABLE em vez de usar a taxa estática, antes de tocar no banco', async () => {
+    await expect(executeExchange('usuario-inexistente', 'BRL', 'EUR', 10)).rejects.toMatchObject({
+      code: 'EXCHANGE_RATE_UNAVAILABLE',
+      statusCode: 503,
+    })
   })
 })
 

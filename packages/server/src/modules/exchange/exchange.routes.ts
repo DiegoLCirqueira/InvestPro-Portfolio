@@ -18,6 +18,7 @@ import { z } from "zod";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { readRateLimit, writeRateLimit } from "../../shared/middleware/rateLimit.js";
 import * as exchangeService from "./exchange.service.js";
+import { configureLogger } from "./exchange.rates.js";
 
 const rateQuerySchema = z.object({
   from: z.enum(CURRENCIES),
@@ -29,6 +30,7 @@ export async function exchangeRoutes(app: FastifyInstance): Promise<void> {
 
   r.setValidatorCompiler(validatorCompiler);
   r.setSerializerCompiler(serializerCompiler);
+  configureLogger(app.log);
 
   r.get(
     "/api/v1/exchange/rates",
