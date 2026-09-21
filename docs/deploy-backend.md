@@ -94,6 +94,12 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `FRONTEND_URL` | URL do frontend no Vercel — usada para montar o link de reset de senha (WI-20). Mesmo valor de `CORS_ORIGIN` na prática. |
 | `RESEND_API_KEY` | Chave da API do [Resend](https://resend.com) (WI-20, email transacional). **Precisa ser criada manualmente no painel do Resend** — não há acesso automatizado a isso. |
 | `TRUST_PROXY` | Opcional — de quais peers o `X-Forwarded-For` é aceito pro IP do cliente; padrão em produção: rede interna do proxy da Railway. Ver "IP do cliente atrás do proxy" abaixo. |
+| `EXCHANGE_RATE_FRESH_TTL_SECONDS` | Opcional — segundos em que a cotação de câmbio é reaproveitada sem chamar a AwesomeAPI. Padrão `30` (faixa 0-300). Ver "Cotação de câmbio" abaixo. |
+| `EXCHANGE_RATE_MAX_AGE_SECONDS` | Opcional — idade máxima da cotação servida do cache quando a fonte falha/limita. Padrão `120` (faixa 1-600, teto rígido; deve ser >= o TTL fresco). |
+| `EXCHANGE_EXECUTE_MAX_AGE_SECONDS` | Opcional — idade máxima da cotação aceita no câmbio executado. Padrão `60` (faixa 1-600; deve ser <= `EXCHANGE_RATE_MAX_AGE_SECONDS`). |
+| `EXCHANGE_RATE_MAX_DEVIATION_PERCENT` | Opcional — desvio máximo (%) de uma cotação nova em relação à última boa em cache; acima disso é rejeitada. Padrão `15` (faixa 1-100). |
+| `REFRESH_ROTATE_AFTER_SECONDS` | Opcional — idade mínima do refresh token para ser rotacionado. Padrão `600` (faixa 0-900; `0` = sempre). Ver "Refresh token" abaixo. |
+| `REFRESH_REUSE_GRACE_SECONDS` | Opcional — janela de tolerância de reuso do refresh token. Padrão `10` (faixa 0-30; `0` desliga). Ver "Refresh token" abaixo. |
 | `RESEND_FROM_EMAIL` | Remetente dos emails (ex.: `InvestPro <no-reply@investpro.app>`). Requer domínio verificado no Resend em produção — sem isso, usar o default `onboarding@resend.dev` (limitado, não recomendado pra produção real). |
 
 > **Importante:** a aplicação **falha na inicialização** se `NODE_ENV=production`
@@ -130,6 +136,52 @@ lista (separada por vírgula) de IPs/CIDRs (ou `loopback`, `linklocal`,
   seguidos do mesmo cliente deve decrescer (4, 3, 2, 1, 0) e a 6ª tentativa dar
   `429`. Saltos aleatórios (4, 4, 3, 4…) indicam que o proxy está fora da faixa
   confiável (cada IP de proxy vira um balde).
+
+### Cotação de câmbio (`EXCHANGE_RATE_*`)
+
+A AwesomeAPI responde `429` em produção e o câmbio executado (`POST /exchange/execute`)
+nunca usa taxa estática, então a cotação viva tem cache curto (sem credencial nova e
+sem trocar de provedor):
+
+- **Fresca** (idade <= `EXCHANGE_RATE_FRESH_TTL_SECONDS`, padrão 30 s): reaproveitada
+  sem chamar a API — é o que reduz os `429`.
+- **Em falha ou `429`**: serve a última cotação **somente** se a idade for
+  <= `EXCHANGE_RATE_MAX_AGE_SECONDS` (padrão 120 s, teto rígido de 600 s) e loga um
+  aviso (`Cotação de câmbio servida do cache após falha da fonte`, com par, idade e
+  motivo, sem dados sensíveis). Passou disso: `503` `EXCHANGE_RATE_UNAVAILABLE`.
+- **`429` respeita o `Retry-After`** (padrão 30 s se ausente, máx. 5 min): durante o
+  backoff a API não é chamada e o cache é servido dentro da idade máxima.
+- Chamadas simultâneas ao mesmo par compartilham uma única requisição.
+- **Faixa de sanidade** (`EXCHANGE_RATE_MAX_DEVIATION_PERCENT`, padrão 15%): cotação
+  nova que desvia mais que isso da última boa em cache (enquanto ela tem idade <=
+  `EXCHANGE_RATE_MAX_AGE_SECONDS`) é rejeitada e tratada como falha da fonte: não é
+  cacheada, e o cache é servido dentro da idade máxima. Cotação não finita, zero ou
+  negativa também é rejeitada. Rejeições ficam no log.
+- **Câmbio executado** (`EXCHANGE_EXECUTE_MAX_AGE_SECONDS`, padrão 60 s): só aceita
+  cotação com idade <= esse limite (mesmo servida do cache); mais velha => `503`.
+- `/exchange/rates` e `/exchange/convert` (simulação) mantêm o fallback estático,
+  marcado com `approximate: true`. Durante o backoff de um `429` eles só leem o cache
+  (nunca chamam a fonte), então tráfego anônimo não prolonga o bloqueio. O cache é **por instância**: com várias réplicas,
+  cada uma busca a sua.
+
+### Refresh token: rotação preguiçosa e tolerância de reuso
+
+- **Rotação preguiçosa** (`REFRESH_ROTATE_AFTER_SECONDS`, padrão 600 s): com um refresh
+  token válido, `POST /auth/refresh` só o troca (cookie novo) se ele já tiver mais que
+  isso de idade. Antes, responde `200` com um access token novo e **não mexe no
+  cookie**, então recargas rápidas reusam o mesmo cookie (abortar uma resposta não
+  deixa o navegador com um cookie que o servidor já rotacionou).
+- **Tolerância de reuso** (`REFRESH_REUSE_GRACE_SECONDS`, padrão 10 s, máx. 30): no
+  caso raro de a resposta da rotação ser abortada, reapresentar o token recém-rotacionado
+  nesses segundos devolve `200` **só com um access token novo**, sem emitir outro
+  refresh token e sem tocar no cookie (um token copiado e reapresentado rende apenas
+  um access token de vida curta).
+- **Reuso real** (token rotacionado reapresentado fora da janela, ou família sem token
+  ativo — logout, troca de senha): `401` `REFRESH_TOKEN_REUSE_DETECTED`, revogando
+  **só a família** daquele login (`familyId`, os descendentes da mesma sessão). As
+  demais sessões do usuário (outros logins/dispositivos) seguem válidas. O evento vai
+  pro log (`refresh_token_reuse_detected`, com ids e contagem, nunca o token).
+- Logout, token expirado e revogação por reuso real nunca entram nas janelas acima.
 
 Para o **frontend (Vercel)**, definir `VITE_API_URL` aponta para a URL pública do
 serviço backend (ex.: `https://api.investpro.up.railway.app/api/v1`).

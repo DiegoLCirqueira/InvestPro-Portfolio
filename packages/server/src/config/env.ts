@@ -1,3 +1,6 @@
+import { parseSecondsInRange } from "./duration.js";
+import { parseIntegerInRange } from "./integerSetting.js";
+import { ACCESS_TOKEN_TTL_SECONDS } from "./tokenLifetimes.js";
 import { parseTrustProxy } from "./trustProxy.js";
 
 const DEV_JWT_SECRET = "investpro-dev-secret-change-in-production";
@@ -13,6 +16,39 @@ const INSECURE_JWT_SECRETS = new Set([DEV_JWT_SECRET, EXAMPLE_JWT_SECRET]);
 const INSECURE_JWT_REFRESH_SECRETS = new Set([DEV_JWT_REFRESH_SECRET, EXAMPLE_JWT_REFRESH_SECRET]);
 
 const isProduction = process.env.NODE_ENV === "production";
+
+// Cotação de câmbio: idade máxima > TTL fresco, senão a cotação "servida do
+// cache em falha" nunca existiria. O teto de idade (10 min) é rígido: uma cotação
+// mais velha que isso não serve pra executar câmbio com dinheiro real.
+const exchangeRateFreshTtlSeconds = parseSecondsInRange(process.env.EXCHANGE_RATE_FRESH_TTL_SECONDS, {
+  name: "EXCHANGE_RATE_FRESH_TTL_SECONDS",
+  defaultSeconds: 30,
+  minSeconds: 0,
+  maxSeconds: 300,
+});
+const exchangeRateMaxAgeSeconds = parseSecondsInRange(process.env.EXCHANGE_RATE_MAX_AGE_SECONDS, {
+  name: "EXCHANGE_RATE_MAX_AGE_SECONDS",
+  defaultSeconds: 120,
+  minSeconds: 1,
+  maxSeconds: 600,
+});
+if (exchangeRateMaxAgeSeconds < exchangeRateFreshTtlSeconds) {
+  throw new Error(
+    "EXCHANGE_RATE_MAX_AGE_SECONDS deve ser >= EXCHANGE_RATE_FRESH_TTL_SECONDS."
+  );
+}
+// O câmbio executado é mais exigente que a simulação: aceita cotação mais nova.
+const exchangeExecuteMaxAgeSeconds = parseSecondsInRange(process.env.EXCHANGE_EXECUTE_MAX_AGE_SECONDS, {
+  name: "EXCHANGE_EXECUTE_MAX_AGE_SECONDS",
+  defaultSeconds: 60,
+  minSeconds: 1,
+  maxSeconds: 600,
+});
+if (exchangeExecuteMaxAgeSeconds > exchangeRateMaxAgeSeconds) {
+  throw new Error(
+    "EXCHANGE_EXECUTE_MAX_AGE_SECONDS deve ser <= EXCHANGE_RATE_MAX_AGE_SECONDS."
+  );
+}
 
 const jwtSecret = process.env.JWT_SECRET ?? DEV_JWT_SECRET;
 const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? DEV_JWT_REFRESH_SECRET;
@@ -39,4 +75,31 @@ export const env = {
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
   BRAPI_API_KEY: process.env.BRAPI_API_KEY ?? "",
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY, isProduction),
+  EXCHANGE_RATE_FRESH_TTL_SECONDS: exchangeRateFreshTtlSeconds,
+  EXCHANGE_RATE_MAX_AGE_SECONDS: exchangeRateMaxAgeSeconds,
+  EXCHANGE_EXECUTE_MAX_AGE_SECONDS: exchangeExecuteMaxAgeSeconds,
+  // Cotação nova que desvia mais que isso da última boa em cache é rejeitada.
+  EXCHANGE_RATE_MAX_DEVIATION_PERCENT: parseIntegerInRange(process.env.EXCHANGE_RATE_MAX_DEVIATION_PERCENT, {
+    name: "EXCHANGE_RATE_MAX_DEVIATION_PERCENT",
+    defaultValue: 15,
+    min: 1,
+    max: 100,
+    unit: "%",
+  }),
+  // Rotação preguiçosa: o refresh token só é trocado quando tem mais que isso de
+  // idade (0 = sempre). Recargas rápidas reusam o mesmo cookie; o teto é o TTL do
+  // access token.
+  REFRESH_ROTATE_AFTER_SECONDS: parseSecondsInRange(process.env.REFRESH_ROTATE_AFTER_SECONDS, {
+    name: "REFRESH_ROTATE_AFTER_SECONDS",
+    defaultSeconds: 600,
+    minSeconds: 0,
+    maxSeconds: ACCESS_TOKEN_TTL_SECONDS,
+  }),
+  // Tolerância de reuso do refresh token logo após a rotação (abas/recarga simultâneas).
+  REFRESH_REUSE_GRACE_SECONDS: parseSecondsInRange(process.env.REFRESH_REUSE_GRACE_SECONDS, {
+    name: "REFRESH_REUSE_GRACE_SECONDS",
+    defaultSeconds: 10,
+    minSeconds: 0,
+    maxSeconds: 30,
+  }),
 } as const;
