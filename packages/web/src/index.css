@@ -97,6 +97,9 @@
 /* Altura da barra de navegação inferior (mobile); o layout reserva esse espaço para o conteúdo não ficar atrás dela. */
 :root {
   --bottom-nav-height: 3.5rem;
+  /* Rodapé do desktop: faixa fixa e mínima (1 linha), diferente do rodapé completo do mobile
+     (que fica só no fim da rolagem, sem ocupar espaço fixo). */
+  --desktop-footer-height: 2rem;
 }
 
 /*

@@ -45,6 +45,18 @@ describe("Layout", () => {
     );
   });
 
+  it("o rodapé do desktop é fixo, de 1 linha só, sem endereço nem slogan", () => {
+    const { container } = renderLayout();
+    const scrollArea = container.querySelector("#main-content") as HTMLElement;
+    const footers = screen.getAllByRole("contentinfo", { hidden: true });
+    const desktopFooter = footers.find((footer) => !scrollArea.contains(footer)) as HTMLElement;
+
+    expect(desktopFooter.className).toMatch(/\bfixed\b/);
+    expect(desktopFooter.className).toContain("h-[var(--desktop-footer-height)]");
+    expect(desktopFooter.textContent).not.toContain("Maceió");
+    expect(desktopFooter.textContent).not.toContain("Plataforma inteligente");
+  });
+
   it("os rodapés não têm itens institucionais sem destino", () => {
     const { container } = renderLayout();
     const footersText = screen
