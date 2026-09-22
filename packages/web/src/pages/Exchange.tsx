@@ -36,7 +36,7 @@ export function Exchange() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 animate-in fade-in duration-300">
+      <div className="animate-in fade-in duration-300">
         <ExchangeSkeleton />
       </div>
     );
@@ -66,7 +66,7 @@ export function Exchange() {
   }
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1">Câmbio de Moedas</h2>
         <p className="text-muted-foreground text-sm">

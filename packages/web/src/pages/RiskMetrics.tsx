@@ -115,7 +115,7 @@ export function RiskMetrics() {
   }
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <header className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
           <Shield size={22} className="text-brand-primary" />
@@ -175,7 +175,7 @@ export function RiskMetrics() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {METRICS.map((metric) => {
           const value = data[metric.key];
           if (typeof value !== "number") return null;

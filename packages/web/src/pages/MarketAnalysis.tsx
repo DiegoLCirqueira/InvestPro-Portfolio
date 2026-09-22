@@ -110,7 +110,7 @@ export function MarketAnalysis() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+      <div className="flex flex-col animate-in fade-in duration-500">
         <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
           Análise de Mercado
         </h2>
@@ -135,7 +135,7 @@ export function MarketAnalysis() {
   }
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <div className="flex flex-col nav:flex-row nav:items-center nav:justify-between gap-3 mb-6">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
           Análise de Mercado
@@ -198,7 +198,7 @@ export function MarketAnalysis() {
         })}
       </div>
 
-      <div className="flex-1 p-6 rounded-2xl border border-border flex flex-col min-h-0">
+      <div className="p-6 rounded-2xl border border-border flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold">Composição e Performance</h3>
           <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">

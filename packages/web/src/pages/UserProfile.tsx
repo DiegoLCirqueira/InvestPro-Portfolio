@@ -217,7 +217,7 @@ export function UserProfile() {
   );
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <div className="flex-1 flex nav:items-start nav:justify-center">
         {/* Mobile: página cheia, sem moldura. Desktop (nav): card centralizado. */}
         <div className="w-full flex flex-col nav:max-w-xl nav:rounded-2xl nav:border nav:border-border nav:bg-surface-1 nav:p-8 nav:shadow-2xl">

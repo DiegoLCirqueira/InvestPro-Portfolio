@@ -50,7 +50,7 @@ export function AdminUsers() {
   const users = data ?? [];
 
   return (
-    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
+    <div className="flex flex-col animate-in fade-in duration-500">
       <header className="mb-6 shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-2">
           <Users size={22} className="text-brand-primary" />
