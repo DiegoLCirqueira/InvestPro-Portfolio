@@ -4,8 +4,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MobileFooter } from "@/components/MobileFooter";
 import { BottomNav } from "@/components/BottomNav";
+import { useResetScrollOnNavigate } from "@/app/use-reset-scroll-on-navigate";
 
 export function Layout() {
+  useResetScrollOnNavigate();
+
   return (
     // dvh: no mobile, 100vh inclui a barra do navegador e cortaria o fim da tela.
     <div className="h-screen h-dvh bg-brand-bg flex text-foreground font-sans overflow-hidden">
@@ -31,7 +34,7 @@ export function Layout() {
           <div
             id="main-content"
             tabIndex={-1}
-            className="flex-1 min-h-0 block nav:flex nav:flex-col overflow-y-auto custom-scrollbar focus:outline-none"
+            className="flex-1 min-h-0 block nav:flex nav:flex-col overflow-y-auto custom-scrollbar focus:outline-none [overflow-anchor:none]"
           >
             <Outlet />
             <MobileFooter />

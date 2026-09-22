@@ -8,3 +8,4 @@ class ResizeObserverStub {
 }
 globalThis.ResizeObserver ??= ResizeObserverStub;
 Element.prototype.scrollIntoView ??= () => {};
+Element.prototype.scrollTo ??= () => {};
