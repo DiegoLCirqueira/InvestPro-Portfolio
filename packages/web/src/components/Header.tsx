@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { User, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { useAuthStore } from "@/stores/auth";
 import { useTheme } from "@/hooks/use-theme";
@@ -25,9 +26,7 @@ export function Header() {
   return (
     <header className="flex items-center gap-4 nav:gap-6 mb-3 nav:mb-10">
       <div className="flex items-center gap-2 nav:hidden">
-        <div className="w-8 h-8 bg-primary-solid rounded-lg flex items-center justify-center">
-          <span className="text-primary-foreground font-black text-xl italic">I</span>
-        </div>
+        <BrandMark />
         <span className="text-lg font-bold tracking-tight">InvestPro</span>
       </div>
 

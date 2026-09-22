@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { useAuthStore } from "@/stores/auth";
 
 interface MenuItem {
@@ -68,9 +69,7 @@ export function Sidebar() {
     <aside className="hidden nav:flex w-64 bg-brand-bg border-r border-border flex-col fixed h-full">
       <div className="p-8">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary-solid rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-black text-xl italic">I</span>
-          </div>
+          <BrandMark />
           <h1 className="text-xl font-bold tracking-tight">InvestPro</h1>
         </div>
       </div>
