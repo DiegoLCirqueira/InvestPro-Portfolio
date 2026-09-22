@@ -112,7 +112,7 @@ export function Diversification() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+      <div className="flex-1 flex flex-col animate-in fade-in duration-500">
         <header className="mb-4">
           <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
         </header>
@@ -130,7 +130,7 @@ export function Diversification() {
   const chartData = buildChartData(breakdown);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
       <header className="mb-4">
         <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
         <p className="text-muted-foreground text-sm">

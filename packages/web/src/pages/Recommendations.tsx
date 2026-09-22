@@ -58,7 +58,7 @@ const TAG_STYLES: Record<TagColor, string> = {
 
 export function Recommendations() {
   return (
-    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
       <header className="mb-8">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
           <div className="flex items-center gap-2">

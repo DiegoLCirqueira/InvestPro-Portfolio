@@ -115,7 +115,7 @@ export function RiskMetrics() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
       <header className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
           <Shield size={22} className="text-brand-primary" />

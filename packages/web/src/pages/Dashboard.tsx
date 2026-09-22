@@ -98,7 +98,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="flex-1 flex flex-col nav:min-h-0">
+    <div className="flex-1 flex flex-col">
       <MobileGreeting change={hasChangeData ? change : undefined} />
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">

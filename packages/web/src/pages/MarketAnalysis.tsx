@@ -110,7 +110,7 @@ export function MarketAnalysis() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+      <div className="flex-1 flex flex-col animate-in fade-in duration-500">
         <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
           Análise de Mercado
         </h2>
@@ -121,7 +121,7 @@ export function MarketAnalysis() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col">
         <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
           Análise de Mercado
         </h2>
@@ -135,7 +135,7 @@ export function MarketAnalysis() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+    <div className="flex-1 flex flex-col animate-in fade-in duration-500">
       <div className="flex flex-col nav:flex-row nav:items-center nav:justify-between gap-3 mb-6">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
           Análise de Mercado
@@ -206,7 +206,7 @@ export function MarketAnalysis() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="nav:max-h-[440px] overflow-y-auto pr-2 custom-scrollbar">
           {assets.length === 0 ? (
             <EmptyState icon={SearchX} message="Nenhum ativo encontrado para este filtro." />
           ) : (
