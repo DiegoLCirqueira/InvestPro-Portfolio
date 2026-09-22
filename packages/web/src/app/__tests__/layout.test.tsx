@@ -16,43 +16,42 @@ function renderLayout() {
 }
 
 describe("Layout", () => {
-  it("o rodapé compacto do mobile vive DENTRO do container rolável, depois do conteúdo", () => {
+  it("os dois rodapés (mobile e desktop) vivem DENTRO do container rolável de cada página, depois do conteúdo", () => {
+    // O rodapé faz parte do que foi rolado NAQUELA página (como uma aba), não
+    // uma barra fixa por cima da interface inteira — por isso nenhum dos dois
+    // pode ficar fora de #main-content nem usar position: fixed.
     const { container } = renderLayout();
     const scrollArea = container.querySelector("#main-content") as HTMLElement;
-
     const page = within(scrollArea).getByText("Conteúdo da página");
-    const mobileFooter = within(scrollArea).getByRole("contentinfo");
+    const footers = within(scrollArea).getAllByRole("contentinfo", { hidden: true });
+
+    expect(footers).toHaveLength(2);
+    for (const footer of footers) {
+      expect(footer.className).not.toMatch(/\bfixed\b/);
+      expect(page.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it("o rodapé compacto do mobile mostra o link 'Contato'", () => {
+    const { container } = renderLayout();
+    const scrollArea = container.querySelector("#main-content") as HTMLElement;
+    const mobileFooter = within(scrollArea).getAllByRole("contentinfo", { hidden: true })[0];
 
     expect(mobileFooter).toHaveTextContent(/InvestPro/);
-    expect(within(mobileFooter).getByRole("link", { name: "Contato" })).toHaveAttribute(
-      "href",
-      "mailto:contato@investpro.com.br",
-    );
-    expect(page.compareDocumentPosition(mobileFooter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("o rodapé completo do desktop fica fora do container rolável", () => {
-    const { container } = renderLayout();
-    const scrollArea = container.querySelector("#main-content") as HTMLElement;
-
-    const footers = screen.getAllByRole("contentinfo", { hidden: true });
-    const desktopFooter = footers.find((footer) => !scrollArea.contains(footer));
-
-    expect(desktopFooter).toBeDefined();
-    expect(within(desktopFooter as HTMLElement).getByRole("link", { name: "contato@investpro.com.br" })).toHaveAttribute(
+    expect(within(mobileFooter).getByRole("link", { name: "Contato", hidden: true })).toHaveAttribute(
       "href",
       "mailto:contato@investpro.com.br",
     );
   });
 
-  it("o rodapé do desktop é fixo, de 1 linha só, sem endereço nem slogan", () => {
+  it("o rodapé do desktop tem 1 linha só, com o e-mail por extenso e sem endereço nem slogan", () => {
     const { container } = renderLayout();
     const scrollArea = container.querySelector("#main-content") as HTMLElement;
-    const footers = screen.getAllByRole("contentinfo", { hidden: true });
-    const desktopFooter = footers.find((footer) => !scrollArea.contains(footer)) as HTMLElement;
+    const desktopFooter = within(scrollArea).getAllByRole("contentinfo", { hidden: true })[1];
 
-    expect(desktopFooter.className).toMatch(/\bfixed\b/);
-    expect(desktopFooter.className).toContain("h-[var(--desktop-footer-height)]");
+    expect(
+      within(desktopFooter).getByRole("link", { name: "contato@investpro.com.br", hidden: true }),
+    ).toHaveAttribute("href", "mailto:contato@investpro.com.br");
     expect(desktopFooter.textContent).not.toContain("Maceió");
     expect(desktopFooter.textContent).not.toContain("Plataforma inteligente");
   });
