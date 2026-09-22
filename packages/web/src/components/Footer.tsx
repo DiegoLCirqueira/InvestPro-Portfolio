@@ -9,9 +9,7 @@ export function Footer() {
 
   return (
     <footer className="hidden nav:flex mt-4 items-center justify-between gap-4 border-t border-border/50 py-1 text-[10px] text-muted-foreground">
-      <span>
-        &copy; {currentYear} <span className="font-bold text-foreground">InvestPro</span>
-      </span>
+      <span>&copy; {currentYear} InvestPro</span>
       <a
         href={CONTACT_MAILTO}
         className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
