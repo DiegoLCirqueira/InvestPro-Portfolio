@@ -24,7 +24,7 @@ export function Header() {
   });
 
   return (
-    <header className="flex items-center gap-4 nav:gap-6 mb-3 nav:mb-10">
+    <header className="flex items-center gap-4 nav:gap-6 mb-3 nav:mb-6">
       <div className="flex items-center gap-2 nav:hidden">
         <BrandMark />
         <span className="text-lg font-bold tracking-tight">InvestPro</span>

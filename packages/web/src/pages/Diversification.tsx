@@ -113,7 +113,7 @@ export function Diversification() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
-        <header className="mb-4 shrink-0">
+        <header className="mb-4">
           <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
         </header>
         <ErrorState
@@ -130,92 +130,90 @@ export function Diversification() {
   const chartData = buildChartData(breakdown);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500 overflow-hidden">
-      <header className="mb-4 shrink-0">
+    <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-500">
+      <header className="mb-4">
         <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
         <p className="text-muted-foreground text-sm">
           Veja onde seu dinheiro está investido.
         </p>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-        <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
-          <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
-            <h3 className="text-base font-bold text-foreground mb-2">
-              Distribuição do portfólio
-            </h3>
-            <div className="h-64">
-              {chartData.length === 0 ? (
-                <EmptyState
-                  icon={PieChartIcon}
-                  message="Sem dados de diversificação."
-                  className="py-20"
-                />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} stroke="none" />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => [
-                        formatCurrency(Number(value)),
-                        "Valor",
-                      ]}
-                      contentStyle={{
-                        backgroundColor: "var(--color-surface-1)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Legend
-                      formatter={(value, entry) => (
-                        <span className="text-muted-foreground text-xs">
-                          {value} —{" "}
-                          {String(
-                            (entry?.payload as Record<string, unknown>)
-                              ?.percentage ?? "",
-                          )}
-                          %
-                        </span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            {breakdown.length === 0 ? (
-              <EmptyState icon={PieChartIcon} message="Sem dados de diversificação." />
+      <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
+        <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
+          <h3 className="text-base font-bold text-foreground mb-2">
+            Distribuição do portfólio
+          </h3>
+          <div className="h-64">
+            {chartData.length === 0 ? (
+              <EmptyState
+                icon={PieChartIcon}
+                message="Sem dados de diversificação."
+                className="py-20"
+              />
             ) : (
-              breakdown.map((item) => (
-                <CategoryCard
-                  key={item.type}
-                  item={item}
-                  totalBalance={totalBalance}
-                />
-              ))
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    nameKey="name"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [
+                      formatCurrency(Number(value)),
+                      "Valor",
+                    ]}
+                    contentStyle={{
+                      backgroundColor: "var(--color-surface-1)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Legend
+                    formatter={(value, entry) => (
+                      <span className="text-muted-foreground text-xs">
+                        {value} —{" "}
+                        {String(
+                          (entry?.payload as Record<string, unknown>)
+                            ?.percentage ?? "",
+                        )}
+                        %
+                      </span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        <div className="mt-4">
-          <CurrencyHoldingsCard />
+        <div className="flex flex-col gap-4">
+          {breakdown.length === 0 ? (
+            <EmptyState icon={PieChartIcon} message="Sem dados de diversificação." />
+          ) : (
+            breakdown.map((item) => (
+              <CategoryCard
+                key={item.type}
+                item={item}
+                totalBalance={totalBalance}
+              />
+            ))
+          )}
         </div>
+      </div>
+
+      <div className="mt-4">
+        <CurrencyHoldingsCard />
       </div>
     </div>
   );
