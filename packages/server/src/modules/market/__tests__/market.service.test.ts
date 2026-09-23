@@ -4,7 +4,7 @@
 // rodar determinística e offline; testamos a lógica de listagem, paginação,
 // filtro, geração de histórico e fallback estático (quando o adapter falha).
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { brapiFetchQuotesMock, coingeckoFetchQuotesMock, awesomeapiFetchQuotesMock } = vi.hoisted(
   () => ({
@@ -25,8 +25,9 @@ vi.mock('../adapters/awesomeapi.js', () => ({
 }))
 
 import { AppError } from '../auth/auth.service.js'
-import { getAssets, getHistory, getQuote } from '../market.service.js'
+import { getAssets, getHistory, getQuote, refreshQuotes } from '../market.service.js'
 import { cacheClear } from '../cache.js'
+import { liveRates } from '../../exchange/exchange.rates.js'
 import type { SourceAsset } from '../adapters/types.js'
 
 // Brapi: sucesso para todos os ativos, exceto VALE3 (reservado para o teste de fallback).
@@ -170,5 +171,73 @@ describe('getHistory', () => {
       code: 'ASSET_NOT_FOUND',
       statusCode: 404,
     })
+  })
+})
+
+// SELIC é um proxy de renda fixa cotado via AwesomeAPI pelo par USD-BRL (assets.ts)
+// — o MESMO par que o câmbio (exchange.rates.ts) consulta. Antes da unificação, o
+// scheduler (refreshQuotes) e o câmbio (liveRates) chamavam a AwesomeAPI cada um
+// por conta própria pro mesmo par, dobrando o consumo do limite de requisições
+// (incidente de 429 em produção). Estes testes provam que os dois caminhos agora
+// compartilham o mesmo cache/provider: no máximo 1 chamada de rede por par.
+describe('AwesomeAPI compartilhada entre o scheduler e o câmbio (USD-BRL)', () => {
+  beforeEach(() => {
+    liveRates.reset()
+    cacheClear()
+    awesomeapiFetchQuotesMock.mockClear()
+  })
+
+  it('scheduler primeiro, câmbio depois: 1 chamada de rede só, e o câmbio recebe a MESMA cotação', async () => {
+    awesomeapiFetchQuotesMock.mockImplementationOnce(async (assets: SourceAsset[]) =>
+      assets.map((a) => ({ ticker: a.ticker, name: a.ticker, type: 'FIXED_INCOME' as const, price: 5.5, change24h: 0, changePercent: 0 }))
+    )
+
+    await refreshQuotes() // scheduler (setInterval, em produção)
+    const rateFromExchange = await liveRates.getRate('USD', 'BRL') // câmbio, sob demanda
+
+    expect(rateFromExchange).toBe(5.5)
+    expect(awesomeapiFetchQuotesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('câmbio primeiro, scheduler depois: 1 chamada de rede só, e o SELIC exibido reflete a cotação do câmbio', async () => {
+    awesomeapiFetchQuotesMock.mockImplementationOnce(async () => [
+      { ticker: 'USD-BRL', name: 'USD-BRL', type: 'FIXED_INCOME' as const, price: 5.2, change24h: 0, changePercent: 0 },
+    ])
+
+    await liveRates.getRate('USD', 'BRL')
+    await refreshQuotes()
+
+    expect(awesomeapiFetchQuotesMock).toHaveBeenCalledTimes(1)
+    const selic = (await getAssets({ page: 1, limit: 100 })).items.find((a) => a.ticker === 'SELIC')
+    expect(selic).toMatchObject({ price: 5.2, priceSource: 'live' })
+  })
+
+  it('scheduler e câmbio ao mesmo tempo (concorrentes): o single-flight já testado em exchange.rates ainda garante 1 única requisição', async () => {
+    let resolveFetch: (quotes: unknown) => void = () => {}
+    awesomeapiFetchQuotesMock.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveFetch = resolve })
+    )
+
+    const schedulerCall = refreshQuotes()
+    const exchangeCall = liveRates.getRate('USD', 'BRL')
+    resolveFetch([{ ticker: 'USD-BRL', name: 'USD-BRL', type: 'FIXED_INCOME', price: 5.3, change24h: 0, changePercent: 0 }])
+    const [, rateFromExchange] = await Promise.all([schedulerCall, exchangeCall])
+
+    expect(rateFromExchange).toBe(5.3)
+    expect(awesomeapiFetchQuotesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cotação servida do cache continua marcada como live (não seed) — a garantia de segurança de exchange.rates não muda', async () => {
+    awesomeapiFetchQuotesMock.mockImplementationOnce(async () => [
+      { ticker: 'USD-BRL', name: 'USD-BRL', type: 'FIXED_INCOME' as const, price: 5.4, change24h: 0, changePercent: 0 },
+    ])
+
+    await refreshQuotes()
+    awesomeapiFetchQuotesMock.mockClear()
+    await refreshQuotes() // dentro do freshTtl: reaproveita o cache, sem nova chamada de rede
+
+    expect(awesomeapiFetchQuotesMock).not.toHaveBeenCalled()
+    const selic = (await getAssets({ page: 1, limit: 100 })).items.find((a) => a.ticker === 'SELIC')
+    expect(selic).toMatchObject({ price: 5.4, priceSource: 'live' })
   })
 })

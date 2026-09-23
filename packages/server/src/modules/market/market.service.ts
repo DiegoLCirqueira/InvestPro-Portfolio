@@ -6,10 +6,12 @@ import type {
   Asset,
   AssetList,
   AssetQuery,
+  Currency,
   PriceHistory,
   PriceSource,
   Quote,
 } from '@investpro/shared'
+import { CURRENCIES } from '@investpro/shared'
 import { AppError } from '../auth/auth.service.js'
 import { brapiSource } from './adapters/brapi.js'
 import { coingeckoSource } from './adapters/coingecko.js'
@@ -24,6 +26,11 @@ import {
   QUOTE_TTL_MS,
   quoteCacheKey,
 } from './cache.js'
+// A AwesomeAPI é a MESMA fonte que o câmbio (exchange.rates.ts) já consulta pro
+// par USD-BRL: sem isso, o scheduler daqui e o câmbio faziam duas chamadas de
+// rede independentes pro mesmo par, dobrando o consumo do limite de requisições
+// da AwesomeAPI (incidente de 429 em produção). Ver currencyPairOf/fetchCurrencyPairQuote.
+import { liveRates } from '../exchange/exchange.rates.js'
 
 const ADAPTERS: Record<string, MarketDataSource> = {
   brapi: brapiSource,
@@ -49,6 +56,30 @@ function logError(message: string, err?: unknown): void {
 
 function findAsset(ticker: string): SeedAsset | undefined {
   return baseAssets.find((a) => a.ticker === ticker.toUpperCase())
+}
+
+// Alguns ativos "awesomeapi" (hoje só o proxy de renda fixa SELIC) na verdade são
+// um PAR DE MOEDAS (remoteId 'USD-BRL') usado como referência externa — o mesmo
+// dado que o câmbio consulta. Detecta esse formato pra rotear a busca pelo
+// provider único do câmbio em vez de chamar a AwesomeAPI de novo por conta própria.
+function currencyPairOf(remoteId: string | undefined): { from: Currency; to: Currency } | undefined {
+  const isCurrency = (code: string | undefined): code is Currency =>
+    (CURRENCIES as readonly string[]).includes(code ?? '')
+  const [from, to] = (remoteId ?? '').split('-')
+  return isCurrency(from) && isCurrency(to) ? { from, to } : undefined
+}
+
+// Cotação de um ativo-proxy de par de moedas, vinda do MESMO cache/provider que o
+// câmbio usa (liveRates): reaproveita o freshTtl, o maxAge, o backoff de 429 e a
+// rejeição por desvio já testados lá, em vez de duplicá-los aqui. É o que garante
+// no máximo uma chamada de rede por par por ciclo, não importa se quem pediu
+// primeiro foi o scheduler (refreshQuotes) ou o câmbio (getRate/convert/execute).
+async function fetchCurrencyPairQuote(
+  seed: SeedAsset,
+  pair: { from: Currency; to: Currency }
+): Promise<MarketQuote> {
+  const price = await liveRates.getRate(pair.from, pair.to)
+  return { ticker: seed.ticker, name: seed.name, type: seed.type, price, change24h: 0, changePercent: 0 }
 }
 
 // Preço estático de referência, marcado como seed pra o cliente poder avisar que
@@ -220,6 +251,52 @@ export async function getHistory(
   return { ticker: quote.ticker, points }
 }
 
+// Busca em lote pelo adapter genérico da fonte (Brapi/CoinGecko/AwesomeAPI) —
+// o caminho de sempre, usado por qualquer ativo que não seja um par de moedas.
+async function refreshByAdapter(source: string, assets: SeedAsset[]): Promise<void> {
+  const adapter = ADAPTERS[source]
+  try {
+    const quotes = await adapter.fetchQuotes(assets)
+    for (const quote of quotes) {
+      cacheSet(quoteCacheKey(quote.ticker), quote, QUOTE_TTL_MS)
+    }
+    cacheDelete(ASSETS_CACHE_KEY)
+  } catch (err) {
+    logError(`Refresh de ${source} falhou; mantendo cache/fallback`, err)
+  }
+}
+
+// Grupo "awesomeapi": separa os ativos que são par de moedas (roteados pro
+// provider único do câmbio, ver fetchCurrencyPairQuote) dos demais (se algum dia
+// existir um ativo "awesomeapi" que não seja par de moedas, segue pelo adapter
+// direto, como sempre). Cada ativo-par busca/falha por conta própria — um par
+// indisponível não deve derrubar os outros.
+async function refreshAwesomeApiGroup(assets: SeedAsset[]): Promise<void> {
+  const pairAssets: Array<{ seed: SeedAsset; pair: { from: Currency; to: Currency } }> = []
+  const otherAssets: SeedAsset[] = []
+
+  for (const seed of assets) {
+    const pair = currencyPairOf(seed.remoteId)
+    if (pair) pairAssets.push({ seed, pair })
+    else otherAssets.push(seed)
+  }
+
+  const refreshed = await Promise.all(
+    pairAssets.map(async ({ seed, pair }) => {
+      try {
+        cacheSet(quoteCacheKey(seed.ticker), await fetchCurrencyPairQuote(seed, pair), QUOTE_TTL_MS)
+        return true
+      } catch (err) {
+        logError(`Cotação de câmbio indisponível pra ${seed.ticker} (par ${pair.from}-${pair.to}); mantendo cache/fallback`, err)
+        return false
+      }
+    })
+  )
+  if (refreshed.some(Boolean)) cacheDelete(ASSETS_CACHE_KEY)
+
+  if (otherAssets.length > 0) await refreshByAdapter('awesomeapi', otherAssets)
+}
+
 export async function refreshQuotes(): Promise<void> {
   const bySource: Record<string, SeedAsset[]> = {}
 
@@ -232,17 +309,8 @@ export async function refreshQuotes(): Promise<void> {
   }
 
   await Promise.all(
-    Object.entries(bySource).map(async ([source, assets]) => {
-      const adapter = ADAPTERS[source]
-      try {
-        const quotes = await adapter.fetchQuotes(assets)
-        for (const quote of quotes) {
-          cacheSet(quoteCacheKey(quote.ticker), quote, QUOTE_TTL_MS)
-        }
-        cacheDelete(ASSETS_CACHE_KEY)
-      } catch (err) {
-        logError(`Refresh de ${source} falhou; mantendo cache/fallback`, err)
-      }
-    })
+    Object.entries(bySource).map(([source, assets]) =>
+      source === 'awesomeapi' ? refreshAwesomeApiGroup(assets) : refreshByAdapter(source, assets)
+    )
   )
 }
