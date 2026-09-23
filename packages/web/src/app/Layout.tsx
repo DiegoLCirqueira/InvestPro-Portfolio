@@ -25,7 +25,7 @@ export function Layout() {
           com conteúdo largo alarga o app além da tela. No mobile, o pb reserva o espaço da
           barra inferior (fixa) para nada ficar atrás dela. */}
       <main className="nav:ml-64 flex-1 min-w-0 flex justify-center px-4 md:px-6 lg:px-8 pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))] nav:pb-0">
-        <div className="w-full min-w-0 max-w-5xl lg:max-w-6xl py-3 md:py-8 lg:py-10 flex flex-col h-full">
+        <div className="w-full min-w-0 max-w-5xl lg:max-w-6xl pt-3 md:pt-8 lg:pt-10 flex flex-col gap-3 nav:gap-6 h-full">
           <Header />
 
           {/* O rodapé (mobile ou desktop, conforme a largura) faz parte do conteúdo
