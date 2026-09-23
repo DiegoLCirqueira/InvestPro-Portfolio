@@ -109,7 +109,11 @@ export function RiskMetrics() {
   if (!data) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
-        <EmptyState icon={ShieldQuestion} message="Nenhum dado de risco disponível." />
+        <EmptyState
+          icon={ShieldQuestion}
+          message="Você ainda não possui investimentos suficientes para calcularmos métricas de risco. Comece investindo na aba Análise de Mercado."
+          action={{ label: "Ver ativos disponíveis", to: "/market" }}
+        />
       </div>
     );
   }

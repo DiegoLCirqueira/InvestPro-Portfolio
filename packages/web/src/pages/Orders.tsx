@@ -66,7 +66,11 @@ export function Orders() {
           </h3>
 
           {orders.length === 0 ? (
-            <EmptyState icon={ClipboardList} message="Nenhuma ordem registrada ainda." />
+            <EmptyState
+              icon={ClipboardList}
+              message="Você ainda não fez nenhuma ordem. Explore os ativos disponíveis para começar a investir."
+              action={{ label: "Ver ativos disponíveis", to: "/market" }}
+            />
           ) : (
             <div className="flex flex-col gap-3 nav:max-h-[560px] nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (

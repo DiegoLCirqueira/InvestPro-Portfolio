@@ -306,7 +306,10 @@ export function Transfers() {
           </h3>
 
           {history.length === 0 ? (
-            <EmptyState icon={Receipt} message="Nenhuma transferência registrada ainda." />
+            <EmptyState
+              icon={Receipt}
+              message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
+            />
           ) : (
             <div className="flex flex-col gap-3">
               {history.map((transfer) => (

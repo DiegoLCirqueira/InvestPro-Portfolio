@@ -147,7 +147,8 @@ export function Diversification() {
             {chartData.length === 0 ? (
               <EmptyState
                 icon={PieChartIcon}
-                message="Sem dados de diversificação."
+                message="Você ainda não possui investimentos na carteira. Compre ativos para ver a distribuição do seu portfólio."
+                action={{ label: "Ver ativos disponíveis", to: "/market" }}
                 className="py-20"
               />
             ) : (
@@ -199,7 +200,11 @@ export function Diversification() {
 
         <div className="flex flex-col gap-4">
           {breakdown.length === 0 ? (
-            <EmptyState icon={PieChartIcon} message="Sem dados de diversificação." />
+            <EmptyState
+              icon={PieChartIcon}
+              message="Você ainda não possui investimentos na carteira. Compre ativos para ver a distribuição do seu portfólio."
+              action={{ label: "Ver ativos disponíveis", to: "/market" }}
+            />
           ) : (
             breakdown.map((item) => (
               <CategoryCard

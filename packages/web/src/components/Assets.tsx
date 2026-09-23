@@ -87,7 +87,10 @@ export function Assets() {
       <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
 
       {positions.length === 0 ? (
-        <EmptyState message="Nenhum ativo no portfólio." />
+        <EmptyState
+          message="Você ainda não possui ativos na carteira. Comece investindo para ver sua posição aqui."
+          action={{ label: "Ver ativos disponíveis", to: "/market" }}
+        />
       ) : (
         <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
           {positions.map((position) => (

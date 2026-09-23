@@ -5,9 +5,11 @@ import { Footer } from "@/components/Footer";
 import { MobileFooter } from "@/components/MobileFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { useResetScrollOnNavigate } from "@/app/use-reset-scroll-on-navigate";
+import { useDocumentTitle } from "@/app/use-document-title";
 
 export function Layout() {
   useResetScrollOnNavigate();
+  useDocumentTitle();
 
   return (
     // dvh: no mobile, 100vh inclui a barra do navegador e cortaria o fim da tela.

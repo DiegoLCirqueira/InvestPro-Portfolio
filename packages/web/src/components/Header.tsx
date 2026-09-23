@@ -38,14 +38,18 @@ export function Header() {
           </span>
         </div>
 
-        {isDashboard ? (
-          <h2 className="text-3xl font-extrabold text-foreground tracking-tight">
-            {greeting},{" "}
-            <span className="text-brand-primary">
-              {user?.fullName?.split(" ")[0] || "Investidor"}
-            </span>
-          </h2>
-        ) : null}
+        {/* Sempre renderizado (mesmo fora do Painel) e só ocultado por visibilidade: assim o
+            espaço reservado pro header é sempre igual ao do conteúdo real, sem precisar de
+            min-height fixo em px pra igualar a altura entre páginas. */}
+        <h2
+          className={`text-3xl font-extrabold text-foreground tracking-tight ${isDashboard ? "" : "invisible"}`}
+          aria-hidden={!isDashboard}
+        >
+          {greeting},{" "}
+          <span className="text-brand-primary">
+            {user?.fullName?.split(" ")[0] || "Investidor"}
+          </span>
+        </h2>
       </div>
 
       <div className="flex items-center gap-3 nav:gap-5 ml-auto">
