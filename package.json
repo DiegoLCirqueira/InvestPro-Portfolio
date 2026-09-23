@@ -12,5 +12,14 @@
     "preview": "npm run preview --workspace=packages/web",
     "test": "npm run test --workspaces --if-present",
     "clean": "rimraf node_modules packages/*/node_modules"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "js-yaml": "4.3.2",
+    "prisma": {
+      "@prisma/config": {
+        "deepmerge-ts": "8.0.2"
+      }
+    }
   }
 }
