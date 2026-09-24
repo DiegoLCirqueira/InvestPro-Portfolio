@@ -13,6 +13,7 @@ function baseInput(overrides: Partial<CreateTransferInput> = {}): CreateTransfer
   return {
     type: 'PIX',
     amount: 100,
+    pixKey: 'destino@investpro.com',
     ...overrides,
   }
 }
@@ -58,6 +59,20 @@ describe('validateTransfer', () => {
       toAccount: { id: 'x', bank: 'Banco X', agency: '0001' },
     })
     expect(validateTransfer(input)).toEqual([])
+  })
+
+  it('PIX sem chave é inválida', () => {
+    expect(validateTransfer(baseInput({ pixKey: undefined }))).toContain('Chave PIX obrigatória')
+    expect(validateTransfer(baseInput({ pixKey: '  ' }))).toContain('Chave PIX obrigatória')
+  })
+
+  it('PIX com chave em formato inválido é inválida', () => {
+    const errors = validateTransfer(baseInput({ pixKey: 'isso-nao-e-chave' }))
+    expect(errors.join(' ')).toContain('Chave PIX inválida')
+  })
+
+  it('TED não exige chave PIX', () => {
+    expect(validateTransfer(baseInput({ type: 'TED', pixKey: undefined }))).toEqual([])
   })
 
   it('TED sem número da conta é inválida', () => {

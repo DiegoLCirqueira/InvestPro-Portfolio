@@ -16,6 +16,9 @@ import {
   uniqueIp,
 } from '../../../test/integration.helpers.js'
 
+// Chave e-mail válida pro DICT: PIX sem chave válida é recusado (validateTransfer).
+const VALID_PIX_KEY = 'qa-pix@investpro.com'
+
 let app: FastifyInstance | undefined
 let email = ''
 let token = ''
@@ -67,6 +70,7 @@ describe('POST /api/v1/transfers', () => {
       remoteAddress: uniqueIp(),
       payload: {
         type: 'PIX',
+        pixKey: VALID_PIX_KEY,
         amount: 50.5,
         toAccount: { id: 'acc-1', bank: '001', agency: '0001', account: '12345-6', holderName: 'QA' },
         description: 'Teste PIX',
@@ -88,6 +92,7 @@ describe('POST /api/v1/transfers', () => {
       remoteAddress: uniqueIp(),
       payload: {
         type: 'PIX',
+        pixKey: VALID_PIX_KEY,
         amount: 25,
         toAccount: { id: 'acc-pix-key', bank: '001', agency: '0001' },
         description: 'Teste PIX sem conta',
@@ -128,7 +133,7 @@ describe('POST /api/v1/transfers', () => {
       method: 'POST',
       url: '/api/v1/transfers',
       remoteAddress: uniqueIp(),
-      payload: { type: 'PIX', amount: 10 },
+      payload: { type: 'PIX', pixKey: VALID_PIX_KEY, amount: 10 },
     })
     expect(res.statusCode).toBe(401)
   })
@@ -214,13 +219,47 @@ describe('POST /api/v1/transfers — persistência real no Postgres', () => {
     expect(row?.pixKey).toBe('qa-pix-key@investpro.com')
   })
 
-  it('transferência sem pixKey grava a coluna como null', async () => {
+  it('PIX com CPF mascarado grava a chave normalizada (só dígitos)', async () => {
     const res = await app!.inject({
       method: 'POST',
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'PIX', amount: 15, description: 'PIX sem chave' },
+      payload: { type: 'PIX', amount: 5, pixKey: '529.982.247-25' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().pixKey).toBe('52998224725')
+  })
+
+  it.each([
+    ['sem chave', undefined],
+    ['com chave vazia', '   '],
+    ['com chave em formato inválido', 'isso-nao-e-chave'],
+  ])('PIX %s: 400 TRANSFER_INVALID, saldo intacto e nada persistido', async (_label, pixKey) => {
+    const balanceBefore = (await getPortfolioOf(token)).balance
+    const totalBefore = await transfersTotalOf(token)
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'PIX', amount: 15, ...(pixKey !== undefined ? { pixKey } : {}) },
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('TRANSFER_INVALID')
+    expect((await getPortfolioOf(token)).balance).toBe(balanceBefore)
+    expect(await transfersTotalOf(token)).toBe(totalBefore)
+  })
+
+  it('transferência não-PIX grava pixKey como null (mesmo se enviada)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'DOC', amount: 15, pixKey: VALID_PIX_KEY, description: 'DOC sem chave' },
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()
@@ -228,6 +267,20 @@ describe('POST /api/v1/transfers — persistência real no Postgres', () => {
 
     const row = await prisma.transfer.findUnique({ where: { id: body.id } })
     expect(row?.pixKey).toBeNull()
+  })
+
+  it('TED com conta avulsa sem id (formato enviado pela tela) é aceita e ganha id do servidor', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'TED', amount: 20, toAccount: { bank: '001', agency: '1234', account: '56789-0' } },
+    })
+    expect(res.statusCode).toBe(200)
+    const { toAccount } = res.json()
+    expect(toAccount).toMatchObject({ bank: '001', agency: '1234', account: '56789-0' })
+    expect(toAccount.id).toEqual(expect.any(String))
   })
 })
 
@@ -248,7 +301,7 @@ describe('fluxo completo: criar, listar e paginar (WI-13)', () => {
         url: '/api/v1/transfers',
         headers: { authorization: `Bearer ${flowToken}`, 'content-type': 'application/json' },
         remoteAddress: uniqueIp(),
-        payload: { type: 'PIX', amount: 10 + i, description: `Transferência ${i}` },
+        payload: { type: 'PIX', pixKey: VALID_PIX_KEY, amount: 10 + i, description: `Transferência ${i}` },
       })
       expect(res.statusCode).toBe(200)
       createdIds.push(res.json().id as string)
@@ -392,7 +445,7 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'PIX', amount: 300, description: 'PIX no limite exato do saldo' },
+      payload: { type: 'PIX', pixKey: VALID_PIX_KEY, amount: 300, description: 'PIX no limite exato do saldo' },
     })
     expect(res.statusCode).toBe(200)
     expect(res.json().status).toBe('COMPLETED')
@@ -454,7 +507,7 @@ describe('CPF obrigatório para criar Transfer (WI-26)', () => {
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${noCpfToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'PIX', amount: 50, description: 'Deve ser rejeitada por falta de CPF' },
+      payload: { type: 'PIX', pixKey: VALID_PIX_KEY, amount: 50, description: 'Deve ser rejeitada por falta de CPF' },
     })
     expect(res.statusCode).toBe(400)
     expect(res.json().error).toBe('CPF_REQUIRED')
@@ -470,7 +523,7 @@ describe('CPF obrigatório para criar Transfer (WI-26)', () => {
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${withCpfToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'PIX', amount: 50, description: 'CPF preenchido' },
+      payload: { type: 'PIX', pixKey: VALID_PIX_KEY, amount: 50, description: 'CPF preenchido' },
     })
     expect(res.statusCode).toBe(200)
     expect(res.json().status).toBe('COMPLETED')

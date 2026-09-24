@@ -17,6 +17,7 @@ export interface Transfer {
   amount: number;
   description?: string | null;
   toAccount?: BankAccount;
+  pixKey?: string | null;
   createdAt: string;
   completedAt?: string | null;
   failureReason?: string;

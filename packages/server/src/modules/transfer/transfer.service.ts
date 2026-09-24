@@ -16,6 +16,7 @@ import {
   calculateTotal,
   determineStatus,
   formatToAccount,
+  normalizedPixKey,
   validateTransfer,
   type TransferStatus,
 } from './transfer.domain.js'
@@ -93,7 +94,7 @@ async function executeTransferTx(
       toAccountNumber: toAccount?.account ?? null,
       toAccountHolder: toAccount?.holderName ?? null,
       toAccountType: toAccount?.type ?? null,
-      pixKey: input.pixKey ?? null,
+      pixKey: normalizedPixKey(input),
       completedAt: status === 'COMPLETED' ? new Date() : null,
       failureReason: status === 'FAILED' ? 'Execução externa falhou' : null,
     },

@@ -2,8 +2,9 @@
 // Lógica pura de transferências bancárias (PIX/TED/DOC). Sem I/O/DB.
 // Funções determinísticas e testáveis.
 
-import type { BankAccount, CreateTransferInput } from '@investpro/shared'
+import type { BankAccount, BankAccountInput, CreateTransferInput } from '@investpro/shared'
 import {
+  parsePixKey,
   TRANSFER_STATUSES,
   TRANSFER_TYPES,
 } from '@investpro/shared'
@@ -33,6 +34,13 @@ export function validateTransfer(input: CreateTransferInput): string[] {
   const errors: string[] = []
   if (!isTransferType(input.type)) errors.push('Tipo de transferência inválido')
   if (!(input.amount > 0)) errors.push('Valor deve ser positivo')
+  if (input.type === 'PIX') {
+    // PIX sem destino identificável debitaria o saldo sem entregar a ninguém.
+    if (!input.pixKey?.trim()) errors.push('Chave PIX obrigatória')
+    else if (!parsePixKey(input.pixKey)) {
+      errors.push('Chave PIX inválida: use CPF, CNPJ, e-mail, telefone com +55 ou chave aleatória')
+    }
+  }
   if (input.toAccount) {
     // PIX identifica o destino pela chave (banco + agência); não exige número
     // da conta. TED/DOC continuam exigindo os três campos.
@@ -47,7 +55,13 @@ export function validateTransfer(input: CreateTransferInput): string[] {
   return errors
 }
 
-export function formatToAccount(account: BankAccount): BankAccount {
+/** Chave PIX na forma normalizada (só para PIX já validado); null nos demais tipos. */
+export function normalizedPixKey(input: CreateTransferInput): string | null {
+  if (input.type !== 'PIX' || !input.pixKey) return null
+  return parsePixKey(input.pixKey)?.value ?? null
+}
+
+export function formatToAccount(account: BankAccountInput): BankAccount {
   return {
     id: account.id ?? `external-${Date.now()}`,
     bank: account.bank,

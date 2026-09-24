@@ -17,6 +17,7 @@ import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { isValidPixKey } from "@/lib/pix-key";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
@@ -42,10 +43,17 @@ function TransferStatusBadge({ status }: { status: TransferStatus }) {
   return <StatusBadge label={config.label} tone={config.tone} />;
 }
 
+function destinationOf(transfer: Transfer): string {
+  if (transfer.pixKey) return `Chave PIX · ${transfer.pixKey}`;
+  if (!transfer.toAccount) return "Transferência externa";
+  const { bank, agency, account } = transfer.toAccount;
+  return [bank, agency && `Ag. ${agency}`, account && `Conta ${account}`]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function TransferItem({ transfer }: { transfer: Transfer }) {
-  const destination = transfer.toAccount
-    ? `${transfer.toAccount.bank} · Conta ${transfer.toAccount.account}`
-    : "Transferência externa";
+  const destination = destinationOf(transfer);
 
   return (
     <div className="p-4 rounded-xl border border-border bg-surface-2">
@@ -98,6 +106,7 @@ export function Transfers() {
   const amountInput = useCurrencyDigitsInput();
   const [description, setDescription] = useState("");
   const [bank, setBank] = useState("");
+  const [agency, setAgency] = useState("");
   const [account, setAccount] = useState("");
   const [pixKey, setPixKey] = useState("");
 
@@ -105,29 +114,51 @@ export function Transfers() {
 
   const history = data?.items ?? [];
 
+  const destinationAccount = { bank: bank.trim(), agency: agency.trim(), account: account.trim() };
+  const accountFieldsFilled = Object.values(destinationAccount).filter(Boolean).length;
+
+  // Mensagem do primeiro problema do formulário, ou null se pode enviar.
+  const formError = (): string | null => {
+    if (amountInput.amount <= 0) return "Informe um valor válido.";
+    if (type === "PIX") {
+      if (!pixKey.trim()) return "Informe a chave PIX de destino.";
+      if (!isValidPixKey(pixKey)) {
+        return "Chave PIX inválida. Use CPF, CNPJ, e-mail, telefone com +55 ou chave aleatória.";
+      }
+    } else if (accountFieldsFilled > 0 && accountFieldsFilled < 3) {
+      return "Preencha banco, agência e número da conta, ou deixe os três em branco.";
+    }
+    return null;
+  };
+
+  const resetForm = () => {
+    amountInput.reset();
+    setDescription("");
+    setBank("");
+    setAgency("");
+    setAccount("");
+    setPixKey("");
+  };
+
   const submitTransfer = async () => {
-    if (amountInput.amount <= 0) {
-      toast.error("Informe um valor válido.");
+    const message = formError();
+    if (message) {
+      toast.error(message);
       return;
     }
+    const isPix = type === "PIX";
     try {
       await createTransfer.mutate({
         type,
         amount: amountInput.amount,
         description: description.trim() || undefined,
-        toAccount:
-          bank.trim() && account.trim()
-            ? { bank: bank.trim(), account: account.trim() }
-            : undefined,
-        pixKey: type === "PIX" && pixKey.trim() ? pixKey.trim() : undefined,
+        toAccount: !isPix && accountFieldsFilled === 3 ? destinationAccount : undefined,
+        pixKey: isPix ? pixKey.trim() : undefined,
       });
     } catch {
       return;
     }
-    amountInput.reset();
-    setDescription("");
-    setBank("");
-    setAccount("");
+    resetForm();
     void refetch();
   };
 
@@ -195,6 +226,7 @@ export function Transfers() {
                         setType(option.value);
                         if (option.value === "PIX") {
                           setBank("");
+                          setAgency("");
                           setAccount("");
                         } else {
                           setPixKey("");
@@ -258,12 +290,13 @@ export function Transfers() {
 
           {type === "PIX" ? (
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-muted-foreground">Chave PIX</label>
+              <label htmlFor="pix-key" className="text-sm text-muted-foreground">Chave PIX</label>
               <input
+                id="pix-key"
                 type="text"
                 value={pixKey}
                 onChange={(e) => setPixKey(e.target.value)}
-                placeholder="CPF, e-mail, telefone ou chave aleatória"
+                placeholder="CPF, CNPJ, e-mail, +55 celular ou chave aleatória"
                 className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
               />
             </div>
@@ -278,6 +311,16 @@ export function Transfers() {
                   value={bank}
                   onChange={(e) => setBank(e.target.value)}
                   placeholder="Banco"
+                  aria-label="Banco"
+                  className="col-span-2 w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={agency}
+                  onChange={(e) => setAgency(e.target.value)}
+                  placeholder="Agência"
+                  aria-label="Agência"
                   className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
                 />
                 <input
@@ -285,6 +328,7 @@ export function Transfers() {
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
                   placeholder="Nº da conta"
+                  aria-label="Número da conta"
                   className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
                 />
               </div>

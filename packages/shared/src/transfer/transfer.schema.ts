@@ -17,12 +17,19 @@ export const bankAccountSchema = z.object({
   type: z.enum(TRANSFER_TYPES).optional(),
 });
 
+// Na criação o id é opcional: conta avulsa digitada na tela não tem id, e o
+// servidor sintetiza um (transfer.domain.ts > formatToAccount).
+export const bankAccountInputSchema = bankAccountSchema.extend({
+  id: z.string().optional(),
+});
+
 export const createTransferInputSchema = z.object({
   type: z.enum(TRANSFER_TYPES),
-  toAccount: bankAccountSchema.optional(),
+  toAccount: bankAccountInputSchema.optional(),
   amount: moneyAmountSchema,
   description: z.string().max(140).optional(),
-  // Chave PIX (CPF/email/telefone/chave aleatória). Só usada quando type === 'PIX'.
+  // Chave PIX (CPF/CNPJ/e-mail/telefone/chave aleatória). Obrigatória e validada
+  // quando type === 'PIX' (transfer.domain.ts > validateTransfer); ignorada nos demais.
   pixKey: z.string().optional(),
 });
 
@@ -47,6 +54,7 @@ export const transferListSchema = z.object({
 });
 
 export type BankAccount = z.infer<typeof bankAccountSchema>;
+export type BankAccountInput = z.infer<typeof bankAccountInputSchema>;
 export type CreateTransferInput = z.infer<typeof createTransferInputSchema>;
 export type Transfer = z.infer<typeof transferSchema>;
 export type TransferList = z.infer<typeof transferListSchema>;

@@ -266,7 +266,7 @@ describe('transferência depende do CPF do perfil', SLOW_DB_TEST, () => {
         url: '/api/v1/transfers',
         headers: { authorization: `Bearer ${user.token}` },
         remoteAddress: uniqueIp(),
-        payload: { type: 'PIX', amount: 10, pixKey: 'chave-teste' },
+        payload: { type: 'PIX', amount: 10, pixKey: 'qa-pix@investpro.com' },
       })
 
     const before = await transfer()

@@ -19,6 +19,7 @@ export * from './market/market.schema.js';
 export * from './order/order.schema.js';
 export * from './exchange/exchange.schema.js';
 export * from './transfer/transfer.schema.js';
+export * from './transfer/pix-key.js';
 export * from './savings-box/savings-box.schema.js';
 export * from './news/news.schema.js';
 export * from './risk/risk.schema.js';

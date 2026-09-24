@@ -78,7 +78,7 @@ const MONEY_ENDPOINTS: MoneyEndpoint[] = [
   {
     name: 'transfers',
     url: '/api/v1/transfers',
-    bodyWith: (amount) => ({ type: 'PIX', amount, pixKey: 'chave-teste' }),
+    bodyWith: (amount) => ({ type: 'PIX', amount, pixKey: 'qa-pix@investpro.com' }),
   },
   {
     name: 'orders (price)',
