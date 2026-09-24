@@ -4,6 +4,13 @@
 // infinito) tem que ser descartado, nunca virar preço.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// Mutável: os testes de autenticação alternam AWESOMEAPI_TOKEN por caso, e os
+// demais testes do arquivo seguem com o padrão '' (nível anônimo), igual ao
+// comportamento real quando a env não está definida.
+const mockEnv = vi.hoisted(() => ({ AWESOMEAPI_TOKEN: '' }))
+vi.mock('../../../config/env.js', () => ({ env: mockEnv }))
+
 import { awesomeapiSource } from '../adapters/awesomeapi.js'
 import { parseRetryAfterMs, UpstreamRateLimitedError } from '../adapters/errors.js'
 import type { SourceAsset } from '../adapters/types.js'
@@ -16,11 +23,14 @@ const usdBrl: SourceAsset = {
   remoteId: 'USD-BRL',
 }
 
-function stubAwesomeApiBid(bid: unknown): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify({ USDBRL: { bid, pctChange: '0.5' } })))
+// Params tipados (mesmo sem uso) pra o mock capturar url/headers da chamada real
+// com o tipo certo, em vez de `any` — usado pelos testes de autenticação abaixo.
+function stubAwesomeApiBid(bid: unknown) {
+  const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+    new Response(JSON.stringify({ USDBRL: { bid, pctChange: '0.5' } }))
   )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
 }
 
 afterEach(() => {
@@ -62,6 +72,32 @@ describe('awesomeapiSource.fetchQuotes — HTTP 429', () => {
     stubRateLimited()
     const error = await awesomeapiSource.fetchQuotes([usdBrl]).catch((err) => err)
     expect(error.retryAfterMs).toBe(30_000)
+  })
+})
+
+describe('awesomeapiSource.fetchQuotes — autenticação (AWESOMEAPI_TOKEN)', () => {
+  afterEach(() => {
+    mockEnv.AWESOMEAPI_TOKEN = ''
+  })
+
+  it('sem AWESOMEAPI_TOKEN: chamada sem header x-api-key (nível anônimo, comportamento de hoje)', async () => {
+    const fetchMock = stubAwesomeApiBid('5.2345')
+
+    await awesomeapiSource.fetchQuotes([usdBrl])
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(init?.headers).not.toHaveProperty('x-api-key')
+  })
+
+  it('com AWESOMEAPI_TOKEN: envia o token no header x-api-key, nunca na query string', async () => {
+    mockEnv.AWESOMEAPI_TOKEN = 'token-de-teste'
+    const fetchMock = stubAwesomeApiBid('5.2345')
+
+    await awesomeapiSource.fetchQuotes([usdBrl])
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(init?.headers).toEqual({ 'x-api-key': 'token-de-teste' })
+    expect(url).not.toContain('token-de-teste')
   })
 })
 

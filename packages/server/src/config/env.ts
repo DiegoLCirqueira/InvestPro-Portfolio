@@ -76,6 +76,7 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
   BRAPI_API_KEY: process.env.BRAPI_API_KEY ?? "",
+  AWESOMEAPI_TOKEN: process.env.AWESOMEAPI_TOKEN ?? "",
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY, isProduction),
   EXCHANGE_RATE_FRESH_TTL_SECONDS: exchangeRateFreshTtlSeconds,
   EXCHANGE_RATE_MAX_AGE_SECONDS: exchangeRateMaxAgeSeconds,

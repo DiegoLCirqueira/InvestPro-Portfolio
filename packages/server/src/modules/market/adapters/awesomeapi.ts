@@ -4,9 +4,15 @@
 // no JSON de resposta ({"USDBRL": {...}}) — por isso a URL e a chave de leitura
 // da resposta usam formatações diferentes do mesmo par.
 // Decisões v1.1 designam AwesomeAPI como fonte de câmbio/fixed income.
+// Autenticação: token no header `x-api-key` (plano gratuito com token: 100 mil
+// req/mês, tempo real — a alternativa via query param `?token=` vaza pro
+// histórico do navegador e logs de servidor, mesmo motivo de BRAPI_API_KEY em
+// brapi.ts, por isso evitamos). Sem AWESOMEAPI_TOKEN configurada, a chamada
+// segue sem header, no nível anônimo (mais sujeito a 429).
 
 import type { MarketDataSource, MarketQuote, SourceAsset } from './types.js'
 import { parseRetryAfterMs, UpstreamRateLimitedError } from './errors.js'
+import { env } from '../../../config/env.js'
 
 const BASE_URL = 'https://economia.awesomeapi.com.br/json/last'
 const FETCH_TIMEOUT_MS = 5000
@@ -17,9 +23,13 @@ interface AwesomeApiEntry {
 }
 
 async function fetchJson(url: string): Promise<Record<string, AwesomeApiEntry>> {
+  const headers: Record<string, string> = env.AWESOMEAPI_TOKEN
+    ? { 'x-api-key': env.AWESOMEAPI_TOKEN }
+    : {}
+
   let response: Response
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    response = await fetch(url, { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   } catch (err) {
     throw new Error(`AwesomeAPI: falha de rede para ${url}: ${err instanceof Error ? err.message : String(err)}`)
   }
