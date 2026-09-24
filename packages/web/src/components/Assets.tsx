@@ -21,7 +21,7 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
     <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-xl transition-colors">
       <div className="flex items-center gap-3">
         <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${TYPE_COLORS[position.type]}`}
+          className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${TYPE_COLORS[position.type]}`}
         >
           {TYPE_LABELS[position.type]}
         </div>
