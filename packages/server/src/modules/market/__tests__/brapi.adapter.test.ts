@@ -5,7 +5,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../config/env.js', () => ({ env: { BRAPI_API_KEY: '' } }))
+const mockEnv = vi.hoisted(() => ({ BRAPI_API_KEY: '' }))
+vi.mock('../../../config/env.js', () => ({ env: mockEnv }))
 
 import { brapiSource, resetBrapiTokenRequiredCache } from '../adapters/brapi.js'
 import type { SourceAsset } from '../adapters/types.js'
@@ -29,7 +30,10 @@ function stubBrapiWithoutToken() {
   return fetchMock
 }
 
-beforeEach(() => resetBrapiTokenRequiredCache())
+beforeEach(() => {
+  resetBrapiTokenRequiredCache()
+  mockEnv.BRAPI_API_KEY = ''
+})
 afterEach(() => vi.unstubAllGlobals())
 
 describe('brapiSource.fetchQuotes sem token', () => {
@@ -77,5 +81,53 @@ describe('brapiSource.fetchQuotes sem token', () => {
     vi.stubGlobal('fetch', fetchMock)
     await expect(brapiSource.fetchQuotes(ASSETS)).rejects.toThrow(/500/)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Brapi com token no plano gratuito: 1 ativo por requisição (lote com token
+// dá 400 QUOTES_PER_REQUEST_EXCEEDED) e 15 mil requisições por mês.
+function stubBrapiWithToken() {
+  const calls: Array<{ symbols: string[]; withToken: boolean }> = []
+  const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    const symbols = url.split('/').pop()!.split(',')
+    const withToken = Boolean((init?.headers as Record<string, string> | undefined)?.Authorization)
+    calls.push({ symbols, withToken })
+    if (withToken && symbols.length > 1) return new Response('{"code":"QUOTES_PER_REQUEST_EXCEEDED"}', { status: 400 })
+    if (!withToken && !symbols.every((symbol) => FREE.has(symbol))) return new Response('{}', { status: 401 })
+    return new Response(JSON.stringify({ results: symbols.map((symbol) => ({ symbol, regularMarketPrice: 20 })) }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return calls
+}
+
+describe('brapiSource.fetchQuotes com token (plano gratuito)', () => {
+  beforeEach(() => {
+    mockEnv.BRAPI_API_KEY = 'chave-teste'
+  })
+
+  it('livres em lote anônimo (sem gastar cota); o pago com token, sozinho: todos ao vivo', async () => {
+    const calls = stubBrapiWithToken()
+    const quotes = await brapiSource.fetchQuotes(ASSETS)
+
+    expect(quotes.map((q) => q.ticker).sort()).toEqual(['BOVA11', 'PETR4', 'VALE3'])
+    expect(calls.filter((c) => c.withToken)).toEqual([{ symbols: ['BOVA11'], withToken: true }])
+    expect(calls.every((c) => !c.withToken || c.symbols.length === 1)).toBe(true)
+  })
+
+  it('o ticker pago é buscado com token no máximo a cada 5 min; entre as buscas vale a última cotação real', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const calls = stubBrapiWithToken()
+    await brapiSource.fetchQuotes(ASSETS)
+    calls.length = 0
+
+    vi.setSystemTime(Date.now() + 60_000)
+    const nextCycle = await brapiSource.fetchQuotes(ASSETS)
+    expect(calls.filter((c) => c.withToken)).toHaveLength(0)
+    expect(nextCycle.map((q) => q.ticker)).toContain('BOVA11')
+
+    vi.setSystemTime(Date.now() + 5 * 60_000)
+    await brapiSource.fetchQuotes(ASSETS)
+    expect(calls.filter((c) => c.withToken)).toEqual([{ symbols: ['BOVA11'], withToken: true }])
+    vi.useRealTimers()
   })
 })

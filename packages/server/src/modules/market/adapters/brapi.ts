@@ -2,9 +2,8 @@
 // Fonte de dados: Brapi (ações brasileiras).
 // Autenticação: Bearer token no header Authorization (método recomendado pela
 // Brapi — a alternativa via query param `?token=` vaza pro histórico do
-// navegador e logs de servidor, por isso evitamos). Sem BRAPI_API_KEY a
-// chamada segue sem header: a Brapi libera só alguns tickers e responde 401
-// para os demais, que caem no preço estimado do market.service.
+// navegador e logs de servidor, por isso evitamos). O token só é enviado para
+// os tickers que o exigem; os livres vão em lote anônimo (ver abaixo).
 
 import type { MarketDataSource, MarketQuote, SourceAsset } from './types.js'
 import { env } from '../../../config/env.js'
@@ -36,19 +35,55 @@ class BrapiHttpError extends Error {
 // Sem token, a Brapi libera só algumas ações (ex.: PETR4, VALE3, ITUB4) e
 // recusa o LOTE inteiro com 401 se um único ticker exigir token (ex.: BOVA11)
 // — derrubando todas para o preço estimado. Tickers que exigem token ficam de
-// fora dos lotes por um tempo, pra não gastar cota tentando a cada minuto.
+// fora dos lotes anônimos por um tempo, pra não tentar a cada minuto.
 const TOKEN_REQUIRED_TTL_MS = 6 * 60 * 60 * 1000
 const tokenRequiredUntil = new Map<string, number>()
 
+// Com token, o plano gratuito aceita só 1 ativo por requisição e 15 mil
+// requisições por mês: os tickers que exigem token são buscados um a um e no
+// máximo a cada 5 minutos (~8,6 mil/mês por ticker); entre uma busca e outra,
+// vale a última cotação real. Os tickers livres seguem no lote anônimo, que
+// não gasta a cota da conta.
+const TOKEN_REFRESH_MS = 5 * 60 * 1000
+const tokenQuotes = new Map<string, { result: BrapiResult; fetchedAt: number }>()
+
 export function resetBrapiTokenRequiredCache(): void {
   tokenRequiredUntil.clear()
+  tokenQuotes.clear()
 }
 
 const symbolOf = (asset: SourceAsset): string => asset.remoteId ?? asset.ticker
 
-async function fetchResults(assets: SourceAsset[]): Promise<BrapiResult[]> {
-  const data = await fetchJson(`${BASE_URL}/${assets.map(symbolOf).join(',')}`)
+async function fetchResults(assets: SourceAsset[], withToken = false): Promise<BrapiResult[]> {
+  const data = await fetchJson(`${BASE_URL}/${assets.map(symbolOf).join(',')}`, withToken)
   return data.results ?? []
+}
+
+const requiresToken = (asset: SourceAsset): boolean =>
+  (tokenRequiredUntil.get(symbolOf(asset)) ?? 0) > Date.now()
+
+async function fetchWithToken(assets: SourceAsset[]): Promise<BrapiResult[]> {
+  if (!env.BRAPI_API_KEY) return []
+
+  const results: BrapiResult[] = []
+  for (const asset of assets) {
+    const symbol = symbolOf(asset)
+    const cached = tokenQuotes.get(symbol)
+    if (cached && Date.now() - cached.fetchedAt < TOKEN_REFRESH_MS) {
+      results.push(cached.result)
+      continue
+    }
+    try {
+      const [result] = await fetchResults([asset], true)
+      if (result) {
+        tokenQuotes.set(symbol, { result, fetchedAt: Date.now() })
+        results.push(result)
+      }
+    } catch {
+      if (cached) results.push(cached.result)
+    }
+  }
+  return results
 }
 
 // Lote recusado por 401: descobre, um a um e em sequência, quais tickers
@@ -69,26 +104,36 @@ async function fetchEachSeparately(assets: SourceAsset[]): Promise<BrapiResult[]
   return results
 }
 
-async function fetchAvailable(assets: SourceAsset[]): Promise<BrapiResult[]> {
-  const now = Date.now()
-  const available = assets.filter((asset) => (tokenRequiredUntil.get(symbolOf(asset)) ?? 0) <= now)
-  if (available.length === 0) {
-    throw new Error('Brapi: estes tickers exigem token (configure BRAPI_API_KEY)')
-  }
-
+async function fetchAnonymous(assets: SourceAsset[]): Promise<BrapiResult[]> {
+  if (assets.length === 0) return []
   try {
-    return await fetchResults(available)
+    return await fetchResults(assets)
   } catch (err) {
-    const batchUnauthorized = err instanceof BrapiHttpError && err.status === 401 && available.length > 1
+    const batchUnauthorized = err instanceof BrapiHttpError && err.status === 401 && assets.length > 1
     if (!batchUnauthorized) throw err
-    return fetchEachSeparately(available)
+    return fetchEachSeparately(assets)
   }
 }
 
-async function fetchJson(url: string): Promise<BrapiResponse> {
-  const headers: Record<string, string> = env.BRAPI_API_KEY
-    ? { Authorization: `Bearer ${env.BRAPI_API_KEY}` }
-    : {}
+// Anônimo primeiro (pode descobrir, neste ciclo, quais tickers exigem token);
+// depois, com token, só os que exigem.
+async function fetchAvailable(assets: SourceAsset[]): Promise<BrapiResult[]> {
+  let anonymousError: unknown
+  let anonymous: BrapiResult[] = []
+  try {
+    anonymous = await fetchAnonymous(assets.filter((asset) => !requiresToken(asset)))
+  } catch (err) {
+    anonymousError = err
+  }
+
+  const results = [...anonymous, ...(await fetchWithToken(assets.filter(requiresToken)))]
+  if (results.length > 0) return results
+  throw anonymousError ?? new Error('Brapi: estes tickers exigem token (configure BRAPI_API_KEY)')
+}
+
+async function fetchJson(url: string, withToken: boolean): Promise<BrapiResponse> {
+  const headers: Record<string, string> =
+    withToken && env.BRAPI_API_KEY ? { Authorization: `Bearer ${env.BRAPI_API_KEY}` } : {}
 
   let response: Response
   try {
