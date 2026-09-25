@@ -17,7 +17,9 @@ import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 import { formatCurrency, formatDateTime } from "@/lib/format";
-import { isValidPixKey } from "@/lib/pix-key";
+import { formatStoredPixKey } from "@/lib/pix-key";
+import { usePixKeyInput } from "@/hooks/use-pix-key-input";
+import { PixKeyField } from "@/components/transfers/PixKeyField";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
@@ -44,7 +46,7 @@ function TransferStatusBadge({ status }: { status: TransferStatus }) {
 }
 
 function destinationOf(transfer: Transfer): string {
-  if (transfer.pixKey) return `Chave PIX · ${transfer.pixKey}`;
+  if (transfer.pixKey) return `Chave PIX · ${formatStoredPixKey(transfer.pixKey)}`;
   if (!transfer.toAccount) return "Transferência externa";
   const { bank, agency, account } = transfer.toAccount;
   return [bank, agency && `Ag. ${agency}`, account && `Conta ${account}`]
@@ -108,7 +110,7 @@ export function Transfers() {
   const [bank, setBank] = useState("");
   const [agency, setAgency] = useState("");
   const [account, setAccount] = useState("");
-  const [pixKey, setPixKey] = useState("");
+  const pixKeyInput = usePixKeyInput();
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
@@ -121,9 +123,10 @@ export function Transfers() {
   const formError = (): string | null => {
     if (amountInput.amount <= 0) return "Informe um valor válido.";
     if (type === "PIX") {
-      if (!pixKey.trim()) return "Informe a chave PIX de destino.";
-      if (!isValidPixKey(pixKey)) {
-        return "Chave PIX inválida. Use CPF, CNPJ, e-mail, telefone com +55 ou chave aleatória.";
+      if (pixKeyInput.isEmpty) return "Informe a chave PIX de destino.";
+      if (pixKeyInput.ambiguousTypes.length > 0) return "Escolha se a chave é um CPF ou um celular.";
+      if (!pixKeyInput.pixKey) {
+        return "Chave PIX inválida. Use CPF, CNPJ, e-mail, celular com DDD ou chave aleatória.";
       }
     } else if (accountFieldsFilled > 0 && accountFieldsFilled < 3) {
       return "Preencha banco, agência e número da conta, ou deixe os três em branco.";
@@ -137,7 +140,7 @@ export function Transfers() {
     setBank("");
     setAgency("");
     setAccount("");
-    setPixKey("");
+    pixKeyInput.reset();
   };
 
   const submitTransfer = async () => {
@@ -146,14 +149,15 @@ export function Transfers() {
       toast.error(message);
       return;
     }
-    const isPix = type === "PIX";
+    const pixKey = type === "PIX" ? pixKeyInput.pixKey : null;
     try {
       await createTransfer.mutate({
         type,
         amount: amountInput.amount,
         description: description.trim() || undefined,
-        toAccount: !isPix && accountFieldsFilled === 3 ? destinationAccount : undefined,
-        pixKey: isPix ? pixKey.trim() : undefined,
+        toAccount: !pixKey && accountFieldsFilled === 3 ? destinationAccount : undefined,
+        pixKey: pixKey?.value,
+        pixKeyType: pixKey?.type,
       });
     } catch {
       return;
@@ -229,7 +233,7 @@ export function Transfers() {
                           setAgency("");
                           setAccount("");
                         } else {
-                          setPixKey("");
+                          pixKeyInput.reset();
                         }
                       }}
                       className={`min-h-11 w-full py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
@@ -289,17 +293,7 @@ export function Transfers() {
           </div>
 
           {type === "PIX" ? (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="pix-key" className="text-sm text-muted-foreground">Chave PIX</label>
-              <input
-                id="pix-key"
-                type="text"
-                value={pixKey}
-                onChange={(e) => setPixKey(e.target.value)}
-                placeholder="CPF, CNPJ, e-mail, +55 celular ou chave aleatória"
-                className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
-              />
-            </div>
+            <PixKeyField input={pixKeyInput} />
           ) : (
             <div className="flex flex-col gap-2">
               <label className="text-sm text-muted-foreground">

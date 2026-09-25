@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { TRANSFER_STATUSES, TRANSFER_TYPES } from '../types/enums.js';
 import { moneyAmountSchema } from '../types/money.js';
+import { PIX_KEY_TYPES } from './pix-key.js';
 
 export const bankAccountSchema = z.object({
   id: z.string(),
@@ -28,9 +29,12 @@ export const createTransferInputSchema = z.object({
   toAccount: bankAccountInputSchema.optional(),
   amount: moneyAmountSchema,
   description: z.string().max(140).optional(),
-  // Chave PIX (CPF/CNPJ/e-mail/telefone/chave aleatória). Obrigatória e validada
+  // Chave PIX (CPF/CNPJ/e-mail/celular/chave aleatória). Obrigatória e validada
   // quando type === 'PIX' (transfer.domain.ts > validateTransfer); ignorada nos demais.
   pixKey: z.string().optional(),
+  // Tipo da chave: obrigatório só quando os dígitos servem pra mais de um tipo
+  // (CPF que também tem formato de celular). A tela sempre envia.
+  pixKeyType: z.enum(PIX_KEY_TYPES).optional(),
 });
 
 export const transferSchema = z.object({

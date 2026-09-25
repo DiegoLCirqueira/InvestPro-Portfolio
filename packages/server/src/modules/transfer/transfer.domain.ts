@@ -5,6 +5,7 @@
 import type { BankAccount, BankAccountInput, CreateTransferInput } from '@investpro/shared'
 import {
   parsePixKey,
+  pixKeyCandidates,
   TRANSFER_STATUSES,
   TRANSFER_TYPES,
 } from '@investpro/shared'
@@ -30,17 +31,23 @@ export function transferFee(type: TransferType): number {
   return TRANSFER_FEES[type] ?? 0
 }
 
+function pixKeyErrors({ pixKey, pixKeyType }: CreateTransferInput): string[] {
+  if (!pixKey?.trim()) return ['Chave PIX obrigatória']
+  if (!pixKeyType && pixKeyCandidates(pixKey).length > 1) {
+    return ['Chave PIX ambígua: informe se é CPF ou celular (pixKeyType)']
+  }
+  if (!parsePixKey(pixKey, pixKeyType)) {
+    return ['Chave PIX inválida: use CPF, CNPJ, e-mail, celular ou chave aleatória']
+  }
+  return []
+}
+
 export function validateTransfer(input: CreateTransferInput): string[] {
   const errors: string[] = []
   if (!isTransferType(input.type)) errors.push('Tipo de transferência inválido')
   if (!(input.amount > 0)) errors.push('Valor deve ser positivo')
-  if (input.type === 'PIX') {
-    // PIX sem destino identificável debitaria o saldo sem entregar a ninguém.
-    if (!input.pixKey?.trim()) errors.push('Chave PIX obrigatória')
-    else if (!parsePixKey(input.pixKey)) {
-      errors.push('Chave PIX inválida: use CPF, CNPJ, e-mail, telefone com +55 ou chave aleatória')
-    }
-  }
+  // PIX sem destino identificável debitaria o saldo sem entregar a ninguém.
+  if (input.type === 'PIX') errors.push(...pixKeyErrors(input))
   if (input.toAccount) {
     // PIX identifica o destino pela chave (banco + agência); não exige número
     // da conta. TED/DOC continuam exigindo os três campos.
@@ -58,7 +65,7 @@ export function validateTransfer(input: CreateTransferInput): string[] {
 /** Chave PIX na forma normalizada (só para PIX já validado); null nos demais tipos. */
 export function normalizedPixKey(input: CreateTransferInput): string | null {
   if (input.type !== 'PIX' || !input.pixKey) return null
-  return parsePixKey(input.pixKey)?.value ?? null
+  return parsePixKey(input.pixKey, input.pixKeyType)?.value ?? null
 }
 
 export function formatToAccount(account: BankAccountInput): BankAccount {

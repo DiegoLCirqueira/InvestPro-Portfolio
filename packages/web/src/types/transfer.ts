@@ -1,3 +1,5 @@
+import type { PixKeyType } from "@/lib/pix-key";
+
 export type TransferType = "PIX" | "TED" | "DOC";
 export type TransferStatus = "PENDING" | "COMPLETED" | "FAILED";
 
@@ -36,4 +38,5 @@ export interface CreateTransferInput {
   description?: string;
   toAccount?: Partial<BankAccount>;
   pixKey?: string;
+  pixKeyType?: PixKeyType;
 }

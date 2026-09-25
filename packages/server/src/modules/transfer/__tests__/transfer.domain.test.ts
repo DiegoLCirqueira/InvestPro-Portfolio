@@ -5,6 +5,7 @@ import {
   determineStatus,
   formatToAccount,
   isTransferType,
+  normalizedPixKey,
   transferFee,
   validateTransfer,
 } from '../transfer.domain.js'
@@ -69,6 +70,19 @@ describe('validateTransfer', () => {
   it('PIX com chave em formato inválido é inválida', () => {
     const errors = validateTransfer(baseInput({ pixKey: 'isso-nao-e-chave' }))
     expect(errors.join(' ')).toContain('Chave PIX inválida')
+  })
+
+  it('PIX com chave ambígua (CPF e celular) exige pixKeyType', () => {
+    const ambiguous = baseInput({ pixKey: '82991234539' })
+    expect(validateTransfer(ambiguous).join(' ')).toContain('Chave PIX ambígua')
+    expect(validateTransfer({ ...ambiguous, pixKeyType: 'PHONE' })).toEqual([])
+    expect(validateTransfer({ ...ambiguous, pixKeyType: 'CPF' })).toEqual([])
+  })
+
+  it('normalizedPixKey usa o tipo informado', () => {
+    expect(normalizedPixKey(baseInput({ pixKey: '82 99123-4567' }))).toBe('+5582991234567')
+    expect(normalizedPixKey(baseInput({ pixKey: '82991234539', pixKeyType: 'PHONE' }))).toBe('+5582991234539')
+    expect(normalizedPixKey(baseInput({ pixKey: '529.982.247-25' }))).toBe('52998224725')
   })
 
   it('TED não exige chave PIX', () => {

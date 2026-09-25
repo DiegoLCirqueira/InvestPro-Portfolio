@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -132,5 +132,69 @@ describe("Transferências: validação do formulário", () => {
       expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/banco, agência e número da conta/)),
     );
     expect(apiMock.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("Transferências: chave PIX só com números (reconhece e formata)", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+    apiMock.post.mockReset().mockResolvedValue({
+      id: "t-1",
+      status: "COMPLETED",
+      type: "PIX",
+      amount: 10,
+      createdAt: new Date().toISOString(),
+    });
+    vi.mocked(toast.error).mockClear();
+  });
+
+  async function typeKey(value: string) {
+    await renderTransfers();
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), { target: { value: "1000" } });
+    fireEvent.change(screen.getByLabelText("Chave PIX"), { target: { value } });
+  }
+
+  it("celular: 82991234567 vira 82 99123-4567 e é enviado como +55 / PHONE", async () => {
+    await typeKey("82991234567");
+
+    expect(screen.getByLabelText("Chave PIX")).toHaveValue("82 99123-4567");
+    expect(screen.getByText("Celular")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+    await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "+5582991234567", pixKeyType: "PHONE" });
+  });
+
+  it("CPF: 52998224725 vira 529.982.247-25 e é enviado só com dígitos / CPF", async () => {
+    await typeKey("52998224725");
+
+    expect(screen.getByLabelText("Chave PIX")).toHaveValue("529.982.247-25");
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+    await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "52998224725", pixKeyType: "CPF" });
+  });
+
+  it("CNPJ: 11222333000181 vira 11.222.333/0001-81", async () => {
+    await typeKey("11222333000181");
+    expect(screen.getByLabelText("Chave PIX")).toHaveValue("11.222.333/0001-81");
+  });
+
+  it("ambígua (CPF e celular): pergunta o tipo, bloqueia o envio até escolher", async () => {
+    await typeKey("82991234539");
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/CPF ou um celular/)),
+    );
+    expect(apiMock.post).not.toHaveBeenCalled();
+
+    const chooser = screen.getByRole("group", { name: "Tipo da chave PIX" });
+    fireEvent.click(within(chooser).getByRole("button", { name: "Celular" }));
+    expect(screen.getByLabelText("Chave PIX")).toHaveValue("82 99123-4539");
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+    await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "+5582991234539", pixKeyType: "PHONE" });
   });
 });
