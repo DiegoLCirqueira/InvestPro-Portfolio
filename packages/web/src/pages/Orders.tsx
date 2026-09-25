@@ -60,7 +60,11 @@ export function Orders() {
       <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
         <NewOrderForm onCreated={() => void refetch()} />
 
-        <div className="nav:col-span-3 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+        {/* No desktop o histórico não define a altura da linha (h-0 + min-h-full):
+            ela vem do formulário, e o histórico usa essa altura como máximo,
+            rolando por dentro quando passa dela. */}
+        <div className="nav:col-span-3 nav:self-stretch nav:h-0 nav:min-h-full">
+        <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
           <h3 className="text-base font-bold text-foreground">
             Histórico de Ordens
           </h3>
@@ -72,12 +76,13 @@ export function Orders() {
               action={{ label: "Ver ativos disponíveis", to: "/market" }}
             />
           ) : (
-            <div className="flex flex-col gap-3 nav:max-h-[560px] nav:overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (
                 <OrderRow key={order.id} order={order} />
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
 

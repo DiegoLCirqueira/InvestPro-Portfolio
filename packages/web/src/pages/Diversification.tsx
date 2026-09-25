@@ -55,17 +55,12 @@ function CategoryCard({
 
   return (
     <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: color }}
-          />
-          <span className="font-bold text-foreground text-sm">{item.label}</span>
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {item.percentage.toFixed(1)}%
-        </span>
+      <div className="flex items-center gap-2">
+        <span
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        <span className="font-bold text-foreground text-sm">{item.label}</span>
       </div>
 
       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">

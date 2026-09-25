@@ -338,7 +338,9 @@ export function Transfers() {
           </button>
         </form>
 
-        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+        {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
+        <div className="nav:self-stretch nav:h-0 nav:min-h-full">
+        <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
           <h3 className="text-base font-bold text-foreground">
             Histórico de Transferências
           </h3>
@@ -349,12 +351,13 @@ export function Transfers() {
               message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
             />
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
               {history.map((transfer) => (
                 <TransferItem key={transfer.id} transfer={transfer} />
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>
