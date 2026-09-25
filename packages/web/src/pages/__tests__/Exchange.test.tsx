@@ -256,3 +256,26 @@ describe("Exchange (simular e depois realizar)", () => {
     expect(within(document.body).queryByText("Simulação")).not.toBeInTheDocument();
   });
 });
+
+describe("Exchange: saldo disponível da moeda de origem", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockImplementation((path: string) => {
+      if (path === "/portfolio") return Promise.resolve({ id: "p1", balance: 10_500_034.35, totalEquity: 1e9, positions: [] });
+      if (path === "/exchange/holdings") return Promise.resolve({ items: [{ currency: "USD", balance: 190_639_474.22 }] });
+      return Promise.resolve({ base: "BRL", items: ["BRL", "USD", "EUR"] });
+    });
+    apiMock.post.mockReset();
+  });
+
+  it("mostra o caixa em BRL (não o patrimônio total) e, ao trocar a origem, o saldo naquela moeda", async () => {
+    await renderExchange();
+
+    expect(await screen.findByText(/R\$\s?10\.500\.034,35/)).toBeInTheDocument();
+    expect(screen.getByText(/Disponível em BRL/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
+
+    expect(await screen.findByText(/Disponível em USD/)).toBeInTheDocument();
+    expect(screen.getByText(/190\.639\.474,22/)).toBeInTheDocument();
+  });
+});

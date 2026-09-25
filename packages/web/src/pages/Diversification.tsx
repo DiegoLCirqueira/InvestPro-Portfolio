@@ -13,14 +13,15 @@ import { ErrorState } from "@/components/ErrorState";
 import { CurrencyHoldingsCard } from "@/components/diversification/CurrencyHoldingsCard";
 import { formatCurrency } from "@/lib/format";
 import type {
-  PortfolioAssetType,
+  DiversificationCategory,
   PortfolioDiversificationItem,
 } from "@/types/portfolio";
 
-const CATEGORY_COLORS: Record<PortfolioAssetType, string> = {
+const CATEGORY_COLORS: Record<DiversificationCategory, string> = {
   CRYPTO: "var(--color-cat-crypto)",
   STOCK: "var(--color-cat-stocks)",
   FIXED_INCOME: "var(--color-cat-fixed)",
+  FOREIGN_CURRENCY: "var(--color-cat-intl)",
 };
 
 const FALLBACK_CATEGORY_COLOR = "var(--color-muted-foreground)";
@@ -72,13 +73,7 @@ function CategoryCard({
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground text-xs">
-          {item.type === "CRYPTO"
-            ? "Criptomoedas"
-            : item.type === "STOCK"
-              ? "Ações"
-              : item.type === "FIXED_INCOME"
-                ? "Renda Fixa"
-                : item.type}
+          {item.label}
         </span>
         <span className="font-bold text-foreground tabular-nums">
           {formatCurrency(item.value)}

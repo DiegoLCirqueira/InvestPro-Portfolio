@@ -111,6 +111,15 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
       percentage: 40,
     })
 
+    // Moeda estrangeira (câmbio) vira uma fatia própria, em BRL, e entra no total.
+    await prisma.currencyHolding.create({ data: { userId, currency: 'USD', balance: 100 } })
+    const withForeign = await getDiversification(userId)
+    const foreign = withForeign.breakdown.find((item) => item.type === 'FOREIGN_CURRENCY')
+    expect(foreign).toMatchObject({ label: 'Moedas estrangeiras' })
+    expect(foreign!.value).toBeGreaterThan(0)
+    expect(withForeign.totalBalance).toBeCloseTo(1000 + foreign!.value, 2)
+    await prisma.currencyHolding.deleteMany({ where: { userId } })
+
     // Card "Valor Total" do Painel: patrimônio total, não só o caixa (600).
     const summary = await getPortfolio(userId)
     expect(summary.balance).toBe(600)

@@ -48,6 +48,7 @@ const PERIOD_OPTIONS: { value: PortfolioPeriod; label: string }[] = [
 export function Dashboard() {
   const { period, setPeriod } = usePortfolioStore();
   const {
+    balance,
     totalEquity,
     isLoading: isSummaryLoading,
     error: summaryError,
@@ -102,7 +103,11 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
-          <SummaryCard totalEquity={totalEquity} change={hasChangeData ? change : undefined} />
+          <SummaryCard
+            totalEquity={totalEquity}
+            availableBalance={balance}
+            change={hasChangeData ? change : undefined}
+          />
 
           <div className="p-6 rounded-2xl border border-border nav:flex-1 flex flex-col nav:min-h-0">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-6">

@@ -43,8 +43,11 @@ export interface PortfolioHistoryResponse {
   returnPct: number | null;
 }
 
+/** Fatias da diversificação: tipos de ativo + moedas estrangeiras (câmbio, em BRL). */
+export type DiversificationCategory = PortfolioAssetType | "FOREIGN_CURRENCY";
+
 export interface PortfolioDiversificationItem {
-  type: PortfolioAssetType;
+  type: DiversificationCategory;
   label: string;
   value: number;
   percentage: number;

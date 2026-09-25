@@ -4,11 +4,15 @@ import { formatCurrency } from "@/lib/format";
 interface SummaryCardProps {
   /** Patrimônio total (caixa + posições + caixinha + moedas), o mesmo do gráfico. */
   totalEquity: number;
+  /** Dinheiro livre em conta (caixa em BRL), o que dá pra usar em ordens, câmbio e transferências. */
+  availableBalance: number;
   /** Rentabilidade do período em %; sem base de comparação, o selo não aparece. */
   change?: number;
 }
 
-export function SummaryCard({ totalEquity, change }: SummaryCardProps) {
+// O total inclui investimentos e moedas: sozinho, dá a ilusão de que tudo é
+// dinheiro disponível. Por isso o saldo em conta aparece junto.
+export function SummaryCard({ totalEquity, availableBalance, change }: SummaryCardProps) {
   const isPositive = (change ?? 0) >= 0;
 
   return (
@@ -35,6 +39,14 @@ export function SummaryCard({ totalEquity, change }: SummaryCardProps) {
           </span>
         )}
       </div>
+
+      <p className="mt-3 text-sm text-muted-foreground">
+        Saldo disponível em conta:{" "}
+        <span className="font-bold text-foreground tabular-nums">{formatCurrency(availableBalance)}</span>
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        O valor total inclui investimentos, caixinha e moedas estrangeiras.
+      </p>
     </div>
   );
 }

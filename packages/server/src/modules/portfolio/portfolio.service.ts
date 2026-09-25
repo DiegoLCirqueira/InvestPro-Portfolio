@@ -4,7 +4,7 @@ import { AppError } from "../auth/auth.service.js";
 import type { HistoryQuery } from "./portfolio.schema.js";
 import { calculateDiversification } from "./portfolio.domain.js";
 import { buildDailySeries, buildIntradaySeries, timeWeightedReturnPct } from "./history.domain.js";
-import { computeEquity, ensureSnapshots, recordSnapshot } from "./snapshot.service.js";
+import { computeEquity, ensureSnapshots, foreignCurrencyValueInBrl, recordSnapshot } from "./snapshot.service.js";
 
 export async function getPortfolio(userId: string) {
   const portfolio = await prisma.portfolio.findUnique({
@@ -162,11 +162,16 @@ export async function getDiversification(userId: string) {
     currentValue: Number(p.currentValue),
   }));
 
-  // Patrimônio total (caixa + posições), não só o caixa: uma ordem FILLED
-  // decrementa/incrementa balance ao mover valor para/de uma Position, então
-  // usar só o balance como denominador distorceria os percentuais (WI-14).
-  const positionsTotal = positions.reduce((sum, p) => sum + p.currentValue, 0);
-  const totalEquity = Number(portfolio.balance) + positionsTotal;
+  // Moedas estrangeiras entram como uma fatia própria, em BRL (mesma cotação
+  // do patrimônio no gráfico de evolução).
+  const foreign = await foreignCurrencyValueInBrl(userId);
+  const slices = foreign > 0 ? [...positions, { type: "FOREIGN_CURRENCY" as const, currentValue: foreign }] : positions;
 
-  return calculateDiversification(positions, totalEquity);
+  // Patrimônio total (caixa + posições + moedas), não só o caixa: uma ordem
+  // FILLED move valor do balance para uma Position, então usar só o balance
+  // como denominador distorceria os percentuais (WI-14).
+  const slicesTotal = slices.reduce((sum, p) => sum + p.currentValue, 0);
+  const totalEquity = Math.round((Number(portfolio.balance) + slicesTotal) * 100) / 100;
+
+  return calculateDiversification(slices, totalEquity);
 }

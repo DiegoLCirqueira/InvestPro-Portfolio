@@ -42,7 +42,7 @@ export const historyResponseSchema = z.object({
 })
 
 export const diversificationItemSchema = z.object({
-  type: z.enum(['CRYPTO', 'STOCK', 'FIXED_INCOME']),
+  type: z.enum(['CRYPTO', 'STOCK', 'FIXED_INCOME', 'FOREIGN_CURRENCY']),
   label: z.string(),
   value: z.number(),
   percentage: z.number(),

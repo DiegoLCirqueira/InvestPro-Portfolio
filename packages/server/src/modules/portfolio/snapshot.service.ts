@@ -35,6 +35,15 @@ export async function computeEquity(userId: string): Promise<number> {
   return Math.round((cash + positions + savings + foreign) * 100) / 100
 }
 
+/** Saldos em moeda estrangeira do usuário, convertidos para BRL. */
+export async function foreignCurrencyValueInBrl(userId: string): Promise<number> {
+  const holdings = await prisma.currencyHolding.findMany({
+    where: { userId, deletedAt: null, balance: { gt: 0 } },
+    select: { currency: true, balance: true },
+  })
+  return Math.round((await foreignHoldingsInBrl(holdings)) * 100) / 100
+}
+
 // Valorização pra exibição (não execução): aceita a cotação de referência
 // quando a fonte ao vivo está fora, como a simulação de câmbio.
 async function foreignHoldingsInBrl(

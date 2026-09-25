@@ -10,6 +10,8 @@ import { ExchangeResultPanel } from "@/components/exchange/ExchangeResultPanel";
 import { useExchange } from "@/hooks/useExchange";
 import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
 import { useExchangeFlow } from "@/hooks/use-exchange-flow";
+import { useAvailableBalance } from "@/hooks/use-available-balance";
+import { formatCurrency } from "@/lib/format";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 
@@ -19,10 +21,14 @@ export function Exchange() {
   const [from, setFrom] = useState(base);
   const [to, setTo] = useState(currencies[0] ?? "USD");
   const amountInput = useCurrencyDigitsInput();
+  const originBalance = useAvailableBalance(from);
 
   const flow = useExchangeFlow({
     input: { from, to, amount: amountInput.amount },
-    onExecuted: amountInput.reset,
+    onExecuted: () => {
+      amountInput.reset();
+      void originBalance.refetch();
+    },
   });
   const handleSimulate = useSubmitOnce(flow.simulate);
   const handleExecute = useSubmitOnce(flow.executeQuote);
@@ -83,6 +89,12 @@ export function Exchange() {
 
           <FormField label="Valor">
             <CurrencyDigitsField input={amountInput} ariaLabel="Valor a converter" />
+            <p className="text-xs text-muted-foreground" aria-live="polite">
+              Disponível em {from}:{" "}
+              <span className="font-bold text-foreground tabular-nums">
+                {originBalance.isLoading ? "…" : formatCurrency(originBalance.available, from)}
+              </span>
+            </p>
           </FormField>
 
           <div className="relative flex flex-col gap-16">
