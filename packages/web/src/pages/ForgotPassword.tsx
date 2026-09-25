@@ -7,6 +7,7 @@ import { KeyRound, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useForgotPassword } from "@/hooks/use-password-reset";
 import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import {
@@ -41,7 +42,8 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
+    <div className="relative min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
+      <ThemeToggle className="absolute top-4 right-4 z-10" />
       <AuthMarketingPanel alt="InvestPro — invista com clareza, cresça com confiança" />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">

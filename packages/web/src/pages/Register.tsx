@@ -7,6 +7,7 @@ import { UserPlus, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { DemoNotice } from "@/components/DemoNotice";
 import { useAuthStore } from "@/stores/auth";
 import { apiErrorMessage } from "@/lib/rate-limit";
@@ -49,7 +50,8 @@ export function Register() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
+    <div className="relative min-h-screen grid grid-cols-1 nav:grid-cols-2 bg-background">
+      <ThemeToggle className="absolute top-4 right-4 z-10" />
       <AuthMarketingPanel alt="InvestPro — sua carteira, mais inteligente desde o primeiro dia" />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">

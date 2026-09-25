@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { User, CalendarDays, LogOut, Moon, Sun } from "lucide-react";
+import { User, CalendarDays, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { useAuthStore } from "@/stores/auth";
-import { useTheme } from "@/hooks/use-theme";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
   const location = useLocation();
@@ -11,7 +11,6 @@ export function Header() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const isDashboard = location.pathname === "/";
-  const { isDark, toggle: toggleTheme } = useTheme();
 
   const hour = new Date().getHours();
   const greeting =
@@ -53,14 +52,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3 nav:gap-5 ml-auto">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          aria-label="Alternar tema claro/escuro"
-        >
-          {isDark ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
+        <ThemeToggle />
 
         <NotificationsMenu />
 
