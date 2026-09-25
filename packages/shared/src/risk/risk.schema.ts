@@ -16,6 +16,10 @@ export const riskReportSchema = z.object({
   volatility: z.number(),
   concentration: z.number().nonnegative().optional(),
   score: z.number().min(0).max(100).optional(),
+  // true enquanto o histórico real do patrimônio não tem dias suficientes pra
+  // VaR/volatilidade/drawdown/Sharpe significarem algo (a tela avisa).
+  insufficientHistory: z.boolean().optional(),
+  historyDays: z.number().int().nonnegative().optional(),
   updatedAt: z.string(),
   metrics: z.array(riskMetricItemSchema).optional(),
 });

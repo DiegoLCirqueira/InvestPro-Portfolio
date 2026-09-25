@@ -41,19 +41,6 @@ describe('getPortfolio', () => {
   })
 })
 
-describe('getHistory', () => {
-  it('gera série de 8 pontos para period=7d', async () => {
-    const result = await getHistory(seedUserId, { period: '7d' })
-    expect(result.history).toHaveLength(8)
-    expect(result.history.every((h) => h.balance > 0)).toBe(true)
-  })
-
-  it('gera série de 31 pontos para period=30d', async () => {
-    const result = await getHistory(seedUserId, { period: '30d' })
-    expect(result.history).toHaveLength(31)
-  })
-})
-
 describe('getDiversification', () => {
   it('agrupa por tipo com base no patrimônio total (caixa + posições, WI-14)', async () => {
     const result = await getDiversification(seedUserId)
@@ -85,6 +72,7 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
   })
 
   afterAll(async () => {
+    await prisma.portfolioSnapshot.deleteMany({ where: { userId } })
     await prisma.position.deleteMany({ where: { portfolio: { userId } } })
     await prisma.portfolio.deleteMany({ where: { userId } })
     await prisma.user.delete({ where: { id: userId } })
@@ -123,10 +111,11 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
       percentage: 40,
     })
 
+    // Conta sem histórico: a série começa hoje, no patrimônio real (a compra
+    // não mudou o total), sem curva inventada sobre o saldo.
     const history = await getHistory(userId, { period: '7d' })
-    expect(history.history).toHaveLength(8)
-    // Ponto de hoje (i=0): factor = 1 + sin(0)*0.02 + (7/7)*0.05 = 1.05.
-    const today = history.history[history.history.length - 1]
-    expect(today.balance).toBe(1050)
+    expect(history.history).toHaveLength(1)
+    expect(history.history[0]).toMatchObject({ balance: 1000, netFlow: 0 })
+    expect(history.returnPct).toBeNull()
   })
 })

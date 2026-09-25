@@ -63,7 +63,11 @@ export async function portfolioRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const user = request.user as { id: string };
-      return portfolioService.getHistory(user.id, request.query as { period: "7d" | "30d" | "90d" | "1y" });
+      return portfolioService.getHistory(
+        user.id,
+        request.query as { period: "7d" | "30d" | "90d" | "1y" },
+        request.log
+      );
     }
   );
 

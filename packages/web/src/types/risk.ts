@@ -11,6 +11,9 @@ export interface RiskReport {
   volatility: number;
   concentration?: number;
   score?: number;
+  /** true enquanto o histórico real do patrimônio tem poucos dias para as métricas de série. */
+  insufficientHistory?: boolean;
+  historyDays?: number;
   updatedAt: string;
   metrics?: RiskMetricItem[];
 }

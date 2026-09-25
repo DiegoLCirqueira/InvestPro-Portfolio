@@ -66,23 +66,9 @@ describe('GET /api/v1/portfolio', () => {
   })
 })
 
+// O comportamento da série (fotografias reais) é coberto em history.routes.test.ts
+// com contas descartáveis: o histórico grava dados e não deve tocar a conta seed.
 describe('GET /api/v1/portfolio/history', () => {
-  it('retorna série temporal para period=7d (8 pontos: 0..7)', async () => {
-    const res = await app!.inject({
-      method: 'GET',
-      url: '/api/v1/portfolio/history?period=7d',
-      headers: { authorization: `Bearer ${token}` },
-    })
-    expect(res.statusCode).toBe(200)
-    const body = res.json()
-    expect(Array.isArray(body.history)).toBe(true)
-    expect(body.history).toHaveLength(8)
-    body.history.forEach((p: { date: string; balance: number }) => {
-      expect(typeof p.date).toBe('string')
-      expect(typeof p.balance).toBe('number')
-    })
-  })
-
   it('retorna 401 sem token', async () => {
     const res = await app!.inject({ method: 'GET', url: '/api/v1/portfolio/history?period=7d' })
     expect(res.statusCode).toBe(401)

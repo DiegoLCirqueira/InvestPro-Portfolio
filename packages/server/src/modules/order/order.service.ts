@@ -15,6 +15,7 @@ import type {
 import { prisma } from '../../config/database.js'
 import { getAssetMeta, getQuote } from '../market/market.service.js'
 import { AppError } from '../auth/auth.service.js'
+import { recordSnapshot } from '../portfolio/snapshot.service.js'
 import {
   applyBuyFill,
   applySellFill,
@@ -243,6 +244,7 @@ export async function createOrder(userId: string, input: CreateOrderInput): Prom
         (tx) => executeOrderTx(tx, userId, asset, input, evaluation),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       )
+      if (created.status === 'FILLED') await recordSnapshot(userId, 'ORDER')
       return toOrder(created)
     } catch (err) {
       const isSerializationConflict =

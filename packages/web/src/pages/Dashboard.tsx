@@ -55,6 +55,7 @@ export function Dashboard() {
   } = usePortfolio();
   const {
     history,
+    returnPct,
     isLoading: isHistoryLoading,
     error: historyError,
     refetch: refetchHistory,
@@ -67,12 +68,9 @@ export function Dashboard() {
     void refetchHistory();
   };
 
-  const hasChangeData = history.length >= 2 && history[0].balance !== 0;
-  const change = hasChangeData
-    ? ((history[history.length - 1].balance - history[0].balance) /
-        history[0].balance) *
-      100
-    : 0;
+  // Rentabilidade real do período (servidor), sem contar aportes/retiradas.
+  const hasChangeData = returnPct !== null;
+  const change = returnPct ?? 0;
 
   if (isLoading) {
     return (

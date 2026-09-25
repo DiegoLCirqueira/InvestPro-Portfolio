@@ -1,7 +1,10 @@
+import type { FastifyBaseLogger } from "fastify";
 import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import type { HistoryQuery } from "./portfolio.schema.js";
 import { calculateDiversification } from "./portfolio.domain.js";
+import { buildDailySeries, timeWeightedReturnPct } from "./history.domain.js";
+import { computeEquity, ensureSnapshots, recordSnapshot } from "./snapshot.service.js";
 
 export async function getPortfolio(userId: string) {
   const portfolio = await prisma.portfolio.findUnique({
@@ -33,47 +36,65 @@ export async function getPortfolio(userId: string) {
   };
 }
 
-export async function getHistory(userId: string, query: HistoryQuery) {
+const PERIOD_DAYS: Record<HistoryQuery["period"], number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Série real do patrimônio (fotografias gravadas a cada operação e uma por
+// dia), não uma curva desenhada sobre o saldo atual. Contas sem histórico
+// começam no primeiro registro, sem inventar passado.
+export async function getHistory(
+  userId: string,
+  query: HistoryQuery,
+  log?: Pick<FastifyBaseLogger, "warn">
+) {
   const portfolio = await prisma.portfolio.findUnique({
     where: { userId, deletedAt: null },
-    select: {
-      balance: true,
-      positions: { where: { deletedAt: null }, select: { currentValue: true } },
-    },
+    select: { id: true },
   });
 
   if (!portfolio) {
     throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
   }
 
-  const periodDays: Record<string, number> = {
-    "7d": 7,
-    "30d": 30,
-    "90d": 90,
-    "1y": 365,
-  };
-
-  const days = periodDays[query.period] ?? 30;
+  const days = PERIOD_DAYS[query.period] ?? PERIOD_DAYS["30d"];
   const now = new Date();
-  // Patrimônio total (caixa + posições): usar só o caixa faria o histórico
-  // "cair" a cada compra, já que a ordem FILLED move valor do balance para
-  // a Position sem alterar o patrimônio de fato (ver WI-12/WI-14).
-  const positionsTotal = portfolio.positions.reduce((sum, p) => sum + Number(p.currentValue), 0);
-  const totalEquity = Number(portfolio.balance) + positionsTotal;
+  const currentEquity = await computeEquity(userId);
+  // Gravar a fotografia do dia é acessório: se falhar, a série sai com o que
+  // já existe (o último ponto é sempre o patrimônio atual).
+  await ensureSnapshots(userId, currentEquity, now).catch((err) => log?.warn({ err, userId }, "fotografia diária não gravada"));
 
-  const history: Array<{ date: string; balance: number }> = [];
-  for (let i = days; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
+  // O 1º dia da janela precisa do último valor registrado antes dela.
+  const since = new Date(now.getTime() - (days + 1) * DAY_MS);
+  const [previous, inWindow] = await Promise.all([
+    prisma.portfolioSnapshot.findFirst({
+      where: { userId, createdAt: { lt: since } },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, equity: true },
+    }),
+    prisma.portfolioSnapshot.findMany({
+      where: { userId, createdAt: { gte: since } },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, equity: true, netFlow: true },
+    }),
+  ]);
 
-    const factor = 1 + (Math.sin(i * 0.3) * 0.02) + ((days - i) / days) * 0.05;
-    history.push({
-      date: date.toISOString().split("T")[0],
-      balance: Math.round(totalEquity * factor * 100) / 100,
-    });
-  }
+  const snapshots = [
+    // O fluxo desse registro já está embutido no valor inicial da janela.
+    ...(previous ? [{ createdAt: previous.createdAt, equity: previous.equity.toNumber(), netFlow: 0 }] : []),
+    ...inWindow.map((s) => ({ createdAt: s.createdAt, equity: s.equity.toNumber(), netFlow: s.netFlow.toNumber() })),
+  ];
 
-  return { history };
+  // Nada gravado ainda (1º acesso concorrente com a gravação, ou falha dela):
+  // o dia de hoje com o patrimônio atual, que é real, em vez de série vazia.
+  const series = snapshots.length > 0 ? snapshots : [{ createdAt: now, equity: currentEquity, netFlow: 0 }];
+  const history = buildDailySeries(series, days, now, currentEquity);
+  return { history, returnPct: timeWeightedReturnPct(history) };
 }
 
 // Incrementa o balance diretamente (top-up simulado de demo, sem Transfer/Order
@@ -84,7 +105,7 @@ export async function getHistory(userId: string, query: HistoryQuery) {
 // userId: hoje sempre coincidem (só top-up na própria conta), mas a distinção
 // já existe na tabela pra quando um ADMIN puder creditar a conta de outro.
 export async function topUp(userId: string, actorUserId: string, amount: number) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const portfolio = await tx.portfolio.findUnique({
       where: { userId },
       select: { id: true },
@@ -110,6 +131,9 @@ export async function topUp(userId: string, actorUserId: string, amount: number)
 
     return { balance: Number(updated.balance) };
   });
+
+  await recordSnapshot(userId, "TOPUP", amount);
+  return result;
 }
 
 export async function getDiversification(userId: string) {

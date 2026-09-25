@@ -10,6 +10,7 @@ import type { SavingsBoxResponse } from "@investpro/shared";
 import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import { runSerializableTx } from "../../shared/db/serializableTransaction.js";
+import { recordSnapshot } from "../portfolio/snapshot.service.js";
 import { estimateSimpleYield, SAVINGS_BOX_ANNUAL_RATE } from "./savings-box.domain.js";
 
 function round2(value: number): number {
@@ -96,6 +97,7 @@ export async function deposit(userId: string, amount: number): Promise<SavingsBo
     "SAVINGS_BOX_EXECUTION_CONFLICT",
     "Conflito ao executar o depósito, tente novamente"
   );
+  await recordSnapshot(userId, "SAVINGS");
   return toResponse(result.balance, result.createdAt);
 }
 
@@ -105,5 +107,6 @@ export async function withdraw(userId: string, amount: number): Promise<SavingsB
     "SAVINGS_BOX_EXECUTION_CONFLICT",
     "Conflito ao executar o resgate, tente novamente"
   );
+  await recordSnapshot(userId, "SAVINGS");
   return toResponse(result.balance, result.createdAt);
 }

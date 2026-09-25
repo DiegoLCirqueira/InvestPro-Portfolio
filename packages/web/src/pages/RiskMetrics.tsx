@@ -130,6 +130,22 @@ export function RiskMetrics() {
         </p>
       </header>
 
+      {data.insufficientHistory && (
+        <div
+          role="status"
+          className="flex gap-3 p-4 mb-6 rounded-2xl border border-border bg-surface-1 text-sm text-muted-foreground"
+        >
+          <ShieldQuestion size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+          <p>
+            Ainda há poucos dias de histórico do seu patrimônio
+            {data.historyDays ? ` (${data.historyDays} até agora)` : ""}. VaR, volatilidade,
+            drawdown e Sharpe precisam de cerca de 3 semanas de dados reais para
+            significar algo, então a nota de risco aparece depois disso. A
+            concentração da carteira já está disponível.
+          </p>
+        </div>
+      )}
+
       {data.score !== undefined && (
         <div className="p-6 rounded-2xl border border-border bg-surface-1 mb-6">
           <div className="flex items-center gap-4 mb-4">

@@ -20,13 +20,17 @@ export interface PortfolioResponse {
   positions: PortfolioPosition[];
 }
 
+// balance = patrimônio total do dia; netFlow = aportes (+) e retiradas (-) do dia.
 export interface PortfolioHistoryPoint {
   date: string;
   balance: number;
+  netFlow: number;
 }
 
 export interface PortfolioHistoryResponse {
   history: PortfolioHistoryPoint[];
+  /** Rentabilidade do período em %, sem contar aportes; null sem base de comparação. */
+  returnPct: number | null;
 }
 
 export interface PortfolioDiversificationItem {

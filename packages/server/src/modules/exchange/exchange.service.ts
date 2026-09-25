@@ -29,6 +29,7 @@ import {
 } from './exchange.domain.js'
 import { env } from '../../config/env.js'
 import { liveRates } from './exchange.rates.js'
+import { recordSnapshot } from '../portfolio/snapshot.service.js'
 
 // Idade máxima da cotação pra EXECUTAR câmbio: mais curta que a da simulação.
 const EXECUTE_MAX_RATE_AGE_MS = env.EXCHANGE_EXECUTE_MAX_AGE_SECONDS * 1000
@@ -270,5 +271,7 @@ export async function executeExchange(
     'Conflito ao executar o câmbio, tente novamente'
   )
 
+  // A taxa de 1% sai do patrimônio como resultado da operação (não é aporte).
+  await recordSnapshot(userId, 'EXCHANGE')
   return toExecuteResponse(record)
 }

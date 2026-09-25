@@ -29,6 +29,7 @@ model User {
   savingsBox          SavingsBox?
   currencyHoldings    CurrencyHolding[]
   currencyExchanges   CurrencyExchange[]
+  portfolioSnapshots  PortfolioSnapshot[]
 }
 
 // Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
@@ -248,6 +249,37 @@ enum TransferType {
   PIX
   TED
   DOC
+}
+
+// Fotografia do patrimônio total (caixa + posições + caixinha + moedas em BRL)
+// num instante: base do gráfico "Evolução do Patrimônio" e das métricas de
+// risco. netFlow é o dinheiro que ENTROU (+, aporte) ou SAIU (-, transferência)
+// da plataforma naquele evento: separa aporte de rendimento no cálculo da
+// rentabilidade. Movimentos internos (ordem, câmbio, caixinha) têm netFlow 0.
+// Restrict como o resto do histórico financeiro (ADR 0001).
+model PortfolioSnapshot {
+  id        String         @id @default(uuid())
+  userId    String
+  equity    Decimal        @db.Decimal(15, 2)
+  netFlow   Decimal        @default(0) @db.Decimal(15, 2)
+  reason    SnapshotReason
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+// DAILY: registro diário ao abrir o painel. BACKFILL: reconstruído dos aportes e
+// transferências já registrados (sem variação de mercado) para contas anteriores
+// a esta tabela.
+enum SnapshotReason {
+  DAILY
+  TOPUP
+  TRANSFER
+  ORDER
+  EXCHANGE
+  SAVINGS
+  BACKFILL
 }
 
 enum TransferStatus {

@@ -12,6 +12,7 @@ import type {
 } from '@investpro/shared'
 import { prisma } from '../../config/database.js'
 import { AppError } from '../auth/auth.service.js'
+import { recordSnapshot } from '../portfolio/snapshot.service.js'
 import {
   calculateTotal,
   determineStatus,
@@ -139,6 +140,8 @@ export async function createTransfer(
         (tx) => executeTransferTx(tx, userId, input, status, toAccount),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       )
+      // Dinheiro que saiu da plataforma (valor + tarifa): não é perda de rendimento.
+      await recordSnapshot(userId, 'TRANSFER', -round2(calculateTotal(input.amount, input.type)))
       return toTransfer(created)
     } catch (err) {
       const isSerializationConflict =

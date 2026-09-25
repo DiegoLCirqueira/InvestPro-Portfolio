@@ -28,8 +28,14 @@ describe('getRiskReport', () => {
     expect(typeof report.maxDrawdown).toBe('number')
     expect(typeof report.sharpe).toBe('number')
     expect(typeof report.volatility).toBe('number')
-    expect(report.score).toBeGreaterThanOrEqual(0)
-    expect(report.score).toBeLessThanOrEqual(100)
+    // Histórico real: enquanto houver poucos dias, a nota fica de fora (não
+    // se dá "baixo risco" por falta de dados).
+    if (report.insufficientHistory) {
+      expect(report.score).toBeUndefined()
+    } else {
+      expect(report.score).toBeGreaterThanOrEqual(0)
+      expect(report.score).toBeLessThanOrEqual(100)
+    }
     expect(Array.isArray(report.metrics)).toBe(true)
     expect(report.metrics!.length).toBeGreaterThanOrEqual(4)
   })

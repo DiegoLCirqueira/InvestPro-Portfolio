@@ -6,10 +6,10 @@
 import type { RiskMetricItem, RiskReport } from '@investpro/shared'
 import { AppError } from '../auth/auth.service.js'
 import { getHistory, getPortfolio } from '../portfolio/portfolio.service.js'
+import { flowAdjustedDailyReturns } from '../portfolio/history.domain.js'
 import {
   annualizedVolatility,
   concentrationHhi,
-  dailyReturnsFromValues,
   largestPositionWeight,
   maxDrawdown,
   riskScore,
@@ -17,6 +17,10 @@ import {
   sharpeRatio,
   varHistorical,
 } from './risk.domain.js'
+
+// ~3 semanas de dias com base de comparação: abaixo disso volatilidade, VaR e
+// Sharpe anualizados viram ruído.
+export const MIN_DAILY_RETURNS_FOR_RISK = 20
 
 export async function getRiskReport(userId: string): Promise<RiskReport> {
   let portfolio
@@ -44,11 +48,13 @@ export async function getRiskReport(userId: string): Promise<RiskReport> {
     )
   }
 
-  // Série de valores diários de saldo começa no histórico determinístico do
-  // portfólio (getHistory). Sem persistência dedicada de risco, usamos essa
-  // série como proxy para derivar os retornos.
-  const values = history.history.map((entry) => entry.balance)
-  const returns = dailyReturnsFromValues(values)
+  // Série real do patrimônio (PortfolioSnapshot). Os retornos descontam
+  // aportes/retiradas do dia, e o drawdown é medido sobre o índice de
+  // rentabilidade (uma transferência para fora não é "queda"). Com poucos
+  // dias, as métricas de série não significam nada: o relatório avisa.
+  const returns = flowAdjustedDailyReturns(history.history)
+  const insufficientHistory = returns.length < MIN_DAILY_RETURNS_FOR_RISK
+  const values = returns.reduce((index, r) => [...index, index[index.length - 1] * (1 + r)], [1])
 
   // Concentração a partir dos valores atuais das posições (getPortfolio).
   const weights = portfolio.positions.map((position) => position.currentValue)
@@ -113,7 +119,10 @@ export async function getRiskReport(userId: string): Promise<RiskReport> {
     sharpe: round4(sharpe),
     volatility: round4(volatility),
     concentration: hhi !== null ? round4(hhi) : undefined,
-    score,
+    // Sem histórico, volatilidade/VaR zerados dariam uma nota "baixo risco" falsa.
+    score: insufficientHistory ? undefined : score,
+    insufficientHistory,
+    historyDays: returns.length,
     updatedAt: new Date().toISOString(),
     metrics,
   }

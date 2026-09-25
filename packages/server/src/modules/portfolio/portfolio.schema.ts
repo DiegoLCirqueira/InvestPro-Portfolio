@@ -21,13 +21,18 @@ export const portfolioResponseSchema = z.object({
   positions: z.array(positionSchema),
 })
 
+// balance = patrimônio total do dia (nome mantido por compatibilidade);
+// netFlow = aportes (+) e retiradas (-) do dia, que não contam como rendimento.
 export const historyPointSchema = z.object({
   date: z.string(),
   balance: z.number(),
+  netFlow: z.number(),
 })
 
 export const historyResponseSchema = z.object({
   history: z.array(historyPointSchema),
+  // Rentabilidade do período (time-weighted, %), sem contar aportes; null sem base.
+  returnPct: z.number().nullable(),
 })
 
 export const diversificationItemSchema = z.object({

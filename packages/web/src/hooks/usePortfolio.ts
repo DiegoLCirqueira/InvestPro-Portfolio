@@ -85,6 +85,7 @@ export function usePortfolioHistory({
   return {
     data: query.data,
     history: query.data?.history ?? [],
+    returnPct: query.data?.returnPct ?? null,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error,
