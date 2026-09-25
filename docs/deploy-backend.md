@@ -94,6 +94,7 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `FRONTEND_URL` | URL do frontend — usada para montar o link de reset de senha (WI-20). **Uma só URL**: a origem principal (com várias em `CORS_ORIGIN`, use a que deve aparecer nos e-mails). |
 | `RESEND_API_KEY` | Chave da API do [Resend](https://resend.com) (WI-20, email transacional). **Precisa ser criada manualmente no painel do Resend** — não há acesso automatizado a isso. |
 | `TRUST_PROXY` | Opcional — de quais peers o `X-Forwarded-For` é aceito pro IP do cliente; padrão em produção: rede interna do proxy da Railway. Ver "IP do cliente atrás do proxy" abaixo. |
+| `ENABLE_API_DOCS` | Opcional — Swagger UI em `/docs`. Padrão: desligado em produção (não expor o mapa completo da API a terceiros; o site não depende dele), ligado em desenvolvimento. `true` liga em produção temporariamente. |
 | `EXCHANGE_RATE_FRESH_TTL_SECONDS` | Opcional — segundos em que a cotação de câmbio é reaproveitada sem chamar a AwesomeAPI. Padrão `30` (faixa 0-300). Ver "Cotação de câmbio" abaixo. |
 | `EXCHANGE_RATE_MAX_AGE_SECONDS` | Opcional — idade máxima da cotação servida do cache quando a fonte falha/limita. Padrão `120` (faixa 1-600, teto rígido; deve ser >= o TTL fresco). |
 | `EXCHANGE_EXECUTE_MAX_AGE_SECONDS` | Opcional — idade máxima da cotação aceita no câmbio executado. Padrão `60` (faixa 1-600; deve ser <= `EXCHANGE_RATE_MAX_AGE_SECONDS`). |

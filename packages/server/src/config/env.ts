@@ -77,6 +77,11 @@ export const env = {
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? "InvestPro <onboarding@resend.dev>",
   BRAPI_API_KEY: process.env.BRAPI_API_KEY ?? "",
   AWESOMEAPI_TOKEN: process.env.AWESOMEAPI_TOKEN ?? "",
+  // Swagger UI (/docs): mapa completo da API. Ligado fora de produção; em
+  // produção só com ENABLE_API_DOCS=true (o site não depende dele).
+  ENABLE_API_DOCS: process.env.ENABLE_API_DOCS
+    ? process.env.ENABLE_API_DOCS === "true"
+    : !isProduction,
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY, isProduction),
   EXCHANGE_RATE_FRESH_TTL_SECONDS: exchangeRateFreshTtlSeconds,
   EXCHANGE_RATE_MAX_AGE_SECONDS: exchangeRateMaxAgeSeconds,

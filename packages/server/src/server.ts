@@ -45,7 +45,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(cookie);
   await registerCors(app);
   await registerSecurity(app);
-  await registerSwagger(app);
+  if (env.ENABLE_API_DOCS) await registerSwagger(app);
   await registerErrorHandler(app);
 
   await app.register(authRoutes);
