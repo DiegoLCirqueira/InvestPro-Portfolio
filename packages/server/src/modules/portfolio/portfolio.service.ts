@@ -3,7 +3,7 @@ import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import type { HistoryQuery } from "./portfolio.schema.js";
 import { calculateDiversification } from "./portfolio.domain.js";
-import { buildDailySeries, timeWeightedReturnPct } from "./history.domain.js";
+import { buildDailySeries, buildIntradaySeries, timeWeightedReturnPct } from "./history.domain.js";
 import { computeEquity, ensureSnapshots, recordSnapshot } from "./snapshot.service.js";
 
 export async function getPortfolio(userId: string) {
@@ -94,7 +94,10 @@ export async function getHistory(
   // o dia de hoje com o patrimônio atual, que é real, em vez de série vazia.
   const series = snapshots.length > 0 ? snapshots : [{ createdAt: now, equity: currentEquity, netFlow: 0 }];
   const history = buildDailySeries(series, days, now, currentEquity);
-  return { history, returnPct: timeWeightedReturnPct(history) };
+  // 1º dia da conta: a série diária tem 1 ponto; a evolução dentro do dia
+  // (fotografias de hoje + agora) permite desenhar a linha desde já.
+  const intraday = history.length < 2 ? buildIntradaySeries(snapshots, now, currentEquity) : [];
+  return { history, intraday, returnPct: timeWeightedReturnPct(history) };
 }
 
 // Incrementa o balance diretamente (top-up simulado de demo, sem Transfer/Order

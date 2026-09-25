@@ -31,6 +31,9 @@ export const historyPointSchema = z.object({
 
 export const historyResponseSchema = z.object({
   history: z.array(historyPointSchema),
+  // Só no 1º dia da conta (history com 1 ponto): evolução dentro do dia, para
+  // o gráfico ter linha desde o início. Vazio a partir do 2º dia.
+  intraday: z.array(z.object({ at: z.string(), balance: z.number() })),
   // Rentabilidade do período (time-weighted, %), sem contar aportes; null sem base.
   returnPct: z.number().nullable(),
 })

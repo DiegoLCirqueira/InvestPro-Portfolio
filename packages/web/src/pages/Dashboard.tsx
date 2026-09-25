@@ -55,6 +55,7 @@ export function Dashboard() {
   } = usePortfolio();
   const {
     history,
+    intraday,
     returnPct,
     isLoading: isHistoryLoading,
     error: historyError,
@@ -125,7 +126,7 @@ export function Dashboard() {
             </div>
 
             <div className="nav:flex-1 nav:min-h-0">
-              <EvolutionChart data={history} />
+              <EvolutionChart data={history} intraday={intraday} />
             </div>
           </div>
         </div>

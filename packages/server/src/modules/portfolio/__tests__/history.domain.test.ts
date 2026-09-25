@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   backfillFromCashFlows,
+  buildIntradaySeries,
   buildDailySeries,
   dayKey,
   flowAdjustedDailyReturns,
@@ -114,5 +115,24 @@ describe('backfillFromCashFlows', () => {
 
   it('se a reconstrução ficaria negativa, não inventa: devolve vazio', () => {
     expect(backfillFromCashFlows(100, [{ createdAt: daysAgo(3), amount: 500 }])).toEqual([])
+  })
+})
+
+describe('buildIntradaySeries (1º dia da conta)', () => {
+  it('fotografias de hoje em ordem + o patrimônio atual: dá linha já no primeiro dia', () => {
+    const snapshots = [
+      { createdAt: new Date('2026-09-25T13:00:00Z'), equity: 1000, netFlow: 1000 },
+      { createdAt: new Date('2026-09-25T12:00:00Z'), equity: 0, netFlow: 0 },
+      { createdAt: daysAgo(3), equity: 50, netFlow: 0 },
+    ]
+    expect(buildIntradaySeries(snapshots, NOW, 1200)).toEqual([
+      { at: '2026-09-25T12:00:00.000Z', balance: 0 },
+      { at: '2026-09-25T13:00:00.000Z', balance: 1000 },
+      { at: NOW.toISOString(), balance: 1200 },
+    ])
+  })
+
+  it('sem fotografia hoje: só o ponto atual (a tela mostra o aviso, sem linha)', () => {
+    expect(buildIntradaySeries([], NOW, 500)).toEqual([{ at: NOW.toISOString(), balance: 500 }])
   })
 })

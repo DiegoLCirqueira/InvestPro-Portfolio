@@ -27,8 +27,15 @@ export interface PortfolioHistoryPoint {
   netFlow: number;
 }
 
+export interface PortfolioIntradayPoint {
+  at: string;
+  balance: number;
+}
+
 export interface PortfolioHistoryResponse {
   history: PortfolioHistoryPoint[];
+  /** Só no 1º dia da conta: evolução dentro do dia. */
+  intraday: PortfolioIntradayPoint[];
   /** Rentabilidade do período em %, sem contar aportes; null sem base de comparação. */
   returnPct: number | null;
 }

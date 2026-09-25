@@ -79,6 +79,31 @@ export function buildDailySeries(
   return series
 }
 
+export interface IntradayPoint {
+  at: string
+  balance: number
+}
+
+/**
+ * Evolução dentro do dia de hoje (cada fotografia + o patrimônio atual): é o
+ * que permite desenhar a linha já no primeiro dia da conta, quando a série
+ * diária ainda tem um ponto só.
+ */
+export function buildIntradaySeries(
+  snapshots: ReadonlyArray<SnapshotPoint>,
+  now: Date,
+  currentEquity: number
+): IntradayPoint[] {
+  const today = dayKey(now)
+  return [
+    ...[...snapshots]
+      .filter((snapshot) => dayKey(snapshot.createdAt) === today)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((snapshot) => ({ at: snapshot.createdAt.toISOString(), balance: round2(snapshot.equity) })),
+    { at: now.toISOString(), balance: round2(currentEquity) },
+  ]
+}
+
 /**
  * Retorno de cada dia descontando o fluxo do dia (aporte não é rendimento):
  * r = (V_hoje - fluxo_hoje) / V_ontem - 1. Dias com V_ontem <= 0 (conta ainda
