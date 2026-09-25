@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/company";
+import { CONTACT_EMAIL, CONTACT_MAILTO, DEMO_NOTICE_SHORT } from "@/lib/company";
 
 // Rodapé do DESKTOP: parte do conteúdo rolável de CADA página (como o
 // MobileFooter), não uma barra fixa sobre a interface inteira — aparece só
@@ -9,7 +9,9 @@ export function Footer() {
 
   return (
     <footer className="hidden nav:flex mt-4 items-center justify-between gap-4 border-t border-border/50 py-1 text-[10px] text-muted-foreground">
-      <span>&copy; {currentYear} InvestPro</span>
+      <span>
+        &copy; {currentYear} InvestPro · {DEMO_NOTICE_SHORT}
+      </span>
       <a
         href={CONTACT_MAILTO}
         className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"

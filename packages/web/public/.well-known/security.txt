@@ -1,0 +1,8 @@
+# Politica de divulgacao responsavel do InvestPro (RFC 9116).
+# Encontrou uma vulnerabilidade? Escreva para o contato abaixo; respondemos em ate 5 dias uteis.
+# Nao acesse dados de outros usuarios nem degrade o servico durante testes.
+
+Contact: mailto:security@investpro.dev.br
+Expires: 2027-09-24T00:00:00.000Z
+Preferred-Languages: pt, en
+Canonical: https://investpro.dev.br/.well-known/security.txt

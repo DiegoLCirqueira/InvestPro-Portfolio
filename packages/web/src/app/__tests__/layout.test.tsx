@@ -40,7 +40,7 @@ describe("Layout", () => {
     expect(mobileFooter).toHaveTextContent(/InvestPro/);
     expect(within(mobileFooter).getByRole("link", { name: "Contato", hidden: true })).toHaveAttribute(
       "href",
-      "mailto:contato@investpro.com.br",
+      "mailto:contato@investpro.dev.br",
     );
   });
 
@@ -50,8 +50,8 @@ describe("Layout", () => {
     const desktopFooter = within(scrollArea).getAllByRole("contentinfo", { hidden: true })[1];
 
     expect(
-      within(desktopFooter).getByRole("link", { name: "contato@investpro.com.br", hidden: true }),
-    ).toHaveAttribute("href", "mailto:contato@investpro.com.br");
+      within(desktopFooter).getByRole("link", { name: "contato@investpro.dev.br", hidden: true }),
+    ).toHaveAttribute("href", "mailto:contato@investpro.dev.br");
     expect(desktopFooter.textContent).not.toContain("Maceió");
     expect(desktopFooter.textContent).not.toContain("Plataforma inteligente");
   });

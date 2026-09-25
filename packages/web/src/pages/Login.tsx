@@ -7,6 +7,7 @@ import { LogIn, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthMarketingPanel } from "@/components/AuthMarketingPanel";
+import { DemoNotice } from "@/components/DemoNotice";
 import { useAuthStore } from "@/stores/auth";
 import { apiErrorMessage, isRateLimitError } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
@@ -157,6 +158,8 @@ export function Login() {
               Criar conta
             </Link>
           </p>
+
+          <DemoNotice />
         </div>
       </div>
     </div>
