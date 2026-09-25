@@ -16,7 +16,10 @@ export interface PortfolioPosition {
 
 export interface PortfolioResponse {
   id: string;
+  /** Saldo em caixa (disponível para ordens/transferências). */
   balance: number;
+  /** Patrimônio total: caixa + posições + caixinha + moedas em BRL. */
+  totalEquity: number;
   positions: PortfolioPosition[];
 }
 

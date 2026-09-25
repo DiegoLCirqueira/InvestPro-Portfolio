@@ -2,14 +2,14 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 interface SummaryCardProps {
-  balance: number;
-  change: number;
+  /** Patrimônio total (caixa + posições + caixinha + moedas), o mesmo do gráfico. */
+  totalEquity: number;
+  /** Rentabilidade do período em %; sem base de comparação, o selo não aparece. */
+  change?: number;
 }
 
-export function SummaryCard({ balance, change }: SummaryCardProps) {
-  const formattedBalance = formatCurrency(balance);
-
-  const isPositive = change >= 0;
+export function SummaryCard({ totalEquity, change }: SummaryCardProps) {
+  const isPositive = (change ?? 0) >= 0;
 
   return (
     <div className="p-6 rounded-2xl border border-border shadow-xl">
@@ -19,19 +19,21 @@ export function SummaryCard({ balance, change }: SummaryCardProps) {
 
       <div className="flex items-end gap-3">
         <h3 className="text-3xl font-bold text-foreground tracking-tight">
-          {formattedBalance}
+          {formatCurrency(totalEquity)}
         </h3>
-        <span
-          className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg mb-1 ${
-            isPositive
-              ? "bg-brand-primary/10 text-brand-primary"
-              : "bg-brand-danger/10 text-brand-danger"
-          }`}
-        >
-          {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-          {isPositive ? "+" : ""}
-          {change.toFixed(2)}%
-        </span>
+        {change !== undefined && (
+          <span
+            className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg mb-1 ${
+              isPositive
+                ? "bg-brand-primary/10 text-brand-primary"
+                : "bg-brand-danger/10 text-brand-danger"
+            }`}
+          >
+            {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            {isPositive ? "+" : ""}
+            {change.toFixed(2)}%
+          </span>
+        )}
       </div>
     </div>
   );

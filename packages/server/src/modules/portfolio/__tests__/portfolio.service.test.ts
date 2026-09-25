@@ -111,6 +111,11 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
       percentage: 40,
     })
 
+    // Card "Valor Total" do Painel: patrimônio total, não só o caixa (600).
+    const summary = await getPortfolio(userId)
+    expect(summary.balance).toBe(600)
+    expect(summary.totalEquity).toBe(1000)
+
     // Conta sem histórico: a série começa hoje, no patrimônio real (a compra
     // não mudou o total), sem curva inventada sobre o saldo.
     const history = await getHistory(userId, { period: '7d' })

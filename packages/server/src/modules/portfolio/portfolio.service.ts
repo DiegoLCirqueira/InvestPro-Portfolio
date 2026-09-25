@@ -24,6 +24,9 @@ export async function getPortfolio(userId: string) {
   return {
     id: portfolio.id,
     balance: Number(portfolio.balance),
+    // Mesmo cálculo do gráfico de evolução (caixa + posições + caixinha +
+    // moedas em BRL): o card "Valor Total" e o gráfico sempre batem.
+    totalEquity: await computeEquity(userId),
     positions: portfolio.positions.map((p) => ({
       id: p.id,
       ticker: p.ticker,

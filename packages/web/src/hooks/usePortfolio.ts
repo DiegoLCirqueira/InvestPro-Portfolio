@@ -52,6 +52,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
   return {
     data,
     balance: data?.balance ?? 0,
+    totalEquity: data?.totalEquity ?? 0,
     positions: (data?.positions ?? []) as PortfolioPosition[],
     diversification: diversification.data ?? null,
     isLoading,

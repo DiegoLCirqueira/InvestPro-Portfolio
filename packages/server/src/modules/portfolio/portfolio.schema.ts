@@ -17,7 +17,10 @@ export const positionSchema = z.object({
 
 export const portfolioResponseSchema = z.object({
   id: z.string(),
+  // Saldo em caixa (disponível pra ordens/transferências).
   balance: z.number(),
+  // Patrimônio total: caixa + posições + caixinha + moedas em BRL.
+  totalEquity: z.number(),
   positions: z.array(positionSchema),
 })
 
