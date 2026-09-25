@@ -1,7 +1,13 @@
 import { defineConfig } from 'vitest/config'
+import { assertTestDatabase, resolveTestDatabaseUrl } from './src/test/test-database.js'
+
+// Banco descartável (npm run test:db:up) — a suíte se recusa a rodar contra
+// um banco remoto/produção antes de qualquer teste.
+const testDatabaseUrl = resolveTestDatabaseUrl()
+assertTestDatabase(testDatabaseUrl)
 
 const sharedTestEnv = {
-  DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/investpro?schema=public',
+  DATABASE_URL: testDatabaseUrl,
   JWT_SECRET: 'investpro-dev-jwt-secret-2024',
   JWT_REFRESH_SECRET: 'investpro-dev-refresh-secret-2024',
   NODE_ENV: 'development',

@@ -69,6 +69,24 @@ senha aleatória e a mostra **uma única vez** no console, só quando cria a con
 que já existe não tem a senha alterada. **Nunca rode o seed em produção**: ele recusa
 com `NODE_ENV=production` (o `prisma migrate reset` também o executa, só em dev).
 
+### Testes
+
+Os testes do servidor rodam contra um **Postgres descartável só de testes** (Docker,
+porta 5433, dados em memória), nunca contra o banco de produção:
+
+```bash
+cd packages/server
+npm run test:db:up     # sobe o banco de testes, aplica migrations e seed
+npm test               # suíte completa (~1 min)
+npm run test:db:down   # derruba o banco de testes (os dados somem)
+```
+
+A suíte **se recusa a rodar** se `DATABASE_URL`/`TEST_DATABASE_URL` apontar para um
+banco que não seja local: os testes criam e apagam contas e abrem muitas conexões, o
+que esgotava o pool do Supabase e derrubava o site. Para um banco remoto descartável,
+defina `ALLOW_REMOTE_TEST_DB=true` de propósito. No CI, o job usa o Postgres do próprio
+runner. Testes do frontend: `npm test --workspace=packages/web`.
+
 ---
 
 ## 📝 Licença

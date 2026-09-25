@@ -11,6 +11,8 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db:up": "node scripts/test-db-up.mjs",
+    "test:db:down": "docker compose -f ../../docker-compose.yml rm -sf postgres-test",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
