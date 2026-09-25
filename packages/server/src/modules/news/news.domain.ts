@@ -3,6 +3,7 @@
 // Sem dependência de I/O — testável sem rede/banco.
 
 import { NEWS_CATEGORIES } from '@investpro/shared'
+import { decodeHtmlEntities } from './html-entities.js'
 
 export type NewsCategory = (typeof NEWS_CATEGORIES)[number]
 
@@ -62,19 +63,14 @@ export function categorizeNews(text: string): NewsCategory | null {
   return null
 }
 
+// Tags saem ANTES de decodificar: "&lt;b&gt;" vira o texto "<b>", não uma tag.
+// O React escapa o texto na tela, então o resultado é seguro de exibir.
 export function stripHtml(value: string): string {
-  return value
+  const withoutTags = value
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#0?39;/gi, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
+  return decodeHtmlEntities(withoutTags).replace(/\s+/g, ' ').trim()
 }
 
 export function summarize(value: string, maxLength = 240): string {
@@ -108,7 +104,7 @@ export function normalizeInput(
   item: { guid: string; title: string; description: string; url: string; publishedAt: string | null },
   sourceLabel: string,
 ): NormalizedNews {
-  const title = item.title.trim() || 'Sem título'
+  const title = stripHtml(item.title) || 'Sem título'
   const summary = summarize(item.description)
   return {
     guid: item.guid || item.url,
