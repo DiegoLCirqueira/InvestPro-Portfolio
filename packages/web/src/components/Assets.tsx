@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import { scrollEdgesMask, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency } from "@/lib/format";
@@ -48,6 +50,8 @@ interface AssetsProps {
 
 export function Assets({ change }: AssetsProps) {
   const { data, positions, error, isLoading, refetch } = usePortfolioPositions();
+  const listRef = useRef<HTMLDivElement>(null);
+  const listMask = scrollEdgesMask(useScrollEdges(listRef, [positions.length]));
 
   if (isLoading) {
     return (
@@ -102,7 +106,12 @@ export function Assets({ change }: AssetsProps) {
           />
         </div>
       ) : (
-        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
+        <div
+          ref={listRef}
+          className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar"
+          // Esmaece as bordas com ativos escondidos, em vez de cortar um no meio.
+          style={{ maskImage: listMask, WebkitMaskImage: listMask }}
+        >
           {positions.map((position) => (
             <PositionRow key={position.id} position={position} />
           ))}
