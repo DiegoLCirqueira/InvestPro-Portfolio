@@ -29,6 +29,9 @@ const formatDay = (isoDay: string) =>
 const formatTime = (isoInstant: string) =>
   new Date(isoInstant).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+// Altura mínima menor no desktop (nav:min-h-40): lá o gráfico já ocupa o
+// espaço livre (flex-1); em telas baixas ele encolhe para o Painel caber sem
+// empurrar o valor total de "Seus Ativos" para fora da tela.
 // Série real do patrimônio: um ponto por dia; no 1º dia da conta, a evolução
 // dentro do dia (horários), pra linha existir desde o início. Sem animação:
 // a linha não "redesenha" inteira quando o saldo muda.
@@ -41,7 +44,7 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
 
   if (points.length < 2) {
     return (
-      <div className="h-full w-full min-h-75 flex flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground">
+      <div className="h-full w-full min-h-75 nav:min-h-40 flex flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground">
         <p>O histórico do seu patrimônio começa hoje.</p>
         <p>A linha de evolução aparece com a próxima movimentação.</p>
       </div>
@@ -49,7 +52,7 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
   }
 
   return (
-    <div className="h-full w-full min-h-75">
+    <div className="h-full w-full min-h-75 nav:min-h-40">
       <ResponsiveContainer width="100%" height="100%" minHeight={0}>
         <AreaChart data={points}>
           <defs>
