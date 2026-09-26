@@ -85,7 +85,7 @@ describe('GET /api/v1/portfolio/diversification', () => {
     expect(res.statusCode).toBe(200)
     const body = res.json()
     // Patrimônio total (caixa + posições), não só o caixa: WI-14.
-    expect(body.totalBalance).toBe(350900.64)
+    expect(body.totalBalance).toBe(175450.32)
     expect(body.breakdown.length).toBeGreaterThanOrEqual(3)
     const types = body.breakdown.map((b: { type: string }) => b.type)
     expect(types).toContain('STOCK')

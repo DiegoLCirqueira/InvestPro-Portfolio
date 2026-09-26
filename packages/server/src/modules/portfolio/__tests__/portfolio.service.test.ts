@@ -42,16 +42,13 @@ describe('getPortfolio', () => {
 })
 
 describe('getDiversification', () => {
-  it('agrupa por tipo com base no patrimônio total (caixa + posições, WI-14)', async () => {
+  it('agrupa por tipo sobre o total INVESTIDO (sem o caixa): as fatias somam 100%', async () => {
     const result = await getDiversification(seedUserId)
-    // Seed: balance 175450.32 + soma de currentValue das 5 posições (175450.32) = 350900.64.
-    expect(result.totalBalance).toBe(350900.64)
-    // As posições somam exatamente metade do patrimônio total nesse seed
-    // (currentValue total == balance), então os percentuais devem somar ~50,
-    // não 100 — sob o bug antigo (denominador = só o caixa) essa soma dava
-    // 100 "por coincidência", mascarando o problema.
+    // Seed: soma de currentValue das 5 posições = 175450.32 (o caixa, também
+    // 175450.32, fica de fora do denominador).
+    expect(result.totalBalance).toBe(175450.32)
     const sumPct = result.breakdown.reduce((acc, b) => acc + b.percentage, 0)
-    expect(sumPct).toBeCloseTo(50, 0)
+    expect(sumPct).toBeCloseTo(100, 0)
     expect(result.breakdown.map((b) => b.type)).toEqual(
       expect.arrayContaining(['STOCK', 'CRYPTO', 'FIXED_INCOME'])
     )
@@ -79,8 +76,9 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
   })
 
   it('uma compra que move valor de caixa para posição não muda o patrimônio total nem distorce os percentuais', async () => {
+    // Só caixa, nada investido: diversificação vazia (o caixa não é fatia).
     const before = await getDiversification(userId)
-    expect(before.totalBalance).toBe(1000)
+    expect(before.totalBalance).toBe(0)
     expect(before.breakdown).toEqual([])
 
     // Simula o efeito de uma ordem BUY FILLED (WI-12): decrementa balance e
@@ -102,22 +100,26 @@ describe('getDiversification / getHistory usam patrimônio total como base (WI-1
       }),
     ])
 
+    // Tudo que está investido é a ação: 100%, mesmo com R$ 600 em caixa.
     const afterDiversification = await getDiversification(userId)
-    expect(afterDiversification.totalBalance).toBe(1000)
+    expect(afterDiversification.totalBalance).toBe(400)
     expect(afterDiversification.breakdown).toHaveLength(1)
     expect(afterDiversification.breakdown[0]).toMatchObject({
       type: 'STOCK',
       value: 400,
-      percentage: 40,
+      percentage: 100,
     })
 
-    // Moeda estrangeira (câmbio) vira uma fatia própria, em BRL, e entra no total.
+    // Moeda estrangeira (câmbio) vira uma fatia própria, em BRL, e entra no
+    // total investido; as fatias continuam somando 100%.
     await prisma.currencyHolding.create({ data: { userId, currency: 'USD', balance: 100 } })
     const withForeign = await getDiversification(userId)
     const foreign = withForeign.breakdown.find((item) => item.type === 'FOREIGN_CURRENCY')
     expect(foreign).toMatchObject({ label: 'Moedas estrangeiras' })
     expect(foreign!.value).toBeGreaterThan(0)
-    expect(withForeign.totalBalance).toBeCloseTo(1000 + foreign!.value, 2)
+    expect(withForeign.totalBalance).toBeCloseTo(400 + foreign!.value, 2)
+    const sumPct = withForeign.breakdown.reduce((acc, item) => acc + item.percentage, 0)
+    expect(sumPct).toBeCloseTo(100, 0)
     await prisma.currencyHolding.deleteMany({ where: { userId } })
 
     // Card "Valor Total" do Painel: patrimônio total, não só o caixa (600).

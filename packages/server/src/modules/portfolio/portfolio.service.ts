@@ -167,11 +167,12 @@ export async function getDiversification(userId: string) {
   const foreign = await foreignCurrencyValueInBrl(userId);
   const slices = foreign > 0 ? [...positions, { type: "FOREIGN_CURRENCY" as const, currentValue: foreign }] : positions;
 
-  // Patrimônio total (caixa + posições + moedas), não só o caixa: uma ordem
-  // FILLED move valor do balance para uma Position, então usar só o balance
-  // como denominador distorceria os percentuais (WI-14).
-  const slicesTotal = slices.reduce((sum, p) => sum + p.currentValue, 0);
-  const totalEquity = Math.round((Number(portfolio.balance) + slicesTotal) * 100) / 100;
+  // Denominador = só o que está INVESTIDO (posições + moedas), sem o caixa:
+  // a diversificação responde "de cada R$ 100 investidos, quanto está em cada
+  // lugar" — as fatias somam 100%. Com o caixa no total, as fatias ficavam
+  // pequenas e a soma não fechava (ex.: 13,6% numa conta com muito caixa).
+  // O saldo em conta aparece no Painel ("Saldo em conta").
+  const totalInvested = Math.round(slices.reduce((sum, p) => sum + p.currentValue, 0) * 100) / 100;
 
-  return calculateDiversification(slices, totalEquity);
+  return calculateDiversification(slices, totalInvested);
 }

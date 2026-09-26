@@ -49,6 +49,8 @@ export const diversificationItemSchema = z.object({
 })
 
 export const diversificationResponseSchema = z.object({
+  // Total INVESTIDO (posições + moedas estrangeiras), sem o caixa: é o
+  // denominador das porcentagens, que somam 100%. Nome mantido por compatibilidade.
   totalBalance: z.number(),
   breakdown: z.array(diversificationItemSchema),
 })

@@ -86,7 +86,6 @@ function CategoryCard({
 export function Diversification() {
   const {
     diversification,
-    balance,
     error,
     isLoading,
     refetch,
@@ -115,7 +114,8 @@ export function Diversification() {
     );
   }
 
-  const totalBalance = diversification?.totalBalance ?? balance;
+  // Total investido (sem o caixa): base das barras dos cards.
+  const totalBalance = diversification?.totalBalance ?? 0;
   const breakdown = diversification?.breakdown ?? [];
   const chartData = buildChartData(breakdown);
 
