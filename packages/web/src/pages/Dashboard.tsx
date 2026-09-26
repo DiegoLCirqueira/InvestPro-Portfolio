@@ -1,4 +1,4 @@
-import { SummaryCard } from "../components/SummaryCard";
+import { AccountBalanceCard } from "../components/AccountBalanceCard";
 import { EvolutionChart } from "../components/EvolutionChart";
 import { Assets } from "../components/Assets";
 import { usePortfolio, usePortfolioHistory } from "@/hooks/usePortfolio";
@@ -49,7 +49,6 @@ export function Dashboard() {
   const { period, setPeriod } = usePortfolioStore();
   const {
     balance,
-    totalEquity,
     isLoading: isSummaryLoading,
     error: summaryError,
     refetch: refetchSummary,
@@ -103,11 +102,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
-          <SummaryCard
-            totalEquity={totalEquity}
-            availableBalance={balance}
-            change={hasChangeData ? change : undefined}
-          />
+          <AccountBalanceCard availableBalance={balance} />
 
           <div className="p-6 rounded-2xl border border-border nav:flex-1 flex flex-col nav:min-h-0">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
@@ -136,8 +131,11 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="nav:col-span-1 nav:h-full nav:min-h-0">
-          <Assets />
+        {/* A coluna de ativos não define a altura da linha (h-0 + min-h-full):
+            ela vem do saldo + gráfico, e a lista de ativos rola dentro dela,
+            com o valor total fixo no rodapé. */}
+        <div className="nav:col-span-1 nav:h-0 nav:min-h-full">
+          <Assets change={hasChangeData ? change : undefined} />
         </div>
       </div>
     </div>

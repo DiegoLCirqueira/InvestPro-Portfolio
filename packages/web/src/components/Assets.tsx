@@ -2,6 +2,7 @@ import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency } from "@/lib/format";
+import { PortfolioTotalBox } from "@/components/PortfolioTotalBox";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
 
 const TYPE_LABELS: Record<PortfolioAssetType, string> = {
@@ -40,8 +41,13 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
   );
 }
 
-export function Assets() {
-  const { positions, error, isLoading, refetch } = usePortfolioPositions();
+interface AssetsProps {
+  /** Rentabilidade do período (%), exibida junto do valor total. */
+  change?: number;
+}
+
+export function Assets({ change }: AssetsProps) {
+  const { data, positions, error, isLoading, refetch } = usePortfolioPositions();
 
   if (isLoading) {
     return (
@@ -82,22 +88,28 @@ export function Assets() {
     );
   }
 
+  // Desktop: o card tem a altura da linha do grid; a lista ocupa o que
+  // sobra (min-h-0 + overflow) e rola, e o total fica fixo no rodapé.
   return (
-    <div className="rounded-2xl border border-border p-6 nav:h-full flex flex-col">
+    <div className="rounded-2xl border border-border p-6 nav:h-full flex flex-col nav:min-h-0">
       <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
 
       {positions.length === 0 ? (
-        <EmptyState
-          message="Você ainda não possui ativos na carteira. Comece investindo para ver sua posição aqui."
-          action={{ label: "Ver ativos disponíveis", to: "/market" }}
-        />
+        <div className="flex-1">
+          <EmptyState
+            message="Você ainda não possui ativos na carteira. Comece investindo para ver sua posição aqui."
+            action={{ label: "Ver ativos disponíveis", to: "/market" }}
+          />
+        </div>
       ) : (
-        <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
           {positions.map((position) => (
             <PositionRow key={position.id} position={position} />
           ))}
         </div>
       )}
+
+      <PortfolioTotalBox totalEquity={data?.totalEquity ?? 0} change={change} />
     </div>
   );
 }
