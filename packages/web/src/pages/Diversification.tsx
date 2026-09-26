@@ -133,7 +133,10 @@ export function Diversification() {
           <h3 className="text-base font-bold text-foreground mb-2">
             Distribuição do portfólio
           </h3>
-          <div className="h-64">
+          {/* Desktop: o card estica até a altura da coluna de categorias ao lado;
+              o gráfico ocupa essa altura (flex-1) em vez de ficar fixo e deixar
+              um vão vazio embaixo. Mobile mantém 256px. */}
+          <div className="h-64 nav:h-auto nav:flex-1 nav:min-h-64">
             {chartData.length === 0 ? (
               <EmptyState
                 icon={PieChartIcon}
@@ -148,8 +151,9 @@ export function Diversification() {
                     data={chartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={45}
-                    outerRadius={80}
+                    // Proporcional ao espaço: a rosca cresce junto com o card.
+                    innerRadius="50%"
+                    outerRadius="78%"
                     paddingAngle={2}
                     dataKey="value"
                     nameKey="name"
