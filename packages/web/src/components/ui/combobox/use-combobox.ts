@@ -53,7 +53,12 @@ export function useCombobox({
   };
 
   // Reabrir sempre parte da lista completa, mesmo com um valor já escolhido.
+  // Já aberta, não faz nada: o gatilho recebe `focus` de novo quando a janela
+  // volta a ficar ativa (trocar de aba/janela) — resetar aí trocava a lista
+  // filtrada pela completa bem no meio do clique, e o clique caía na opção que
+  // passou a ocupar aquele lugar (ex.: clicar em PETR4 e selecionar BOVA11).
   const open = () => {
+    if (isOpen) return;
     setFilterText("");
     setActiveIndex(Math.max(0, options.findIndex((o) => o.value === selectedValue)));
     show();

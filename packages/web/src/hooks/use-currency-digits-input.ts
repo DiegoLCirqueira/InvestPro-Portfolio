@@ -9,13 +9,17 @@ import { formatCurrency } from "@/lib/format";
  * extração roda sobre o valor formatado já editado pelo navegador, não sobre
  * um índice de cursor.
  */
-export function useCurrencyDigitsInput(initialDigits = "") {
+export function useCurrencyDigitsInput({
+  currency = "BRL",
+  initialDigits = "",
+}: { currency?: string; initialDigits?: string } = {}) {
   const [digits, setDigits] = useState(initialDigits);
   const amount = Number(digits || "0") / 100;
 
   return {
     amount,
-    displayValue: formatCurrency(amount),
+    // Símbolo da moeda em que o valor é digitado (no câmbio, a de origem).
+    displayValue: formatCurrency(amount, currency),
     onChange: (e: ChangeEvent<HTMLInputElement>) =>
       setDigits(e.target.value.replace(/\D/g, "")),
     reset: () => setDigits(""),

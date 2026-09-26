@@ -279,3 +279,22 @@ describe("Exchange: saldo disponível da moeda de origem", () => {
     expect(screen.getByText(/190\.639\.474,22/)).toBeInTheDocument();
   });
 });
+
+describe("Exchange: símbolo do campo de valor segue a moeda de origem", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockImplementation((path: string) => {
+      if (path === "/portfolio") return Promise.resolve({ id: "p1", balance: 100, totalEquity: 100, positions: [] });
+      if (path === "/exchange/holdings") return Promise.resolve({ items: [] });
+      return Promise.resolve({ base: "BRL", items: ["BRL", "USD", "EUR"] });
+    });
+  });
+
+  it("BRL mostra R$; ao inverter para USD, o campo passa a mostrar US$", async () => {
+    await renderExchange();
+    typeAmount("5000");
+    expect((screen.getByLabelText("Valor a converter") as HTMLInputElement).value).toMatch(/R\$\s?50,00/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
+    expect((screen.getByLabelText("Valor a converter") as HTMLInputElement).value).toMatch(/US\$\s?50,00/);
+  });
+});

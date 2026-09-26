@@ -20,7 +20,7 @@ export function Exchange() {
 
   const [from, setFrom] = useState(base);
   const [to, setTo] = useState(currencies[0] ?? "USD");
-  const amountInput = useCurrencyDigitsInput();
+  const amountInput = useCurrencyDigitsInput({ currency: from });
   const originBalance = useAvailableBalance(from);
 
   const flow = useExchangeFlow({

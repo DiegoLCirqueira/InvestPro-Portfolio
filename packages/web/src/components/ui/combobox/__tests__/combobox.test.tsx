@@ -140,6 +140,24 @@ describe("Combobox (modo digitável)", () => {
   });
 });
 
+describe("Combobox (regressão: clique na opção filtrada)", () => {
+  it("foco repetido no campo com a lista aberta (ex.: voltar para a janela) não troca a lista filtrada pela completa", () => {
+    const onChange = vi.fn();
+    render(<Harness searchable onChange={onChange} />);
+
+    fireEvent.focus(getTrigger());
+    fireEvent.change(getTrigger(), { target: { value: "PETR4" } });
+    expect(getOptions().map((o) => o.textContent)).toEqual([expect.stringContaining("PETR4")]);
+
+    // Janela volta a ficar ativa: o navegador reemite focus no campo.
+    fireEvent.focus(getTrigger());
+    expect(getOptions()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("option", { name: /PETR4/ }));
+    expect(onChange).toHaveBeenLastCalledWith("PETR4");
+  });
+});
+
 describe("combobox-options", () => {
   it("filtra por valor, rótulo e descrição ignorando caixa", () => {
     expect(filterOptions(OPTIONS, "bitc").map((o) => o.value)).toEqual(["BTC"]);
