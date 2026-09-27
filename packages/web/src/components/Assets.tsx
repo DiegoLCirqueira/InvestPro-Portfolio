@@ -6,7 +6,6 @@ import { scrollEdgesMask, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency, formatQuantity } from "@/lib/format";
-import { PortfolioTotalBox } from "@/components/PortfolioTotalBox";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
 
 // Ícone da categoria no lugar de siglas ("CR", "AC") que não diziam nada; o nome vai para leitor de tela.
@@ -52,14 +51,9 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
   );
 }
 
-interface AssetsProps {
-  /** Rentabilidade do período (%), exibida junto do valor total. */
-  change?: number;
-}
-
-export function Assets({ change }: AssetsProps) {
-  const { data, positions, error, isLoading, refetch } =
-    usePortfolioPositions();
+// Só a lista de posições: o patrimônio total foi para a faixa de KPIs do topo do Painel.
+export function Assets() {
+  const { positions, error, isLoading, refetch } = usePortfolioPositions();
   const listRef = useRef<HTMLDivElement>(null);
   const listMask = scrollEdgesMask(useScrollEdges(listRef, [positions.length]));
 
@@ -103,7 +97,7 @@ export function Assets({ change }: AssetsProps) {
   }
 
   // Desktop: o card tem a altura da linha do grid; a lista ocupa o que
-  // sobra (min-h-0 + overflow) e rola, e o total fica fixo no rodapé.
+  // sobra (min-h-0 + overflow) e rola.
   return (
     <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full flex flex-col nav:min-h-0">
       <SectionTitle className="mb-4 shrink-0">Seus Ativos</SectionTitle>
@@ -127,8 +121,6 @@ export function Assets({ change }: AssetsProps) {
           ))}
         </div>
       )}
-
-      <PortfolioTotalBox totalEquity={data?.totalEquity ?? 0} change={change} />
     </div>
   );
 }

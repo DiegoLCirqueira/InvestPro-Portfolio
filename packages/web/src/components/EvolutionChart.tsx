@@ -7,7 +7,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { axisCurrencyFormatter } from "@/lib/chart-axis";
+import { evolutionAxis } from "@/lib/chart-axis";
 import type {
   PortfolioHistoryPoint,
   PortfolioIntradayPoint,
@@ -54,10 +54,7 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
     : intraday.map((point) => ({ label: point.at, balance: point.balance }));
   const formatLabel = isDaily ? formatDay : formatTime;
   const balances = points.map((point) => point.balance);
-  const axis = axisCurrencyFormatter(
-    Math.min(...balances),
-    Math.max(...balances),
-  );
+  const axis = evolutionAxis(Math.min(...balances), Math.max(...balances));
 
   if (points.length < 2) {
     return (
@@ -94,8 +91,9 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
           />
           <XAxis dataKey="label" hide />
           <YAxis
-            width={axis.width}
-            domain={["auto", "auto"]}
+            width={84}
+            domain={axis.domain}
+            ticks={axis.ticks}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
