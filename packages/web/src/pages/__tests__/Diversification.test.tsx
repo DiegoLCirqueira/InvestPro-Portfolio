@@ -65,12 +65,18 @@ describe("Diversificação", () => {
 
   it("com investimentos: mostra a distribuição e os cards, sem o aviso de carteira vazia", () => {
     portfolioMock.breakdown = [
-      { type: "STOCK", label: "Ações", value: 1500, percentage: 100 },
+      { type: "STOCK", label: "Ações", value: 500, percentage: 25 },
+      { type: "CRYPTO", label: "Criptomoedas", value: 1500, percentage: 75 },
     ];
 
     renderPage();
 
     expect(screen.getByText("Distribuição do portfólio")).toBeInTheDocument();
+    // Cada card diz a fatia da carteira (sem repetir o nome) e a ordem é do maior para o menor.
+    const shares = screen
+      .getAllByText(/% da carteira$/)
+      .map((el) => el.textContent);
+    expect(shares).toEqual(["75,0% da carteira", "25,0% da carteira"]);
     expect(screen.getByText("Moedas")).toBeInTheDocument();
     expect(
       screen.queryByText("Sua carteira ainda está vazia"),

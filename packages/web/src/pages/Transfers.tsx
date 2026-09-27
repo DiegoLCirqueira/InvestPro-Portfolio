@@ -16,6 +16,8 @@ import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatStoredPixKey } from "@/lib/pix-key";
 import { usePixKeyInput } from "@/hooks/use-pix-key-input";
 import { PixKeyField } from "@/components/transfers/PixKeyField";
+import { segmentClassName } from "@/components/ui/segmented";
+import { cn } from "@/lib/utils";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
@@ -278,13 +280,12 @@ export function Transfers() {
                           pixKeyInput.reset();
                         }
                       }}
-                      className={`min-h-11 w-full py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                        help ? "pr-7" : ""
-                      } ${
-                        type === option.value
-                          ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                          : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
-                      }`}
+                      aria-pressed={type === option.value}
+                      className={segmentClassName(
+                        type === option.value,
+                        "primary",
+                        cn("w-full", help && "pr-7"),
+                      )}
                     >
                       {option.label}
                     </button>
@@ -307,7 +308,7 @@ export function Transfers() {
               onChange={amountInput.onChange}
               onPaste={amountInput.onPaste}
               aria-label="Valor da transferência"
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200 tabular-nums"
             />
           </div>
 
@@ -325,7 +326,7 @@ export function Transfers() {
               maxLength={140}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="ex.: Pagamento de aluguel"
-              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
             />
           </div>
 
@@ -343,7 +344,7 @@ export function Transfers() {
                   onChange={(e) => setBank(e.target.value)}
                   placeholder="Banco"
                   aria-label="Banco"
-                  className="col-span-2 w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                  className="col-span-2 w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
                 <input
                   type="text"
@@ -352,7 +353,7 @@ export function Transfers() {
                   onChange={(e) => setAgency(e.target.value)}
                   placeholder="Agência"
                   aria-label="Agência"
-                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
                 <input
                   type="text"
@@ -360,7 +361,7 @@ export function Transfers() {
                   onChange={(e) => setAccount(e.target.value)}
                   placeholder="Nº da conta"
                   aria-label="Número da conta"
-                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
               </div>
             </div>

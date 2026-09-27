@@ -105,7 +105,7 @@ export function Dashboard() {
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
           <AccountBalanceCard availableBalance={balance} />
 
-          <div className="p-6 rounded-2xl border border-border nav:flex-1 flex flex-col nav:min-h-0">
+          <div className="p-6 rounded-2xl border border-border bg-surface-1 nav:flex-1 flex flex-col nav:min-h-0">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
               <h3 className="text-lg font-bold">Evolução do Patrimônio</h3>
 
@@ -121,8 +121,9 @@ export function Dashboard() {
                     aria-pressed={period === option.value}
                     onClick={() => setPeriod(option.value)}
                     className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                      // Seletor, não ação: sem o verde cheio do botão principal (ver ui/segmented.ts).
                       period === option.value
-                        ? "bg-primary-solid text-primary-foreground"
+                        ? "bg-primary/8 text-primary ring-1 ring-primary"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >

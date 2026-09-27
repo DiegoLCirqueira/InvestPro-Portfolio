@@ -18,7 +18,12 @@
   --color-surface-1: #ffffff;
   --color-surface-2: #f0f0ee;
   --color-surface-3: #e6e6e3;
-  --color-overlay: rgba(15, 17, 20, 0.45);
+  /* Fundo atrás de diálogos/menus: usar como bg-overlay, SEM opacidade extra (/80). */
+  --color-overlay: rgba(15, 17, 20, 0.5);
+  /* Camadas flutuantes (diálogo, menu Mais, popover): se destacam da página escurecida. */
+  --color-surface-raised: #ffffff;
+  /* Borda das camadas flutuantes: >= 3:1 contra a página escurecida pelo overlay. */
+  --color-border-raised: #cfcfca;
 
   /* ── Foregrounds / Text ──────────────────────── */
   --color-foreground: #15171b;
@@ -56,12 +61,18 @@
 
   /* ── Input / Ring ────────────────────────────── */
   --color-input: #e2e2df;
+  /* Borda de campo de digitação: >= 3:1 (WCAG 1.4.11) contra o fundo do campo e do card.
+     Separada de --color-input, que também pinta seletores e o botão outline. */
+  --color-field: #868b94;
   --color-ring: #077455;
 
   /* ── Semantic extras ─────────────────────────── */
   --color-warning: #8a5d00;
   --color-success: #077455;
-  --color-info: #3760d8;
+  /* Azul "info": 4,5:1+ como texto do selo sobre o próprio fundo a 15%. */
+  --color-info: #2f5bd0;
+  /* Destaque roxo (selos): >= 4,5:1 como texto sobre o próprio fundo claro/10%. */
+  --color-highlight: #6d3fd6;
 
   /* ── Chart / Category palette ────────────────── */
   --color-cat-crypto: #d9821b;
@@ -151,7 +162,9 @@
   --color-surface-1: #16191e;
   --color-surface-2: #1c212a;
   --color-surface-3: #232933;
-  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-overlay: rgba(0, 0, 0, 0.72);
+  --color-surface-raised: #1c212a;
+  --color-border-raised: #566072;
 
   --color-foreground: #eef0f3;
   --color-muted: #9aa0ac;
@@ -178,11 +191,13 @@
   --color-muted-surface: #1c212a;
 
   --color-input: #262c35;
+  --color-field: #6b7382;
   --color-ring: #25c68d;
 
   --color-warning: #d9a441;
   --color-success: #25c68d;
-  --color-info: #5b8df6;
+  --color-info: #6b98f7;
+  --color-highlight: #a78bfa;
 
   --color-cat-crypto: #fb923c;
   --color-cat-stocks: #5b8df6;
@@ -239,12 +254,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar oculta globalmente */
+/* Barra de rolagem fina (não oculta): esconder a barra escondia conteúdo, como linhas da
+   tabela do Mercado. Onde a rolagem horizontal é só enfeite, use .scrollbar-none. */
 * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.scrollbar-none {
   scrollbar-width: none;
 }
 
-*::-webkit-scrollbar {
+.scrollbar-none::-webkit-scrollbar {
   display: none;
 }
 

@@ -9,9 +9,11 @@ interface AccountBalanceCardProps {
 // Destaque principal do Painel: o saldo em conta. O patrimônio total (que
 // soma investimentos, caixinha e moedas) fica no rodapé de "Seus Ativos" —
 // como número principal, ele dava a ilusão de que tudo era dinheiro livre.
-export function AccountBalanceCard({ availableBalance }: AccountBalanceCardProps) {
+export function AccountBalanceCard({
+  availableBalance,
+}: AccountBalanceCardProps) {
   return (
-    <div className="p-6 rounded-2xl border border-border shadow-xl">
+    <div className="p-6 rounded-2xl border border-border bg-surface-1">
       <p className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-1">
         <Wallet size={16} aria-hidden="true" />
         Saldo em conta

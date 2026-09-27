@@ -8,7 +8,7 @@ export function RiskSkeleton() {
         <Skeleton className="h-4 w-64" />
       </header>
 
-      <div className="p-6 rounded-2xl border border-border mb-6">
+      <div className="p-6 rounded-2xl border border-border bg-surface-1 mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Skeleton className="h-20 w-20 rounded-full" />
           <div className="space-y-2">
@@ -25,7 +25,7 @@ export function RiskSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="p-5 rounded-2xl border border-border space-y-3"
+            className="p-5 rounded-2xl border border-border bg-surface-1 space-y-3"
           >
             <Skeleton className="h-3.5 w-24" />
             <Skeleton className="h-6 w-20" />

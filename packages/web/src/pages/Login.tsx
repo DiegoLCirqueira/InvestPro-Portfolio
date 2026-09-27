@@ -76,7 +76,7 @@ export function Login() {
             autoComplete="email"
             aria-invalid={!!errors.email}
             {...register("email")}
-            className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground"
+            className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground"
           />
           {errors.email && (
             <p className="text-xs text-destructive mt-1">
@@ -100,7 +100,7 @@ export function Login() {
               autoComplete="current-password"
               aria-invalid={!!errors.password}
               {...register("password")}
-              className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground pr-10"
+              className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground pr-10"
             />
             <button
               type="button"
@@ -127,9 +127,7 @@ export function Login() {
         </div>
 
         {errors.root && (
-          <p className="text-xs text-destructive mt-1">
-            {errors.root.message}
-          </p>
+          <p className="text-xs text-destructive mt-1">{errors.root.message}</p>
         )}
 
         <Button

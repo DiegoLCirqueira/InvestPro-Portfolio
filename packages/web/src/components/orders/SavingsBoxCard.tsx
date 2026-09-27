@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
+import { segmentClassName } from "@/components/ui/segmented";
 import { FormField } from "@/components/FormField";
 import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
@@ -31,8 +32,12 @@ export function SavingsBoxCard() {
   };
 
   // Depositar sai do saldo do portfólio; resgatar sai do saldo da caixinha.
-  const handleDepositError = useFinancialErrorHandler(["PORTFOLIO_INSUFFICIENT_BALANCE"]);
-  const handleWithdrawError = useFinancialErrorHandler(["SAVINGS_BOX_INSUFFICIENT_BALANCE"]);
+  const handleDepositError = useFinancialErrorHandler([
+    "PORTFOLIO_INSUFFICIENT_BALANCE",
+  ]);
+  const handleWithdrawError = useFinancialErrorHandler([
+    "SAVINGS_BOX_INSUFFICIENT_BALANCE",
+  ]);
 
   const deposit = useSavingsBoxDeposit({
     onSuccess: () => handleMutationSuccess("Depósito realizado com sucesso!"),
@@ -73,8 +78,10 @@ export function SavingsBoxCard() {
 
       <p className="text-xs text-muted-foreground">
         Rende{" "}
-        <span className="text-brand-primary font-bold text-sm">100% do CDI</span> ·
-        deposite e resgate quando quiser.
+        <span className="text-brand-primary font-bold text-sm">
+          100% do CDI
+        </span>{" "}
+        · deposite e resgate quando quiser.
       </p>
 
       <div className="grid grid-cols-2 gap-2">
@@ -82,12 +89,9 @@ export function SavingsBoxCard() {
           <button
             key={option.value}
             type="button"
+            aria-pressed={mode === option.value}
             onClick={() => setMode(option.value)}
-            className={`min-h-11 py-2.5 rounded-xl border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              mode === option.value
-                ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                : "bg-surface-2 text-muted-foreground border-input hover:border-border-strong"
-            }`}
+            className={segmentClassName(mode === option.value)}
           >
             {option.label}
           </button>

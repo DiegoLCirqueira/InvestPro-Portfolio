@@ -67,7 +67,11 @@ export function ProfileField({
         }
         disabled={!editable}
         className={`w-full px-4 py-3 rounded-xl border text-sm transition-colors duration-200 ${
-          isInvalid ? "border-destructive" : "border-input"
+          isInvalid
+            ? "border-destructive"
+            : editable
+              ? "border-field"
+              : "border-input"
         } ${
           editable
             ? "bg-surface-2 text-foreground focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

@@ -50,18 +50,18 @@ export function LogoutConfirmDialog({
           event.preventDefault();
           returnFocusRef.current.focus();
         }}
-        className="flex w-[calc(100%-2rem)] max-w-sm flex-col items-center gap-3 text-center"
+        className="flex max-w-sm flex-col items-center gap-3 text-center"
       >
         <LogOut size={32} className="text-destructive" aria-hidden="true" />
         <DialogTitle className="text-foreground font-semibold text-lg">
           Tem certeza que quer sair?
         </DialogTitle>
-        <DialogDescription className="text-sm text-muted-foreground">
+        <DialogDescription>
           Você precisará entrar novamente com seu{" "}
           <span className="whitespace-nowrap">e-mail</span> e senha para acessar
           sua conta.
         </DialogDescription>
-        <DialogFooter className="mt-2 w-full gap-2 sm:space-x-0">
+        <DialogFooter className="mt-2 w-full">
           <DialogClose asChild>
             <Button
               variant="outline"

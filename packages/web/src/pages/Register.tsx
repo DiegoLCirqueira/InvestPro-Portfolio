@@ -79,7 +79,7 @@ export function Register() {
             autoComplete="name"
             aria-invalid={!!errors.name}
             {...register("name")}
-            className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground"
+            className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground"
           />
           {errors.name && (
             <p className="text-xs text-destructive mt-1">
@@ -102,7 +102,7 @@ export function Register() {
             autoComplete="email"
             aria-invalid={!!errors.email}
             {...register("email")}
-            className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground"
+            className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground"
           />
           {errors.email && (
             <p className="text-xs text-destructive mt-1">
@@ -126,7 +126,7 @@ export function Register() {
               autoComplete="new-password"
               aria-invalid={!!errors.password}
               {...register("password")}
-              className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground pr-10"
+              className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground pr-10"
             />
             <button
               type="button"
@@ -159,7 +159,7 @@ export function Register() {
               autoComplete="new-password"
               aria-invalid={!!errors.confirmPassword}
               {...register("confirmPassword")}
-              className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground pr-10"
+              className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground pr-10"
             />
             <button
               type="button"
@@ -169,11 +169,7 @@ export function Register() {
                 showConfirmPassword ? "Ocultar senha" : "Mostrar senha"
               }
             >
-              {showConfirmPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
+              {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           {errors.confirmPassword && (
@@ -184,9 +180,7 @@ export function Register() {
         </div>
 
         {errors.root && (
-          <p className="text-xs text-destructive mt-1">
-            {errors.root.message}
-          </p>
+          <p className="text-xs text-destructive mt-1">{errors.root.message}</p>
         )}
 
         <Button

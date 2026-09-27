@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export const fieldInputClassName =
-  "w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200";
+  "w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200";
 
 export const fieldButtonClassName = `${fieldInputClassName} flex items-center justify-between gap-2 text-left cursor-pointer`;
 

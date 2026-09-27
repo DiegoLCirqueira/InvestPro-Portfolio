@@ -30,7 +30,7 @@ export function InsufficientBalanceDialog() {
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogContent
         hideCloseButton
-        className="flex w-[calc(100%-2rem)] max-w-sm flex-col items-center gap-3 text-center"
+        className="flex max-w-sm flex-col items-center gap-3 text-center"
       >
         <AlertTriangle
           size={32}
@@ -40,9 +40,7 @@ export function InsufficientBalanceDialog() {
         <DialogTitle className="text-foreground font-semibold text-lg">
           Saldo insuficiente
         </DialogTitle>
-        <DialogDescription className="text-sm text-muted-foreground">
-          {message}
-        </DialogDescription>
+        <DialogDescription>{message}</DialogDescription>
         <DialogClose asChild>
           <Button className="mt-2 h-11 w-full">Entendi</Button>
         </DialogClose>

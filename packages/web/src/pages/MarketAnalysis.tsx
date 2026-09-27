@@ -161,10 +161,13 @@ export function MarketAnalysis() {
           Análise de Mercado
         </h2>
 
-        <div className="flex gap-2 overflow-x-auto nav:overflow-visible custom-scrollbar">
+        {/* No celular os filtros rolam na horizontal: a borda direita esmaece para indicar que há mais. */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-none pr-6 [mask-image:linear-gradient(to_right,black_85%,transparent)] nav:overflow-visible nav:pr-0 nav:[mask-image:none]">
           {TYPE_FILTERS.map((filterOption) => (
             <button
               key={filterOption.value}
+              type="button"
+              aria-pressed={filter === filterOption.value}
               onClick={() => setFilter(filterOption.value)}
               className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 filter === filterOption.value
@@ -185,7 +188,7 @@ export function MarketAnalysis() {
           return (
             <div
               key={index.ticker}
-              className="p-6 rounded-2xl border border-border hover:border-brand-primary/30 transition-colors"
+              className="p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
             >
               <h4 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                 {index.ticker}
@@ -215,7 +218,7 @@ export function MarketAnalysis() {
         })}
       </div>
 
-      <div className="p-6 rounded-2xl border border-border flex flex-col min-h-0">
+      <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold">Composição e Performance</h3>
           <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">
@@ -223,7 +226,8 @@ export function MarketAnalysis() {
           </span>
         </div>
 
-        <div className="nav:max-h-[440px] overflow-y-auto pr-2 custom-scrollbar">
+        {/* Sem rolagem interna: com a barra oculta, linhas (ex.: SELIC) ficavam escondidas. A página rola. */}
+        <div>
           {assets.length === 0 ? (
             <EmptyState
               icon={SearchX}

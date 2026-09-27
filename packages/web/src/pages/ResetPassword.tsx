@@ -18,12 +18,18 @@ import {
 // Mensagem única pra token invalido/expirado/ja usado — não diferencia o motivo.
 const GENERIC_ERROR_MESSAGE =
   "Não foi possível redefinir sua senha. O link pode ser inválido, ter expirado ou já ter sido usado.";
-const UNAVAILABLE_MESSAGE = "Não foi possível redefinir sua senha agora. Tente novamente.";
+const UNAVAILABLE_MESSAGE =
+  "Não foi possível redefinir sua senha agora. Tente novamente.";
 
 // Só uma resposta 4xx (que não seja limite de tentativas) diz que o link não serve mais;
 // limite de tentativas, 5xx e falha de rede deixam o formulário aberto para tentar de novo.
 function isRejectedLink(error: unknown): boolean {
-  return error instanceof ApiError && error.status >= 400 && error.status < 500 && !isRateLimitError(error);
+  return (
+    error instanceof ApiError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    !isRateLimitError(error)
+  );
 }
 
 export function ResetPassword() {
@@ -54,7 +60,11 @@ export function ResetPassword() {
       if (isRejectedLink(error)) {
         setStatus("error");
       } else {
-        toast.error(isRateLimitError(error) ? rateLimitMessage(error.retryAfterSeconds) : UNAVAILABLE_MESSAGE);
+        toast.error(
+          isRateLimitError(error)
+            ? rateLimitMessage(error.retryAfterSeconds)
+            : UNAVAILABLE_MESSAGE,
+        );
       }
     }
   }
@@ -85,10 +95,7 @@ export function ResetPassword() {
           <p className="text-sm text-foreground">
             Sua senha foi redefinida com sucesso.
           </p>
-          <Button
-            asChild
-            className="w-full h-11 font-semibold"
-          >
+          <Button asChild className="w-full h-11 font-semibold">
             <Link to="/login">Ir para o login</Link>
           </Button>
         </div>
@@ -97,9 +104,7 @@ export function ResetPassword() {
           <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
             <ShieldAlert size={24} className="text-destructive" />
           </div>
-          <p className="text-sm text-foreground">
-            {GENERIC_ERROR_MESSAGE}
-          </p>
+          <p className="text-sm text-foreground">{GENERIC_ERROR_MESSAGE}</p>
           <Link
             to="/forgot-password"
             className="inline-block text-sm text-brand-primary hover:underline font-semibold"
@@ -128,15 +133,13 @@ export function ResetPassword() {
                 autoComplete="new-password"
                 aria-invalid={!!errors.password}
                 {...register("password")}
-                className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground pr-10"
+                className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 className="absolute right-0 top-0 h-11 min-w-11 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={
-                  showPassword ? "Ocultar senha" : "Mostrar senha"
-                }
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -163,7 +166,7 @@ export function ResetPassword() {
                 autoComplete="new-password"
                 aria-invalid={!!errors.confirmPassword}
                 {...register("confirmPassword")}
-                className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground pr-10"
+                className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground pr-10"
               />
               <button
                 type="button"
@@ -173,11 +176,7 @@ export function ResetPassword() {
                   showConfirmPassword ? "Ocultar senha" : "Mostrar senha"
                 }
               >
-                {showConfirmPassword ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {errors.confirmPassword && (

@@ -62,12 +62,11 @@ export function ForgotPassword() {
             <CheckCircle2 size={24} className="text-primary" />
           </div>
           <p className="text-sm text-foreground">
-            Se esse email estiver cadastrado na InvestPro, enviamos um
-            link de redefinição de senha para ele.
+            Se esse email estiver cadastrado na InvestPro, enviamos um link de
+            redefinição de senha para ele.
           </p>
           <p className="text-xs text-muted-foreground">
-            Verifique também a caixa de spam. O link expira em 30
-            minutos.
+            Verifique também a caixa de spam. O link expira em 30 minutos.
           </p>
         </div>
       ) : (
@@ -90,7 +89,7 @@ export function ForgotPassword() {
               autoComplete="email"
               aria-invalid={!!errors.email}
               {...register("email")}
-              className="h-11 bg-surface-2 border-input text-foreground placeholder:text-muted-foreground"
+              className="h-11 bg-surface-2 text-foreground placeholder:text-muted-foreground"
             />
             {errors.email && (
               <p className="text-xs text-destructive mt-1">

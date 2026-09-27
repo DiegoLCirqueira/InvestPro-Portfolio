@@ -66,7 +66,9 @@ function CategoryCard({
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground text-xs">{item.label}</span>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {formatPercent(item.percentage, { decimals: 1 })} da carteira
+        </span>
         <span className="font-bold text-foreground tabular-nums">
           {formatCurrency(item.value)}
         </span>
@@ -105,7 +107,10 @@ export function Diversification() {
 
   // Total investido (sem o caixa): base das barras dos cards.
   const totalBalance = diversification?.totalBalance ?? 0;
-  const breakdown = diversification?.breakdown ?? [];
+  // Maior → menor: cards e legenda do gráfico na mesma ordem.
+  const breakdown = [...(diversification?.breakdown ?? [])].sort(
+    (a, b) => b.value - a.value,
+  );
   const chartData = buildChartData(breakdown);
 
   const header = (
@@ -180,6 +185,7 @@ export function Diversification() {
                   }}
                 />
                 <Legend
+                  iconType="circle"
                   formatter={(value, entry) => (
                     <span className="text-muted-foreground text-xs">
                       {value} —{" "}

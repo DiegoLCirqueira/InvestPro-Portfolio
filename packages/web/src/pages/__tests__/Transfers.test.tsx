@@ -298,3 +298,21 @@ describe("Transferências: ajuda do TED/DOC", () => {
     );
   });
 });
+
+describe("Transferências: campo de chave PIX", () => {
+  beforeEach(() => {
+    apiMock.get
+      .mockReset()
+      .mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+  });
+
+  it("placeholder curto e a lista completa de tipos como ajuda ligada ao campo", async () => {
+    await renderTransfers();
+
+    const field = screen.getByLabelText("Chave PIX");
+    expect(field).toHaveAttribute("placeholder", "CPF, e-mail, celular…");
+    expect(field).toHaveAccessibleDescription(
+      /Aceita CPF, CNPJ, celular, e-mail ou chave aleatória/,
+    );
+  });
+});

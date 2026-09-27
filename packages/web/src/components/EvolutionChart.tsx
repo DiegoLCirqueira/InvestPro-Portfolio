@@ -7,6 +7,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { axisCurrencyFormatter } from "@/lib/chart-axis";
 import type {
   PortfolioHistoryPoint,
   PortfolioIntradayPoint,
@@ -27,26 +28,6 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value,
   );
-
-// Eixo Y: inteiro com separador de milhar ("R$ 10.110"). A partir de 1 milhão abrevia para
-// caber na largura do eixo ("R$ 3,01 mi"); o compacto em todos os valores repetiria o mesmo
-// rótulo quando a variação do período é pequena.
-const axisFormat = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
-const axisFormatMillions = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  notation: "compact",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const formatAxisCurrency = (value: number) =>
-  Math.abs(value) >= 1_000_000
-    ? axisFormatMillions.format(value)
-    : axisFormat.format(value);
 
 const formatDay = (isoDay: string) =>
   new Date(`${isoDay}T12:00:00`).toLocaleDateString("pt-BR", {
@@ -72,6 +53,11 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
     ? data.map((point) => ({ label: point.date, balance: point.balance }))
     : intraday.map((point) => ({ label: point.at, balance: point.balance }));
   const formatLabel = isDaily ? formatDay : formatTime;
+  const balances = points.map((point) => point.balance);
+  const axis = axisCurrencyFormatter(
+    Math.min(...balances),
+    Math.max(...balances),
+  );
 
   if (points.length < 2) {
     return (
@@ -108,12 +94,12 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
           />
           <XAxis dataKey="label" hide />
           <YAxis
-            width={76}
+            width={axis.width}
             domain={["auto", "auto"]}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
-            tickFormatter={formatAxisCurrency}
+            tickFormatter={axis.format}
           />
 
           <Tooltip

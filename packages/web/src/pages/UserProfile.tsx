@@ -131,7 +131,7 @@ function TopUpCard() {
           onPaste={amountInput.onPaste}
           aria-label="Valor a adicionar"
           disabled={isLimitReached}
-          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
+          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-field text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
         />
         <button
           type="submit"
