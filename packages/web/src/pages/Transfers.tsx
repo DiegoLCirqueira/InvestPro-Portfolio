@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Info, LogIn, Receipt } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -243,23 +245,17 @@ export function Transfers() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">
-          Transferências Bancárias
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Movimente dinheiro entre suas contas.
-        </p>
-      </header>
+      <PageHeader
+        title="Transferências"
+        description="Movimente dinheiro entre suas contas."
+      />
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
           className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-foreground">
-            Nova Transferência
-          </h3>
+          <SectionTitle>Nova Transferência</SectionTitle>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Tipo</label>
@@ -379,9 +375,7 @@ export function Transfers() {
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
         <div className="nav:self-stretch nav:h-0 nav:min-h-full">
           <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-            <h3 className="text-base font-bold text-foreground">
-              Histórico de Transferências
-            </h3>
+            <SectionTitle>Histórico de Transferências</SectionTitle>
 
             {history.length === 0 ? (
               <EmptyState

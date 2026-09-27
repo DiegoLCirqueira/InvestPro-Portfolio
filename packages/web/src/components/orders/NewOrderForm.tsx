@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
@@ -91,7 +92,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
       onSubmit={handleSubmit}
       className="nav:col-span-2 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
     >
-      <h3 className="text-base font-bold text-foreground">Nova Ordem</h3>
+      <SectionTitle>Nova Ordem</SectionTitle>
 
       <FormField label="Lado">
         <OrderSideToggle value={form.side} onChange={form.changeSide} />

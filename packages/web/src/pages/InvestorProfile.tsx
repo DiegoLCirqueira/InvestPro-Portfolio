@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Compass, RotateCcw } from "lucide-react";
+import { ChevronLeft, RotateCcw } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,8 @@ import { userMessageFor } from "@/lib/financial-error";
 import { ALLOCATION_LABELS } from "@/lib/allocation";
 import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   InvestorProfile as SavedProfile,
@@ -80,10 +82,7 @@ export function InvestorProfile() {
             Perfil do usuário
           </button>
 
-          <header className="mb-6 flex items-center gap-2">
-            <Compass size={24} className="text-brand-primary" aria-hidden="true" />
-            <h2 className="text-2xl font-bold text-foreground">Perfil de investidor</h2>
-          </header>
+          <PageHeader title="Perfil de investidor" />
 
           {body}
 
@@ -229,7 +228,7 @@ function ProfileResult({ profile, definition, onRetake }: ProfileResultProps) {
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-base font-bold text-foreground">Carteira de referência</h3>
+        <SectionTitle>Carteira de referência</SectionTitle>
         <AllocationBars rows={rows} />
       </section>
 

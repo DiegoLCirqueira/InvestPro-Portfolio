@@ -9,6 +9,7 @@ import {
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
 import { useNewsFeed } from "@/hooks/use-news-feed";
 import { formatDateShort } from "@/lib/format";
 import type { NewsCategory } from "@/types/news";
@@ -70,11 +71,7 @@ export function News() {
   if (error) {
     return (
       <div className="flex-1 animate-in fade-in duration-300">
-        <header className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Notícias do Mercado
-          </h2>
-        </header>
+        <PageHeader title="Notícias" />
         <ErrorState
           title="Não foi possível carregar as notícias"
           message={error.message}
@@ -86,14 +83,10 @@ export function News() {
 
   return (
     <div ref={topRef} className="flex-1">
-      <header className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Notícias do Mercado
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Fique por dentro do que move o seu dinheiro hoje.
-        </p>
-      </header>
+      <PageHeader
+        title="Notícias"
+        description="Fique por dentro do que move o seu dinheiro hoje."
+      />
 
       <div className="flex flex-wrap gap-2 mb-6">
         {visibleFilters.map((option) => (
@@ -152,9 +145,9 @@ export function News() {
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors mb-2">
+              <h2 className="text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors mb-2">
                 {item.title}
-              </h3>
+              </h2>
 
               {item.summary && (
                 <p className="text-muted-foreground text-xs leading-relaxed">

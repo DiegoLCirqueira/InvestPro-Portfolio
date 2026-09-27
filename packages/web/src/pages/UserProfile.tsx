@@ -29,6 +29,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { CpfSection } from "@/components/profile/CpfSection";
 import { ProfileField } from "@/components/profile/ProfileField";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 
@@ -325,19 +326,19 @@ export function UserProfile() {
             Voltar
           </button>
 
-          <div className="flex items-center justify-between mb-6 nav:mb-8">
-            <h2 className="text-2xl font-bold text-foreground">
-              Perfil do Usuário
-            </h2>
-            <button
-              onClick={() => navigate("/")}
-              className="hidden nav:block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Fechar"
-              type="button"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <PageHeader
+            title="Perfil"
+            actions={
+              <button
+                onClick={() => navigate("/")}
+                className="hidden nav:block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label="Fechar"
+                type="button"
+              >
+                <X size={18} />
+              </button>
+            }
+          />
 
           {body}
         </div>

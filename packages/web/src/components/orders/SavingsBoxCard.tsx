@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { segmentClassName } from "@/components/ui/segmented";
@@ -67,7 +68,7 @@ export function SavingsBoxCard() {
 
   return (
     <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
-      <h3 className="text-base font-bold text-foreground">Caixinha</h3>
+      <SectionTitle>Caixinha</SectionTitle>
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Saldo na caixinha</span>

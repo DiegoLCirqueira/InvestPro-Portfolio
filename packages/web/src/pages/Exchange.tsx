@@ -5,6 +5,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField } from "@/components/FormField";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CurrencySelect } from "@/components/exchange/CurrencySelect";
 import { ExchangeResultPanel } from "@/components/exchange/ExchangeResultPanel";
 import { useExchange } from "@/hooks/useExchange";
@@ -73,19 +75,17 @@ export function Exchange() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Câmbio de Moedas</h2>
-        <p className="text-muted-foreground text-sm">
-          Simule a conversão entre moedas e, se gostar do resultado, realize-a.
-        </p>
-      </header>
+      <PageHeader
+        title="Câmbio"
+        description="Simule a conversão entre moedas e, se gostar do resultado, realize-a."
+      />
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSimulate}
           className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-foreground">Conversor</h3>
+          <SectionTitle>Conversor</SectionTitle>
 
           <FormField label="Valor">
             <CurrencyDigitsField input={amountInput} ariaLabel="Valor a converter" />

@@ -10,6 +10,8 @@ import { PieChart as PieChartIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CurrencyHoldingsCard } from "@/components/diversification/CurrencyHoldingsCard";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type {
@@ -91,11 +93,7 @@ export function Diversification() {
   if (error) {
     return (
       <div className="flex flex-col animate-in fade-in duration-500">
-        <header className="mb-4">
-          <h2 className="text-2xl font-bold text-foreground mb-1">
-            Diversificação
-          </h2>
-        </header>
+        <PageHeader title="Diversificação" />
         <ErrorState
           title="Não foi possível carregar a diversificação"
           message={error.message}
@@ -114,14 +112,10 @@ export function Diversification() {
   const chartData = buildChartData(breakdown);
 
   const header = (
-    <header className="mb-4">
-      <h2 className="text-2xl font-bold text-foreground mb-1">
-        Diversificação
-      </h2>
-      <p className="text-muted-foreground text-sm">
-        Veja onde seu dinheiro está investido.
-      </p>
-    </header>
+    <PageHeader
+      title="Diversificação"
+      description="Veja onde seu dinheiro está investido."
+    />
   );
 
   // Sem nenhuma categoria (as moedas do Câmbio também entram no breakdown), gráfico, cards e
@@ -148,9 +142,7 @@ export function Diversification() {
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
-          <h3 className="text-base font-bold text-foreground mb-2">
-            Distribuição do portfólio
-          </h3>
+          <SectionTitle className="mb-2">Distribuição do portfólio</SectionTitle>
           {/* Desktop: o card estica até a altura da coluna de categorias ao lado;
               o gráfico ocupa essa altura (flex-1) em vez de ficar fixo e deixar
               um vão vazio embaixo. Mobile mantém 256px. */}

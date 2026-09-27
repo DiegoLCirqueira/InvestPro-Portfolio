@@ -4,6 +4,8 @@ import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { EstimatedPriceTag } from "@/components/market/EstimatedPriceTag";
 import { EstimatedPricesBanner } from "@/components/market/EstimatedPricesBanner";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
@@ -131,9 +133,7 @@ export function MarketAnalysis() {
   if (isLoading) {
     return (
       <div className="flex flex-col animate-in fade-in duration-500">
-        <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
-          Análise de Mercado
-        </h2>
+        <PageHeader title="Análise de Mercado" />
         <MarketSkeleton />
       </div>
     );
@@ -142,9 +142,7 @@ export function MarketAnalysis() {
   if (error) {
     return (
       <div className="flex-1 flex flex-col">
-        <h2 className="text-2xl font-bold text-foreground mb-6 tracking-tight">
-          Análise de Mercado
-        </h2>
+        <PageHeader title="Análise de Mercado" />
         <ErrorState
           title="Não foi possível carregar os dados do mercado"
           message={error.message}
@@ -156,30 +154,29 @@ export function MarketAnalysis() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <div className="flex flex-col nav:flex-row nav:items-center nav:justify-between gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight">
-          Análise de Mercado
-        </h2>
-
-        {/* No celular os filtros rolam na horizontal: a borda direita esmaece para indicar que há mais. */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pr-6 [mask-image:linear-gradient(to_right,black_85%,transparent)] nav:overflow-visible nav:pr-0 nav:[mask-image:none]">
-          {TYPE_FILTERS.map((filterOption) => (
-            <button
-              key={filterOption.value}
-              type="button"
-              aria-pressed={filter === filterOption.value}
-              onClick={() => setFilter(filterOption.value)}
-              className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                filter === filterOption.value
-                  ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                  : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
-              }`}
-            >
-              {filterOption.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Análise de Mercado"
+        actions={
+          // No celular os filtros rolam na horizontal: a borda direita esmaece para indicar que há mais.
+          <div className="flex gap-2 overflow-x-auto scrollbar-none pr-6 [mask-image:linear-gradient(to_right,black_85%,transparent)] nav:overflow-visible nav:pr-0 nav:[mask-image:none]">
+            {TYPE_FILTERS.map((filterOption) => (
+              <button
+                key={filterOption.value}
+                type="button"
+                aria-pressed={filter === filterOption.value}
+                onClick={() => setFilter(filterOption.value)}
+                className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  filter === filterOption.value
+                    ? "bg-primary-solid text-primary-foreground border-brand-primary"
+                    : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
+                }`}
+              >
+                {filterOption.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {hasEstimatedPrices && <EstimatedPricesBanner />}
 
@@ -190,12 +187,12 @@ export function MarketAnalysis() {
               key={index.ticker}
               className="p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
             >
-              <h4 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                 {index.ticker}
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
                 </span>
-              </h4>
+              </h2>
 
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-3">
@@ -220,7 +217,7 @@ export function MarketAnalysis() {
 
       <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold">Composição e Performance</h3>
+          <SectionTitle>Composição e Performance</SectionTitle>
           <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">
             Tempo Real
           </span>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2, ShieldAlert, Users, UserX } from "lucide-react";
+import { Loader2, ShieldAlert, UserX } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
 import { useAdminUsers } from "@/hooks/use-admin-users";
 import { ApiError } from "@/services/api";
@@ -51,15 +52,10 @@ export function AdminUsers() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-2">
-          <Users size={22} className="text-brand-primary" />
-          Administração de Usuários
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Lista de todos os usuários cadastrados no sistema.
-        </p>
-      </header>
+      <PageHeader
+        title="Administração"
+        description="Lista de todos os usuários cadastrados no sistema."
+      />
 
       {users.length === 0 ? (
         <EmptyState icon={UserX} message="Nenhum usuário encontrado." />

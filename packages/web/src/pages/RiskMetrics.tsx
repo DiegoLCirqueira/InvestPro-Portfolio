@@ -1,4 +1,6 @@
-import { ShieldAlert, ShieldQuestion, Shield, LogIn } from "lucide-react";
+import { ShieldAlert, ShieldQuestion, LogIn } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { RiskSkeleton } from "@/components/skeletons/RiskSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -121,7 +123,8 @@ export function RiskMetrics() {
 
   if (!data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh]">
+      <div className="flex-1 flex flex-col min-h-[40vh]">
+        <PageHeader title="Risco" />
         <EmptyState
           icon={ShieldQuestion}
           message="Você ainda não possui investimentos suficientes para calcularmos métricas de risco. Comece investindo na aba Análise de Mercado."
@@ -133,15 +136,10 @@ export function RiskMetrics() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-          <Shield size={22} className="text-brand-primary" />
-          Análise de Risco
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Indicadores de risco do seu portfólio.
-        </p>
-      </header>
+      <PageHeader
+        title="Risco"
+        description="Indicadores de risco do seu portfólio."
+      />
 
       {data.insufficientHistory && (
         <div
@@ -196,7 +194,7 @@ export function RiskMetrics() {
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-foreground">Score de Risco</h3>
+              <SectionTitle>Score de Risco</SectionTitle>
               <p className="text-xs text-muted-foreground">
                 Escala de 0 a 100. Quanto maior o score, maior o risco estimado.
               </p>
@@ -288,9 +286,7 @@ export function RiskMetrics() {
 
       {formattedMetrics.length > 0 && (
         <div className="mt-6 p-6 rounded-2xl border border-border bg-surface-1">
-          <h3 className="text-base font-bold text-foreground mb-4">
-            Métricas detalhadas
-          </h3>
+          <SectionTitle className="mb-4">Métricas detalhadas</SectionTitle>
           <div className="space-y-3">
             {formattedMetrics.map((m, idx) => (
               <div

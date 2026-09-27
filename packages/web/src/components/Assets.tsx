@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Bitcoin, Landmark, TrendingUp, type LucideIcon } from "lucide-react";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { scrollEdgesMask, useScrollEdges } from "@/hooks/use-scroll-edges";
@@ -65,7 +66,7 @@ export function Assets({ change }: AssetsProps) {
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full">
-        <h3 className="text-lg font-bold mb-4">Seus Ativos</h3>
+        <SectionTitle className="mb-4">Seus Ativos</SectionTitle>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
@@ -90,7 +91,7 @@ export function Assets({ change }: AssetsProps) {
   if (error) {
     return (
       <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full">
-        <h3 className="text-lg font-bold mb-3">Seus Ativos</h3>
+        <SectionTitle className="mb-3">Seus Ativos</SectionTitle>
         <ErrorState
           message={error.message}
           onRetry={refetch}
@@ -105,7 +106,7 @@ export function Assets({ change }: AssetsProps) {
   // sobra (min-h-0 + overflow) e rola, e o total fica fixo no rodapé.
   return (
     <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full flex flex-col nav:min-h-0">
-      <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
+      <SectionTitle className="mb-4 shrink-0">Seus Ativos</SectionTitle>
 
       {positions.length === 0 ? (
         <div className="flex-1">

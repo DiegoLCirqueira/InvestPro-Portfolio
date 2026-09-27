@@ -70,7 +70,8 @@ export function Sidebar() {
       <div className="p-8">
         <div className="flex items-center gap-3">
           <BrandMark />
-          <h1 className="text-xl font-bold tracking-tight">InvestPro</h1>
+          {/* Marca, não título: o h1 é o nome de cada página (PageHeader). */}
+          <p className="text-xl font-bold tracking-tight">InvestPro</p>
         </div>
       </div>
 

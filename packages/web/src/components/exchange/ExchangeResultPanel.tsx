@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
 
@@ -41,7 +42,7 @@ export function ExchangeResultPanel({
 
   return (
     <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-      <h3 className="text-base font-bold text-foreground">Resultado</h3>
+      <SectionTitle>Resultado</SectionTitle>
       <p className="text-sm text-muted-foreground text-center py-16">
         Preencha o valor e clique em Converter para simular a conversão.
       </p>

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { Compass, Lightbulb } from "lucide-react";
+import { Compass } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,16 +27,15 @@ export function Recommendations() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-8 space-y-2">
-        <div className="flex items-center gap-2">
-          <Lightbulb size={24} className="text-brand-primary" aria-hidden="true" />
-          <h2 className="text-2xl font-bold text-foreground">Recomendações</h2>
-        </div>
-        <p role="note" className="text-muted-foreground text-sm">
-          Sugestões educativas geradas por regras, a partir do seu perfil de investidor e da sua
-          carteira. Não são uma recomendação de investimento.
-        </p>
-      </header>
+      <PageHeader
+        title="Recomendações"
+        description={
+          <span role="note">
+            Sugestões educativas geradas por regras, a partir do seu perfil de investidor e da sua
+            carteira. Não são uma recomendação de investimento.
+          </span>
+        }
+      />
 
       {isLoading ? (
         <RecommendationsSkeleton />
@@ -58,7 +59,7 @@ export function Recommendations() {
                 <Compass size={20} className="text-brand-primary" aria-hidden="true" />
               </div>
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Sua carteira x referência</h3>
+                <SectionTitle>Sua carteira x referência</SectionTitle>
                 <AllocationBars rows={data.allocation} />
                 <p className="text-xs text-muted-foreground">
                   A barra mostra quanto você tem hoje em cada classe (sobre o total investido); o traço
@@ -82,7 +83,7 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
     <article className="rounded-2xl border border-border bg-surface-1 p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="mb-2 text-lg font-bold text-foreground">{item.title}</h3>
+          <SectionTitle className="mb-2">{item.title}</SectionTitle>
           <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
         </div>
         <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />

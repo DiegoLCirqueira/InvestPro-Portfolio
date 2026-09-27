@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDateTime, formatExchangeRate } from "@/lib/format";
 import type { ExchangeSummary } from "@/types/exchange";
@@ -45,12 +46,12 @@ export function ExchangeResultCard({ variant, summary, children }: ExchangeResul
 
   return (
     <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-      <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
+      <SectionTitle className="flex items-center gap-2">
         {variant === "confirmation" && (
           <CheckCircle2 size={18} className="text-brand-primary" aria-hidden="true" />
         )}
         {text.title}
-      </h3>
+      </SectionTitle>
 
       <div className="flex flex-col gap-2">
         <ResultRow label={text.sends}>

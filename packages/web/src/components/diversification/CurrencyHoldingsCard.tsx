@@ -1,4 +1,5 @@
 import { Coins } from "lucide-react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { EmptyState } from "@/components/EmptyState";
 import { useCurrencyHoldings, type CurrencyHolding } from "@/hooks/use-currency-holdings";
 import { currencyName } from "@/lib/currency";
@@ -66,9 +67,9 @@ export function CurrencyHoldingsCard() {
       aria-labelledby="currency-holdings-title"
       className="p-4 rounded-2xl border border-border bg-surface-1"
     >
-      <h3 id="currency-holdings-title" className="text-base font-bold text-foreground mb-1">
+      <SectionTitle id="currency-holdings-title" className="mb-1">
         Moedas
-      </h3>
+      </SectionTitle>
       <p className="text-xs text-muted-foreground mb-2">
         Saldo de cada moeda que você obteve pelo Câmbio.
       </p>
