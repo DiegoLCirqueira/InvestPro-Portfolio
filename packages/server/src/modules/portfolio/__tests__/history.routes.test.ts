@@ -14,6 +14,7 @@ import {
   uniqueIp,
   uniqueValidCpf,
 } from '../../../test/integration.helpers.js'
+import { INITIAL_ACCOUNT_BALANCE } from '@investpro/shared'
 import { dayKey } from '../history.domain.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -70,11 +71,13 @@ async function shiftSnapshots(userId: string, days: number) {
 }
 
 describe('GET /api/v1/portfolio/history (histórico real)', () => {
-  it('conta nova começa hoje, sem curva inventada', async () => {
+  it('conta nova começa hoje, com o saldo inicial como aporte (não rendimento)', async () => {
     const user = await newUser()
     const body = await history(user.token)
 
-    expect(body.history).toEqual([{ date: dayKey(new Date()), balance: 0, netFlow: 0 }])
+    expect(body.history).toEqual([
+      { date: dayKey(new Date()), balance: INITIAL_ACCOUNT_BALANCE, netFlow: INITIAL_ACCOUNT_BALANCE },
+    ])
     expect(body.returnPct).toBeNull()
   })
 
@@ -83,10 +86,16 @@ describe('GET /api/v1/portfolio/history (histórico real)', () => {
     expect((await call(user.token, 'POST', '/api/v1/portfolio/topup', { amount: 1000 })).statusCode).toBe(200)
     await history(user.token)
 
-    // Aporte de 1000 "há 3 dias" e valorização para 1100 "há 2 dias".
+    // Abertura (saldo inicial) + aporte de 1000 "há 3 dias" e valorização de
+    // 100 "há 2 dias".
     await shiftSnapshots(user.id, 3)
     await prisma.portfolioSnapshot.create({
-      data: { userId: user.id, equity: 1100, reason: 'DAILY', createdAt: new Date(Date.now() - 2 * DAY_MS) },
+      data: {
+        userId: user.id,
+        equity: INITIAL_ACCOUNT_BALANCE + 1100,
+        reason: 'DAILY',
+        createdAt: new Date(Date.now() - 2 * DAY_MS),
+      },
     })
     const before = await history(user.token)
     const past = before.history.slice(0, -1)
@@ -102,9 +111,16 @@ describe('GET /api/v1/portfolio/history (histórico real)', () => {
 
     const after = await history(user.token)
     expect(after.history.slice(0, past.length)).toEqual(past)
-    expect(past[0]).toMatchObject({ balance: 1000, netFlow: 1000 })
-    expect(past[1]).toMatchObject({ balance: 1100, netFlow: 0 })
-    expect(after.history.at(-1)).toMatchObject({ date: dayKey(new Date()), balance: 1300, netFlow: 300 })
+    expect(past[0]).toMatchObject({
+      balance: INITIAL_ACCOUNT_BALANCE + 1000,
+      netFlow: INITIAL_ACCOUNT_BALANCE + 1000,
+    })
+    expect(past[1]).toMatchObject({ balance: INITIAL_ACCOUNT_BALANCE + 1100, netFlow: 0 })
+    expect(after.history.at(-1)).toMatchObject({
+      date: dayKey(new Date()),
+      balance: INITIAL_ACCOUNT_BALANCE + 1300,
+      netFlow: 300,
+    })
   })
 
   it('métricas de risco avisam histórico insuficiente em vez de dar nota falsa', async () => {
@@ -119,6 +135,8 @@ describe('GET /api/v1/portfolio/history (histórico real)', () => {
 
   it('conta anterior ao histórico: reconstrói aportes/transferências já registrados, uma única vez', async () => {
     const user = await newUser()
+    // Conta criada antes das fotografias: sem nem a de abertura.
+    await prisma.portfolioSnapshot.deleteMany({ where: { userId: user.id } })
     const portfolio = await prisma.portfolio.findUniqueOrThrow({ where: { userId: user.id } })
     await prisma.portfolio.update({ where: { id: portfolio.id }, data: { balance: 700 } })
     await prisma.balanceTopUp.create({

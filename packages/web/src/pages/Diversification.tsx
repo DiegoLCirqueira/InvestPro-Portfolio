@@ -16,13 +16,7 @@ import type {
   DiversificationCategory,
   PortfolioDiversificationItem,
 } from "@/types/portfolio";
-
-const CATEGORY_COLORS: Record<DiversificationCategory, string> = {
-  CRYPTO: "var(--color-cat-crypto)",
-  STOCK: "var(--color-cat-stocks)",
-  FIXED_INCOME: "var(--color-cat-fixed)",
-  FOREIGN_CURRENCY: "var(--color-cat-intl)",
-};
+import { CATEGORY_COLORS } from "@/lib/allocation";
 
 const FALLBACK_CATEGORY_COLOR = "var(--color-muted-foreground)";
 

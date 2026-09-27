@@ -1,21 +1,76 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { Recommendations } from "@/pages/Recommendations";
+import type { RecommendationsResponse } from "@/types/investor-profile";
 
-describe("Recommendations (conteúdo de exemplo)", () => {
-  it("rotula a página como EXEMPLO e diz que não é personalizada nem recomendação de investimento", () => {
-    render(<Recommendations />);
+const apiMock = vi.hoisted(() => ({ get: vi.fn() }));
 
-    expect(screen.getByText("Exemplo")).toBeInTheDocument();
-    expect(screen.getByRole("note")).toHaveTextContent(/ilustrativo/i);
-    expect(screen.getByRole("note")).toHaveTextContent(/não é uma recomendação personalizada nem uma recomendação de investimento/i);
+vi.mock("@/services/api", async () => {
+  const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
+  return { ...actual, api: apiMock };
+});
+
+function renderWith(response: RecommendationsResponse) {
+  apiMock.get.mockResolvedValue(response);
+  return render(
+    <MemoryRouter>
+      <Recommendations />
+    </MemoryRouter>,
+  );
+}
+
+describe("Recommendations (pelo perfil de investidor)", () => {
+  beforeEach(() => apiMock.get.mockReset());
+
+  it("sem perfil: convida a responder o questionário e não mostra comparação de carteira", async () => {
+    renderWith({
+      profile: null,
+      allocation: [],
+      items: [
+        {
+          id: "take-questionnaire",
+          category: "PROFILE",
+          title: "Descubra seu perfil de investidor",
+          description: "Responda 7 perguntas rápidas.",
+        },
+      ],
+    });
+
+    const cta = await screen.findByRole("link", { name: /Responder o questionário/ });
+    expect(cta).toHaveAttribute("href", "/profile/investor-profile");
+    expect(screen.queryByText("Sua carteira x referência")).not.toBeInTheDocument();
   });
 
-  it("não alega personalização nem inteligência artificial", () => {
-    const { container } = render(<Recommendations />);
-    const text = container.textContent ?? "";
+  it("com perfil: mostra o perfil, as sugestões e a carteira atual x referência", async () => {
+    renderWith({
+      profile: "MODERATE",
+      allocation: [
+        { type: "FIXED_INCOME", label: "Renda Fixa", currentPct: 20, targetPct: 45 },
+        { type: "STOCK", label: "Ações", currentPct: 80, targetPct: 35 },
+      ],
+      items: [
+        {
+          id: "reduce-STOCK",
+          category: "RISK",
+          title: "Reduzir a exposição a ações",
+          description: "Hoje ações representam 80% do que você tem investido.",
+        },
+      ],
+    });
 
-    expect(text).not.toMatch(/seu perfil|inteligência artificial|de IA|gerad[ao]s? pel/i);
-    expect(text).not.toMatch(/\d+%/); // sem "score" que pareça confiança de um modelo
+    expect(await screen.findByText("Moderado")).toBeInTheDocument();
+    expect(screen.getByText("Reduzir a exposição a ações")).toBeInTheDocument();
+    expect(screen.getByText("Risco")).toBeInTheDocument();
+    expect(screen.getByText("Sua carteira x referência")).toBeInTheDocument();
+    expect(screen.getByText("Renda Fixa")).toBeInTheDocument();
+  });
+
+  it("deixa claro que é conteúdo educativo, sem alegar inteligência artificial", async () => {
+    const { container } = renderWith({ profile: null, allocation: [], items: [] });
+    await screen.findByRole("note");
+
+    expect(screen.getByRole("note")).toHaveTextContent(/não são uma recomendação de investimento/i);
+    expect(container.textContent ?? "").not.toMatch(/inteligência artificial|de IA/i);
   });
 });

@@ -9,27 +9,31 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(uuid())
-  email               String               @unique
-  passwordHash        String
-  fullName            String
-  cpf                 String?              @unique
-  phone               String?
-  role                Role                 @default(USER)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  portfolio           Portfolio?
-  refreshTokens       RefreshToken[]
-  bankAccounts        BankAccount[]
-  transfers           Transfer[]
-  orders              Order[]
-  passwordResetTokens PasswordResetToken[]
-  topUpsReceived      BalanceTopUp[]       @relation("TopUpReceiver")
-  topUpsActed         BalanceTopUp[]       @relation("TopUpActor")
-  savingsBox          SavingsBox?
-  currencyHoldings    CurrencyHolding[]
-  currencyExchanges   CurrencyExchange[]
-  portfolioSnapshots  PortfolioSnapshot[]
+  id                   String               @id @default(uuid())
+  email                String               @unique
+  passwordHash         String
+  fullName             String
+  cpf                  String?              @unique
+  phone                String?
+  role                 Role                 @default(USER)
+  // Perfil de investidor (questionário). Pontuação e data guardadas para auditoria.
+  investorProfile      InvestorProfile?
+  investorProfileScore Int?
+  investorProfileAt    DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  portfolio            Portfolio?
+  refreshTokens        RefreshToken[]
+  bankAccounts         BankAccount[]
+  transfers            Transfer[]
+  orders               Order[]
+  passwordResetTokens  PasswordResetToken[]
+  topUpsReceived       BalanceTopUp[]       @relation("TopUpReceiver")
+  topUpsActed          BalanceTopUp[]       @relation("TopUpActor")
+  savingsBox           SavingsBox?
+  currencyHoldings     CurrencyHolding[]
+  currencyExchanges    CurrencyExchange[]
+  portfolioSnapshots   PortfolioSnapshot[]
 }
 
 // Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
@@ -269,11 +273,13 @@ model PortfolioSnapshot {
   @@index([userId, createdAt])
 }
 
+// SIGNUP: abertura da conta, com o saldo inicial como aporte.
 // DAILY: registro diário ao abrir o painel. BACKFILL: reconstruído dos aportes e
 // transferências já registrados (sem variação de mercado) para contas anteriores
 // a esta tabela.
 enum SnapshotReason {
   DAILY
+  SIGNUP
   TOPUP
   TRANSFER
   ORDER
@@ -306,6 +312,12 @@ enum Currency {
   CAD
   AUD
   CNY
+}
+
+enum InvestorProfile {
+  CONSERVATIVE
+  MODERATE
+  AGGRESSIVE
 }
 
 enum Role {

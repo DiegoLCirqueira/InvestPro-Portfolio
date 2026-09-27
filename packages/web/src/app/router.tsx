@@ -38,6 +38,9 @@ const Orders = lazy(() =>
 const UserProfile = lazy(() =>
   import("@/pages/UserProfile").then((m) => ({ default: m.UserProfile })),
 );
+const InvestorProfile = lazy(() =>
+  import("@/pages/InvestorProfile").then((m) => ({ default: m.InvestorProfile })),
+);
 const RiskMetrics = lazy(() =>
   import("@/pages/RiskMetrics").then((m) => ({ default: m.RiskMetrics })),
 );
@@ -142,6 +145,10 @@ export function Router() {
         <Route
           path="/profile"
           element={withSuspense(UserProfile, <RouteErrorFallback />)}
+        />
+        <Route
+          path="/profile/investor-profile"
+          element={withSuspense(InvestorProfile, <RouteErrorFallback />)}
         />
         <Route
           path="/admin/users"

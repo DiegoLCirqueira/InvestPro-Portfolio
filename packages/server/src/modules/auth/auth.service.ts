@@ -1,6 +1,6 @@
 import type { FastifyBaseLogger } from "fastify";
 import type { RefreshToken as StoredRefreshToken } from "@prisma/client";
-import { normalizeCpf } from "@investpro/shared";
+import { INITIAL_ACCOUNT_BALANCE, normalizeCpf } from "@investpro/shared";
 import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import type { RegisterBody, LoginBody } from "./auth.schema.js";
@@ -61,8 +61,19 @@ export async function register(data: RegisterBody): Promise<AuthResult> {
         data: { email: data.email, passwordHash, fullName: data.fullName, cpf },
       });
 
+      // Conta nova já começa com saldo simulado para a demonstração. A
+      // fotografia de abertura registra esse saldo como aporte (netFlow), para
+      // não virar "rendimento" no gráfico nem na rentabilidade.
       await tx.portfolio.create({
-        data: { userId: user.id },
+        data: { userId: user.id, balance: INITIAL_ACCOUNT_BALANCE },
+      });
+      await tx.portfolioSnapshot.create({
+        data: {
+          userId: user.id,
+          equity: INITIAL_ACCOUNT_BALANCE,
+          netFlow: INITIAL_ACCOUNT_BALANCE,
+          reason: "SIGNUP",
+        },
       });
 
       return user;

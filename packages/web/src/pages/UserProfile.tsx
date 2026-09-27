@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { ChevronLeft, ShieldCheck, Wallet, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Compass, ShieldCheck, Wallet, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import type { UpdateProfileInput } from "@/hooks/use-profile";
-import { usePortfolioPositions, useTopUpPortfolio } from "@/hooks/usePortfolio";
+import { usePortfolioPositions, useTopUpLimit, useTopUpPortfolio } from "@/hooks/usePortfolio";
+import { INVESTOR_PROFILE_LABELS, useInvestorProfile } from "@/hooks/use-investor-profile";
 import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
@@ -34,7 +35,10 @@ function ProfileFieldsSkeleton() {
 
 function TopUpCard() {
   const { balance, isLoading, refetch } = usePortfolioPositions();
+  const topUpLimit = useTopUpLimit();
   const amountInput = useCurrencyDigitsInput();
+  const remaining = topUpLimit.data?.remaining;
+  const isLimitReached = remaining === 0;
 
   const handleTopUpError = useFinancialErrorHandler();
   const topUp = useTopUpPortfolio({
@@ -42,6 +46,7 @@ function TopUpCard() {
       toast.success("Saldo adicionado com sucesso!");
       amountInput.reset();
       void refetch();
+      void topUpLimit.refetch();
     },
     onError: handleTopUpError,
   });
@@ -49,6 +54,10 @@ function TopUpCard() {
   const submitTopUp = async () => {
     if (amountInput.amount <= 0) {
       toast.error("Informe um valor válido.");
+      return;
+    }
+    if (remaining !== undefined && amountInput.amount > remaining) {
+      toast.error(`Você ainda pode adicionar até ${formatCurrency(remaining)}.`);
       return;
     }
     try {
@@ -79,6 +88,22 @@ function TopUpCard() {
         </span>
       </p>
 
+      {topUpLimit.data && (
+        <p className="text-xs text-muted-foreground">
+          {isLimitReached ? (
+            "Você já adicionou o limite de saldo da conta. Agora o saldo só cresce com seus investimentos."
+          ) : (
+            <>
+              Ainda pode adicionar{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {formatCurrency(topUpLimit.data.remaining)}
+              </span>{" "}
+              de {formatCurrency(topUpLimit.data.limit)} no total.
+            </>
+          )}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
@@ -86,17 +111,42 @@ function TopUpCard() {
           value={amountInput.displayValue}
           onChange={amountInput.onChange}
           aria-label="Valor a adicionar"
+          disabled={isLimitReached}
           className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
         />
         <button
           type="submit"
-          disabled={topUp.isPending}
+          disabled={topUp.isPending || isLimitReached}
           className="min-h-11 shrink-0 px-4 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
         </button>
       </form>
     </div>
+  );
+}
+
+// Atalho para o questionário: mostra o perfil atual ou convida a descobrir.
+function InvestorProfileLink() {
+  const { data } = useInvestorProfile();
+  const profile = data?.profile;
+
+  return (
+    <Link
+      to="/profile/investor-profile"
+      className="flex min-h-11 items-center gap-3 p-4 rounded-xl border border-border bg-surface-2 text-foreground hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <Compass size={18} className="text-primary" aria-hidden="true" />
+      <span className="flex-1">
+        <span className="block text-sm font-medium">Perfil de investidor</span>
+        <span className="block text-xs text-muted-foreground">
+          {profile
+            ? `Seu perfil: ${INVESTOR_PROFILE_LABELS[profile.type]}`
+            : "Descubra seu perfil em 7 perguntas"}
+        </span>
+      </span>
+      <ChevronRight size={18} className="text-muted-foreground" aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -201,6 +251,7 @@ export function UserProfile() {
       </div>
 
       <div className="mt-6 space-y-3">
+        <InvestorProfileLink />
         <TopUpCard />
 
         {isAdmin && (

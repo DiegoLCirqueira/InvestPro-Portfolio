@@ -114,6 +114,20 @@ export function useTopUpPortfolio(
   });
 }
 
+export interface TopUpLimit {
+  /** Teto do total adicionado na vida da conta. */
+  limit: number;
+  used: number;
+  remaining: number;
+}
+
+export function useTopUpLimit() {
+  return useQuery<TopUpLimit>({
+    fetcher: () => api.get<TopUpLimit>("/portfolio/topup-limit"),
+    deps: [],
+  });
+}
+
 export type {
   PortfolioPeriod,
   PortfolioPosition,

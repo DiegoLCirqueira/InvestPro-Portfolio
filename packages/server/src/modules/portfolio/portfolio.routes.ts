@@ -13,6 +13,8 @@ import {
   diversificationResponseSchema,
   topUpBodySchema,
   topUpResponseSchema,
+  topUpLimitResponseSchema,
+  errorResponseSchema,
 } from "./portfolio.schema.js";
 import * as portfolioService from "./portfolio.service.js";
 
@@ -102,11 +104,12 @@ export async function portfolioRoutes(app: FastifyInstance): Promise<void> {
         tags: ["Portfolio"],
         summary: "Top-up simulado do saldo",
         description:
-          "Incrementa o saldo do portfólio do usuário autenticado. Funcionalidade de demo (não representa um pagamento real); disponível para USER e ADMIN.",
+          "Incrementa o saldo do portfólio do usuário autenticado. Funcionalidade de demo (não representa um pagamento real); disponível para USER e ADMIN. O total adicionado na vida da conta tem teto: acima dele, 422 TOPUP_LIMIT_EXCEEDED.",
         security: [{ BearerAuth: [] }],
         body: topUpBodySchema,
         response: {
           200: topUpResponseSchema,
+          422: errorResponseSchema,
         },
       },
     },
@@ -115,6 +118,28 @@ export async function portfolioRoutes(app: FastifyInstance): Promise<void> {
       // Hoje sempre é top-up na própria conta (userId === actorUserId), mas
       // ambos vêm do token, não de um único valor reaproveitado.
       return portfolioService.topUp(user.id, user.id, request.body.amount);
+    }
+  );
+
+  r.get(
+    "/api/v1/portfolio/topup-limit",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Portfolio"],
+        summary: "Limite do top-up simulado",
+        description:
+          "Quanto o usuário autenticado já adicionou pelo top-up e quanto ainda pode adicionar (teto do total na vida da conta).",
+        security: [{ BearerAuth: [] }],
+        response: {
+          200: topUpLimitResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return portfolioService.getTopUpLimit(user.id);
     }
   );
 }

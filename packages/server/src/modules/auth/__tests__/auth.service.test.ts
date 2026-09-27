@@ -5,6 +5,7 @@
 // não código) — ver WI-229. Estes testes validam o fluxo quando o DB responde.
 
 import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { INITIAL_ACCOUNT_BALANCE } from '@investpro/shared'
 
 vi.mock('../../../config/env.js', () => ({
   env: {
@@ -33,6 +34,7 @@ const mocks = vi.hoisted(() => {
     userCreate: vi.fn(),
     userUpdate: vi.fn(),
     portfolioCreate: vi.fn(),
+    snapshotCreate: vi.fn(),
     passwordResetTokenDeleteMany: vi.fn(),
     passwordResetTokenCreate: vi.fn(),
     passwordResetTokenUpdateMany: vi.fn(),
@@ -119,7 +121,7 @@ describe('register', () => {
       return await (fn as (tx: unknown) => Promise<unknown>)(
         {
           user: { create: mocks.userCreate },
-          portfolio: { create: mocks.portfolioCreate },
+          portfolio: { create: mocks.portfolioCreate }, portfolioSnapshot: { create: mocks.snapshotCreate },
         }
       )
     })
@@ -138,6 +140,31 @@ describe('register', () => {
     expect(result.accessToken).toBeTruthy()
     expect(result.refreshToken).toBeTruthy()
     expect(result.user).not.toHaveProperty('passwordHash')
+  })
+
+  it('abre a conta com o saldo inicial e registra esse saldo como aporte na fotografia de abertura', async () => {
+    mocks.findUnique.mockResolvedValue(null)
+    mocks.transaction.mockImplementation(async (fn: unknown) =>
+      (fn as (tx: unknown) => Promise<unknown>)({
+        user: { create: mocks.userCreate },
+        portfolio: { create: mocks.portfolioCreate },
+        portfolioSnapshot: { create: mocks.snapshotCreate },
+      })
+    )
+    mocks.userCreate.mockResolvedValue(dbUser)
+    mocks.refreshTokenCreate.mockResolvedValue({ id: 'rt-1' })
+
+    await register({ email: BASE.email, password: BASE.password, fullName: BASE.fullName })
+
+    expect(mocks.portfolioCreate).toHaveBeenCalledWith({ data: { userId: dbUser.id, balance: INITIAL_ACCOUNT_BALANCE } })
+    expect(mocks.snapshotCreate).toHaveBeenCalledWith({
+      data: {
+        userId: dbUser.id,
+        equity: INITIAL_ACCOUNT_BALANCE,
+        netFlow: INITIAL_ACCOUNT_BALANCE,
+        reason: 'SIGNUP',
+      },
+    })
   })
 
   describe('conflito de unique no banco (P2002)', () => {
@@ -180,7 +207,7 @@ describe('register', () => {
       mocks.transaction.mockImplementation(async (fn: unknown) =>
         (fn as (tx: unknown) => Promise<unknown>)({
           user: { create: mocks.userCreate },
-          portfolio: { create: mocks.portfolioCreate },
+          portfolio: { create: mocks.portfolioCreate }, portfolioSnapshot: { create: mocks.snapshotCreate },
         })
       )
       mocks.userCreate.mockResolvedValue(dbUser)
@@ -204,7 +231,7 @@ describe('register', () => {
     mocks.findUnique.mockResolvedValue(null)
     mocks.transaction.mockImplementation(async (fn: unknown) => {
       return await (fn as (tx: unknown) => Promise<unknown>)(
-        { user: { create: mocks.userCreate }, portfolio: { create: mocks.portfolioCreate } }
+        { user: { create: mocks.userCreate }, portfolio: { create: mocks.portfolioCreate }, portfolioSnapshot: { create: mocks.snapshotCreate } }
       )
     })
     mocks.userCreate.mockImplementation(async (args: { data: { passwordHash: string } }) => {
@@ -223,7 +250,7 @@ describe('register', () => {
     mocks.findUnique.mockResolvedValue(null)
     mocks.transaction.mockImplementation(async (fn: unknown) => {
       return await (fn as (tx: unknown) => Promise<unknown>)(
-        { user: { create: mocks.userCreate }, portfolio: { create: mocks.portfolioCreate } }
+        { user: { create: mocks.userCreate }, portfolio: { create: mocks.portfolioCreate }, portfolioSnapshot: { create: mocks.snapshotCreate } }
       )
     })
     mocks.userCreate.mockResolvedValue(dbUser)

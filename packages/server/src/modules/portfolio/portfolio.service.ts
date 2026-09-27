@@ -1,4 +1,6 @@
 import type { FastifyBaseLogger } from "fastify";
+import { MAX_TOTAL_TOP_UP } from "@investpro/shared";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import type { HistoryQuery } from "./portfolio.schema.js";
@@ -121,6 +123,20 @@ export async function topUp(userId: string, actorUserId: string, amount: number)
       throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
     }
 
+    // Trava a linha do portfólio antes de somar: dois top-ups simultâneos não
+    // podem ler o mesmo total e juntos passar do teto.
+    await tx.$queryRaw`SELECT id FROM "Portfolio" WHERE id = ${portfolio.id} FOR UPDATE`;
+    const { remaining } = await topUpLimitFor(tx, userId);
+    if (amount > remaining) {
+      throw new AppError(
+        "TOPUP_LIMIT_EXCEEDED",
+        remaining > 0
+          ? `Limite de saldo adicionado atingido. Você ainda pode adicionar ${formatBrl(remaining)}.`
+          : "Você já adicionou o limite de saldo da conta. Agora o saldo só cresce com seus investimentos.",
+        422
+      );
+    }
+
     const updated = await tx.portfolio.update({
       where: { id: portfolio.id },
       data: { balance: { increment: amount } },
@@ -140,6 +156,24 @@ export async function topUp(userId: string, actorUserId: string, amount: number)
 
   await recordSnapshot(userId, "TOPUP", amount);
   return result;
+}
+
+const formatBrl = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+type TopUpReader = Pick<Prisma.TransactionClient, "balanceTopUp">;
+
+// Teto do total adicionado pelo "Adicionar saldo" na vida da conta (o saldo
+// inicial da abertura não entra: não é um BalanceTopUp).
+async function topUpLimitFor(client: TopUpReader, userId: string) {
+  const { _sum } = await client.balanceTopUp.aggregate({ where: { userId }, _sum: { amount: true } });
+  const used = _sum.amount?.toNumber() ?? 0;
+  const remaining = Math.max(0, Math.round((MAX_TOTAL_TOP_UP - used) * 100) / 100);
+  return { limit: MAX_TOTAL_TOP_UP, used, remaining };
+}
+
+export function getTopUpLimit(userId: string) {
+  return topUpLimitFor(prisma, userId);
 }
 
 export async function getDiversification(userId: string) {

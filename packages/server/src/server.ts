@@ -13,6 +13,7 @@ import { portfolioRoutes } from "./modules/portfolio/portfolio.routes.js";
 import { marketRoutes } from "./modules/market/market.routes.js";
 import { newsRoutes } from "./modules/news/news.routes.js";
 import { riskRoutes } from "./modules/risk/risk.routes.js";
+import { recommendationsRoutes } from "./modules/recommendations/recommendations.routes.js";
 import { orderRoutes } from "./modules/order/order.routes.js";
 import { exchangeRoutes } from "./modules/exchange/exchange.routes.js";
 import { transferRoutes } from "./modules/transfer/transfer.routes.js";
@@ -55,6 +56,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
   await app.register(marketRoutes);
   await app.register(newsRoutes);
   await app.register(riskRoutes);
+  await app.register(recommendationsRoutes);
   await app.register(orderRoutes);
   await app.register(exchangeRoutes);
   await app.register(transferRoutes);

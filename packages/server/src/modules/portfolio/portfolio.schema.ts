@@ -66,4 +66,15 @@ export const topUpResponseSchema = z.object({
   balance: z.number(),
 })
 
+export const topUpLimitResponseSchema = z.object({
+  limit: z.number(),
+  used: z.number(),
+  remaining: z.number(),
+})
+
+export const errorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+})
+
 export type HistoryQuery = z.infer<typeof historyQuerySchema>

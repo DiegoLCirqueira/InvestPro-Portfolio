@@ -32,11 +32,13 @@ export function Layout() {
 
           {/* O rodapé (mobile ou desktop, conforme a largura) faz parte do conteúdo
               rolável de CADA página, não da interface geral: fica no fim do que foi
-              rolado ali, não uma barra fixa sobre a tela inteira. */}
+              rolado ali, não uma barra fixa sobre a tela inteira. Coluna flex nos dois
+              tamanhos: em página curta o rodapé (mt-auto) desce até o fim da área,
+              em vez de ficar logo abaixo do conteúdo, no meio da tela. */}
           <div
             id="main-content"
             tabIndex={-1}
-            className="flex-1 min-h-0 block nav:flex nav:flex-col overflow-y-auto custom-scrollbar focus:outline-none [overflow-anchor:none]"
+            className="flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar focus:outline-none [overflow-anchor:none]"
           >
             <Outlet />
             <MobileFooter />

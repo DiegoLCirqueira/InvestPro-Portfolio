@@ -13,7 +13,9 @@ import {
   registerTestUser,
   deleteUser,
   uniqueEmail,
+  uniqueIp,
 } from '../../../test/integration.helpers.js'
+import { INITIAL_ACCOUNT_BALANCE, MAX_TOTAL_TOP_UP } from '@investpro/shared'
 
 let app: FastifyInstance | undefined
 let token = ''
@@ -125,7 +127,7 @@ describe('POST /api/v1/portfolio/topup', () => {
       payload: { amount: 500 },
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json().balance).toBe(500)
+    expect(res.json().balance).toBe(INITIAL_ACCOUNT_BALANCE + 500)
 
     const again = await app!.inject({
       method: 'POST',
@@ -134,11 +136,11 @@ describe('POST /api/v1/portfolio/topup', () => {
       payload: { amount: 250.5 },
     })
     expect(again.statusCode).toBe(200)
-    expect(again.json().balance).toBe(750.5)
+    expect(again.json().balance).toBe(INITIAL_ACCOUNT_BALANCE + 750.5)
   })
 
   it('grava um BalanceTopUp por chamada, com userId/actorUserId e balanceAfter corretos', async () => {
-    // Continua o mesmo usuário do teste anterior (saldo em 750.5 nesse ponto).
+    // Continua o mesmo usuário do teste anterior (saldo inicial + 750.5 nesse ponto).
     const res = await app!.inject({
       method: 'POST',
       url: '/api/v1/portfolio/topup',
@@ -146,7 +148,7 @@ describe('POST /api/v1/portfolio/topup', () => {
       payload: { amount: 100 },
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json().balance).toBe(850.5)
+    expect(res.json().balance).toBe(INITIAL_ACCOUNT_BALANCE + 850.5)
 
     const rows = await prisma.balanceTopUp.findMany({
       where: { userId: topupUserId },
@@ -161,7 +163,7 @@ describe('POST /api/v1/portfolio/topup', () => {
     // do token (não copiado de userId) — ver comentário em portfolio.routes.ts.
     expect(last.actorUserId).toBe(topupUserId)
     expect(last.amount.toNumber()).toBe(100)
-    expect(last.balanceAfter.toNumber()).toBe(850.5)
+    expect(last.balanceAfter.toNumber()).toBe(INITIAL_ACCOUNT_BALANCE + 850.5)
   })
 
   it('retorna 400 para amount não positivo', async () => {
@@ -180,6 +182,100 @@ describe('POST /api/v1/portfolio/topup', () => {
       url: '/api/v1/portfolio/topup',
       payload: { amount: 100 },
     })
+    expect(res.statusCode).toBe(401)
+  })
+})
+
+// IP próprio por requisição: o rate-limit de escrita é por IP e este arquivo
+// já faz várias chamadas.
+describe('limite do total adicionado (POST /topup e GET /topup-limit)', () => {
+  const email = uniqueEmail('topup-limit')
+  let token = ''
+
+  beforeAll(async () => {
+    const { body } = await registerTestUser(app!, email)
+    token = body.accessToken
+  })
+
+  afterAll(async () => {
+    await deleteUser(email)
+  })
+
+  const topUp = (amount: number) =>
+    app!.inject({
+      method: 'POST',
+      url: '/api/v1/portfolio/topup',
+      headers: { authorization: `Bearer ${token}` },
+      remoteAddress: uniqueIp(),
+      payload: { amount },
+    })
+
+  const limit = async () => {
+    const res = await app!.inject({
+      method: 'GET',
+      url: '/api/v1/portfolio/topup-limit',
+      headers: { authorization: `Bearer ${token}` },
+      remoteAddress: uniqueIp(),
+    })
+    expect(res.statusCode).toBe(200)
+    return res.json()
+  }
+
+  it('conta nova tem o limite inteiro: o saldo inicial não conta como top-up', async () => {
+    expect(await limit()).toEqual({ limit: MAX_TOTAL_TOP_UP, used: 0, remaining: MAX_TOTAL_TOP_UP })
+  })
+
+  it('recusa (422) o que passa do restante e aceita exatamente o restante', async () => {
+    expect((await topUp(MAX_TOTAL_TOP_UP - 100)).statusCode).toBe(200)
+    expect(await limit()).toMatchObject({ used: MAX_TOTAL_TOP_UP - 100, remaining: 100 })
+
+    const over = await topUp(100.01)
+    expect(over.statusCode).toBe(422)
+    expect(over.json()).toMatchObject({ error: 'TOPUP_LIMIT_EXCEEDED' })
+    expect(over.json().message).toContain('R$ 100,00')
+
+    expect((await topUp(100)).statusCode).toBe(200)
+    expect(await limit()).toMatchObject({ used: MAX_TOTAL_TOP_UP, remaining: 0 })
+  })
+
+  it('com o limite esgotado, qualquer top-up é recusado sem mudar o saldo', async () => {
+    const res = await topUp(0.01)
+    expect(res.statusCode).toBe(422)
+    expect(res.json()).toMatchObject({ error: 'TOPUP_LIMIT_EXCEEDED' })
+
+    const portfolio = await app!.inject({
+      method: 'GET',
+      url: '/api/v1/portfolio',
+      headers: { authorization: `Bearer ${token}` },
+      remoteAddress: uniqueIp(),
+    })
+    expect(portfolio.json().balance).toBe(INITIAL_ACCOUNT_BALANCE + MAX_TOTAL_TOP_UP)
+  })
+
+  it('top-ups simultâneos não furam o teto', async () => {
+    const otherEmail = uniqueEmail('topup-race')
+    const { body } = await registerTestUser(app!, otherEmail)
+    try {
+      const results = await Promise.all(
+        [0, 1, 2].map(() =>
+          app!.inject({
+            method: 'POST',
+            url: '/api/v1/portfolio/topup',
+            headers: { authorization: `Bearer ${body.accessToken}` },
+            remoteAddress: uniqueIp(),
+            payload: { amount: MAX_TOTAL_TOP_UP / 2 },
+          })
+        )
+      )
+      expect(results.filter((res) => res.statusCode === 200)).toHaveLength(2)
+      expect(results.filter((res) => res.statusCode === 422)).toHaveLength(1)
+    } finally {
+      await deleteUser(otherEmail)
+    }
+  })
+
+  it('GET /topup-limit exige autenticação (401)', async () => {
+    const res = await app!.inject({ method: 'GET', url: '/api/v1/portfolio/topup-limit' })
     expect(res.statusCode).toBe(401)
   })
 })

@@ -1,98 +1,111 @@
-import { Lightbulb } from "lucide-react";
-import { StatusBadge } from "@/components/StatusBadge";
+import { Link } from "react-router-dom";
+import { Compass, Lightbulb } from "lucide-react";
+import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
+import { ErrorState } from "@/components/ErrorState";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AllocationBars } from "@/components/investor-profile/AllocationBars";
+import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
+import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
 
-type TagColor = "brand-secondary" | "brand-primary" | "brand-danger";
-
-interface Recommendation {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  tagColor: TagColor;
-}
-
-// Conteúdo ILUSTRATIVO: não vem de nenhuma análise nem do perfil do usuário.
-const EXAMPLE_RECOMMENDATIONS: Recommendation[] = [
-  {
-    id: 1,
-    title: "Considere diversificar em REITs",
-    description: "Fundos imobiliários podem equilibrar um portfólio concentrado em poucos ativos",
-    category: "Diversificação",
-    tagColor: "brand-secondary",
-  },
-  {
-    id: 2,
-    title: "Momento favorável para ações de tecnologia",
-    description: "Análise técnica indica tendência de alta no setor",
-    category: "Oportunidade",
-    tagColor: "brand-primary",
-  },
-  {
-    id: 3,
-    title: "Reduzir exposição em commodities",
-    description: "Volatilidade elevada prevista para os próximos meses",
-    category: "Risco",
-    tagColor: "brand-danger",
-  },
-  {
-    id: 4,
-    title: "Títulos do Tesouro para reserva de emergência",
-    description: "Rentabilidade em alta e liquidez diária costumam combinar com uma reserva de emergência",
-    category: "Oportunidade",
-    tagColor: "brand-primary",
-  },
-  {
-    id: 5,
-    title: "Considerar ETFs internacionais para proteção cambial",
-    description: "Exposição ao dólar pode proteger o patrimônio em cenário de incerteza",
-    category: "Diversificação",
-    tagColor: "brand-secondary",
-  },
-];
-
-const TAG_STYLES: Record<TagColor, string> = {
-  "brand-secondary": "bg-brand-secondary/80 text-white",
-  "brand-primary": "bg-primary-solid text-primary-foreground",
-  "brand-danger": "bg-destructive-solid text-destructive-foreground",
+const CATEGORY_BADGES: Record<RecommendationCategory, { label: string; tone: StatusTone }> = {
+  PROFILE: { label: "Perfil", tone: "info" },
+  DIVERSIFICATION: { label: "Diversificação", tone: "purple" },
+  OPPORTUNITY: { label: "Oportunidade", tone: "success" },
+  RISK: { label: "Risco", tone: "danger" },
+  ALIGNED: { label: "Em dia", tone: "success" },
 };
 
+const PROFILE_LINK_CLASS =
+  "min-h-11 inline-flex items-center gap-2 rounded-xl text-sm font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+// Sugestões do servidor: comparam a carteira com a carteira de referência do
+// perfil de investidor. Conteúdo educativo, não recomendação de investimento.
 export function Recommendations() {
+  const { data, error, isLoading, refetch } = useRecommendations();
+
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-8">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
-          <div className="flex items-center gap-2">
-            <Lightbulb size={24} className="text-brand-primary" />
-            <h2 className="text-2xl font-bold text-foreground">Exemplos de recomendações</h2>
-          </div>
-          <StatusBadge label="Exemplo" tone="warning" />
+      <header className="mb-8 space-y-2">
+        <div className="flex items-center gap-2">
+          <Lightbulb size={24} className="text-brand-primary" aria-hidden="true" />
+          <h2 className="text-2xl font-bold text-foreground">Recomendações</h2>
         </div>
         <p role="note" className="text-muted-foreground text-sm">
-          Conteúdo ilustrativo, para mostrar como as recomendações aparecerão. Não é uma recomendação
-          personalizada nem uma recomendação de investimento.
+          Sugestões educativas geradas por regras, a partir do seu perfil de investidor e da sua
+          carteira. Não são uma recomendação de investimento.
         </p>
       </header>
 
-      <div className="space-y-4">
-        {EXAMPLE_RECOMMENDATIONS.map((rec) => (
-          <article
-            key={rec.id}
-            className="bg-surface-1 border border-border p-5 rounded-2xl"
-          >
-            <div className="flex justify-between items-start gap-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-foreground mb-2">{rec.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{rec.description}</p>
+      {isLoading ? (
+        <RecommendationsSkeleton />
+      ) : error || !data ? (
+        <ErrorState message="Não foi possível carregar as recomendações." onRetry={() => void refetch()} />
+      ) : (
+        <div className="grid gap-6 nav:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] nav:items-start">
+          <section aria-label="Sugestões" className="space-y-4">
+            {data.items.map((item) => (
+              <RecommendationCard key={item.id} item={item} />
+            ))}
+          </section>
+
+          {data.profile && (
+            <aside className="space-y-5 rounded-2xl border border-border bg-surface-1 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground">Seu perfil</p>
+                  <p className="text-xl font-bold text-foreground">{INVESTOR_PROFILE_LABELS[data.profile]}</p>
+                </div>
+                <Compass size={20} className="text-brand-primary" aria-hidden="true" />
               </div>
-              <span
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${TAG_STYLES[rec.tagColor]}`}
-              >
-                {rec.category}
-              </span>
-            </div>
-          </article>
-        ))}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-foreground">Sua carteira x referência</h3>
+                <AllocationBars rows={data.allocation} />
+                <p className="text-xs text-muted-foreground">
+                  A barra mostra quanto você tem hoje em cada classe (sobre o total investido); o traço
+                  marca a referência do seu perfil.
+                </p>
+              </div>
+              <Link to="/profile/investor-profile" className={PROFILE_LINK_CLASS}>
+                Ver ou refazer meu perfil
+              </Link>
+            </aside>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
+  const badge = CATEGORY_BADGES[item.category];
+  return (
+    <article className="rounded-2xl border border-border bg-surface-1 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-2 text-lg font-bold text-foreground">{item.title}</h3>
+          <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+        </div>
+        <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />
       </div>
+      {item.category === "PROFILE" && (
+        <Link
+          to="/profile/investor-profile"
+          className="mt-4 min-h-11 inline-flex items-center gap-2 rounded-xl bg-primary-solid px-4 text-sm font-bold text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Compass size={16} aria-hidden="true" />
+          Responder o questionário
+        </Link>
+      )}
+    </article>
+  );
+}
+
+function RecommendationsSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+      ))}
     </div>
   );
 }
