@@ -24,20 +24,24 @@ const SERIES_METRIC_NAMES = new Set([
 ]);
 const PENDING_VALUE = "—";
 
+// A API manda VaR, drawdown, volatilidade e concentração (HHI) como proporção (0,02 = 2%).
+// Formatar direto como "%" mostrava o risco 100 vezes menor.
+const toPct = (proportion: number) => proportion * 100;
+
 const METRICS: MetricConfig[] = [
   {
     key: "var95",
     label: "VaR 95%",
-    format: (v) => formatPercent(v),
+    format: (v) => formatPercent(toPct(v)),
     good: "lower",
-    barValue: (v) => Math.min(100, Math.max(0, v * 2)),
+    barValue: (v) => Math.min(100, Math.max(0, toPct(v) * 2)),
   },
   {
     key: "maxDrawdown",
     label: "Drawdown Máx.",
-    format: (v) => formatPercent(v),
+    format: (v) => formatPercent(toPct(v)),
     good: "lower",
-    barValue: (v) => Math.min(100, Math.max(0, v * 2)),
+    barValue: (v) => Math.min(100, Math.max(0, toPct(v) * 2)),
   },
   {
     key: "sharpe",
@@ -49,9 +53,9 @@ const METRICS: MetricConfig[] = [
   {
     key: "volatility",
     label: "Volatilidade",
-    format: (v) => formatPercent(v),
+    format: (v) => formatPercent(toPct(v)),
     good: "lower",
-    barValue: (v) => Math.min(100, Math.max(0, (v / 50) * 100)),
+    barValue: (v) => Math.min(100, Math.max(0, (toPct(v) / 50) * 100)),
   },
 ];
 
@@ -247,7 +251,8 @@ export function RiskMetrics() {
 
         {data.concentration !== undefined &&
           (() => {
-            const isGood = data.concentration! <= 50;
+            const concentrationPct = toPct(data.concentration!);
+            const isGood = concentrationPct <= 50;
             return (
               <div className="p-5 rounded-2xl border border-border bg-surface-1">
                 <div className="flex justify-between items-start mb-2">
@@ -259,14 +264,14 @@ export function RiskMetrics() {
                       isGood ? "text-brand-primary" : "text-destructive"
                     }`}
                   >
-                    {formatPercent(data.concentration!, { decimals: 1 })}
+                    {formatPercent(concentrationPct, { decimals: 1 })}
                   </span>
                 </div>
                 <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${isGood ? "bg-brand-primary" : "bg-destructive"}`}
                     style={{
-                      width: `${Math.min(100, Math.max(0, data.concentration!))}%`,
+                      width: `${Math.min(100, Math.max(0, concentrationPct))}%`,
                     }}
                   />
                 </div>

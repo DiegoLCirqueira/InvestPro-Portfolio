@@ -2,11 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Info, LogIn, Receipt } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -42,30 +38,33 @@ const STATUS_CONFIG: Record<
   FAILED: { label: "Falhou", tone: "danger" },
 };
 
-// Ajuda do TED/DOC: o Tooltip do Radix só abre com hover/foco; aqui o toque também abre e fecha,
-// senão no celular a explicação fica inacessível.
+// Ajuda do TED/DOC em Popover (abre e fecha no clique/toque). O Tooltip do Radix fecha no
+// pointerdown do próprio gatilho e só abre com hover/foco: no celular a explicação não aparecia.
 function TransferTypeHelp({ label, help }: { label: string; help: string }) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <Tooltip open={open} onOpenChange={setOpen}>
-      <TooltipTrigger asChild>
+    <PopoverPrimitive.Root>
+      <PopoverPrimitive.Trigger asChild>
         <button
           type="button"
-          onClick={(e) => {
-            // preventDefault impede o Tooltip de fechar no clique (comportamento padrão dele).
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen((current) => !current);
-          }}
+          // O ícone fica dentro do botão do tipo (TED/DOC): o clique não pode selecioná-lo.
+          onClick={(e) => e.stopPropagation()}
           aria-label={`Saiba mais sobre ${label}`}
           className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Info size={13} />
         </button>
-      </TooltipTrigger>
-      <TooltipContent>{help}</TooltipContent>
-    </Tooltip>
+      </PopoverPrimitive.Trigger>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          side="top"
+          sideOffset={4}
+          collisionPadding={16}
+          className="z-50 max-w-64 rounded-md border border-border bg-surface-3 px-3 py-1.5 text-xs text-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+        >
+          {help}
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
   );
 }
 

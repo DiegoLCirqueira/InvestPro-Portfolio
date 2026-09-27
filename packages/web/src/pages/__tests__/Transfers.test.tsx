@@ -279,14 +279,22 @@ describe("Transferências: ajuda do TED/DOC", () => {
       name: "Saiba mais sobre TED",
     });
 
-    fireEvent.click(helpButton);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      /bancos diferentes/,
-    );
+    // Sequência real do navegador (pressionar e depois clicar): só o click, sem pointerdown,
+    // escondia que o Tooltip do Radix se fechava no pointerdown do próprio gatilho.
+    const tap = () => {
+      fireEvent.pointerDown(helpButton, { button: 0, pointerType: "touch" });
+      fireEvent.mouseDown(helpButton, { button: 0 });
+      fireEvent.pointerUp(helpButton, { button: 0, pointerType: "touch" });
+      fireEvent.mouseUp(helpButton, { button: 0 });
+      fireEvent.click(helpButton);
+    };
 
-    fireEvent.click(helpButton);
+    tap();
+    expect(await screen.findByText(/bancos diferentes/)).toBeInTheDocument();
+
+    tap();
     await vi.waitFor(() =>
-      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument(),
+      expect(screen.queryByText(/bancos diferentes/)).not.toBeInTheDocument(),
     );
   });
 });

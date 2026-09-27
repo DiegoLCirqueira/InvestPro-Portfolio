@@ -11,7 +11,7 @@ import { usePortfolio } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { CurrencyHoldingsCard } from "@/components/diversification/CurrencyHoldingsCard";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatPercent } from "@/lib/format";
 import type {
   DiversificationCategory,
   PortfolioDiversificationItem,
@@ -183,11 +183,13 @@ export function Diversification() {
                   formatter={(value, entry) => (
                     <span className="text-muted-foreground text-xs">
                       {value} —{" "}
-                      {String(
-                        (entry?.payload as Record<string, unknown>)
-                          ?.percentage ?? "",
+                      {formatPercent(
+                        Number(
+                          (entry?.payload as Partial<ChartDatum> | undefined)
+                            ?.percentage ?? 0,
+                        ),
+                        { decimals: 1 },
                       )}
-                      %
                     </span>
                   )}
                 />
