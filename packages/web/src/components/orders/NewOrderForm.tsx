@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField, fieldInputClassName } from "@/components/FormField";
@@ -9,13 +11,15 @@ import { useCreateOrder, useSellableAssets } from "@/hooks/use-orders";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useOrderForm } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
+import { ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { OrderType } from "@/types/order";
 
-const TYPE_OPTIONS: { value: OrderType; label: string }[] = [
-  { value: "MARKET", label: "Mercado" },
-  { value: "LIMIT", label: "Limitada" },
-  { value: "STOP", label: "Stop" },
-];
+const TYPE_OPTIONS = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map(
+  (value) => ({
+    value,
+    label: ORDER_TYPE_LABELS[value],
+  }),
+);
 
 interface NewOrderFormProps {
   onCreated: () => void;
@@ -30,22 +34,36 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     refetch: refetchSellableAssets,
   } = useSellableAssets();
 
+  const [searchParams] = useSearchParams();
+
   const form = useOrderForm({
     marketAssets: marketData?.items ?? [],
     isMarketLoading,
     sellableAssets,
     isSellableLoading,
+    initialTicker: searchParams.get("ticker") ?? undefined,
   });
 
-  const handleOrderError = useFinancialErrorHandler(["ORDER_INSUFFICIENT_BALANCE"]);
+  const handleOrderError = useFinancialErrorHandler([
+    "ORDER_INSUFFICIENT_BALANCE",
+  ]);
   const createOrder = useCreateOrder({
     onSuccess: () => toast.success("Ordem criada com sucesso!"),
     onError: handleOrderError,
   });
 
+  // Depois de uma tentativa de envio, os campos obrigatórios vazios ficam marcados na tela.
+  const [showRequired, setShowRequired] = useState(false);
+  const tickerRequired = showRequired && form.missingFields.ticker;
+  const quantityRequired = showRequired && form.missingFields.quantity;
+
   const submitOrder = async () => {
     const submitError = form.findSubmitError();
     if (submitError) {
+      if (form.missingFields.ticker || form.missingFields.quantity) {
+        setShowRequired(true);
+        return;
+      }
       toast.error(submitError);
       return;
     }
@@ -56,6 +74,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
       return;
     }
     form.reset();
+    setShowRequired(false);
     void refetchSellableAssets();
     onCreated();
   };
@@ -63,7 +82,9 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
   const handleSubmit = useSubmitOnce(submitOrder);
 
   const isSubmitBlocked =
-    createOrder.isPending || form.hasNothingToSell || form.quantityError !== null;
+    createOrder.isPending ||
+    form.hasNothingToSell ||
+    form.quantityError !== null;
 
   return (
     <form
@@ -95,6 +116,11 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
               placeholder="ex.: PETR4"
               className="uppercase"
             />
+            {tickerRequired && (
+              <p role="alert" className="text-xs text-destructive">
+                Escolha um ativo.
+              </p>
+            )}
             {form.isSell && sellableError && (
               <p className="text-xs text-destructive">
                 Não foi possível carregar seus ativos: {sellableError.message}
@@ -121,7 +147,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
           value={form.quantity}
           onChange={(e) => form.changeQuantity(e.target.value)}
           placeholder="0"
-          aria-invalid={form.quantityError !== null}
+          aria-invalid={form.quantityError !== null || quantityRequired}
           className={fieldInputClassName}
         />
         {form.quantityError && (
@@ -129,9 +155,18 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
             {form.quantityError}
           </p>
         )}
+        {quantityRequired && (
+          <p role="alert" className="text-xs text-destructive">
+            Informe uma quantidade maior que zero.
+          </p>
+        )}
       </FormField>
 
-      <OrderSummary side={form.side} settlement={form.settlement} isPriceEstimated={form.isPriceEstimated} />
+      <OrderSummary
+        side={form.side}
+        settlement={form.settlement}
+        isPriceEstimated={form.isPriceEstimated}
+      />
 
       {form.needsPrice && (
         <FormField label="Preço" htmlFor="order-price">

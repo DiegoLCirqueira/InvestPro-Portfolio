@@ -6,6 +6,7 @@
 
 import { Prisma } from '@prisma/client'
 import type { Order as PrismaOrder } from '@prisma/client'
+import { requiresWholeQuantity, WHOLE_QUANTITY_MESSAGE } from '@investpro/shared'
 import type {
   CreateOrderInput,
   Order,
@@ -225,6 +226,13 @@ export async function createOrder(userId: string, input: CreateOrderInput): Prom
   }
 
   const asset = resolveAsset(input)
+
+  if (input.side === 'BUY' && !Number.isInteger(input.quantity)) {
+    const meta = await getAssetMeta(asset.ticker)
+    if (meta && requiresWholeQuantity(meta.type)) {
+      throw new AppError('ORDER_INVALID', WHOLE_QUANTITY_MESSAGE, 400)
+    }
+  }
 
   // Preço corrente do ativo via Market (não requer DB; mercado usa cache/fallback).
   const quote = await getQuote(asset.ticker).catch((err) => {

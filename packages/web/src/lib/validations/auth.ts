@@ -2,14 +2,16 @@ import { z } from "zod";
 
 // O servidor normaliza o email (trim + minúsculas) antes de validar; o cliente não pode ser mais
 // rígido: o teclado do celular costuma deixar um espaço no fim ao autocompletar.
-const emailField = z.string().trim().min(1, "Email é obrigatório").email("Email inválido");
+const emailField = z
+  .string()
+  .trim()
+  .min(1, "Email é obrigatório")
+  .email("Email inválido");
 
 export const loginSchema = z.object({
   email: emailField,
-  password: z
-    .string()
-    .min(1, "Senha é obrigatória")
-    .min(6, "Senha deve ter pelo menos 6 caracteres"),
+  // No login só se exige a senha: a regra de tamanho é do cadastro (8) e o servidor diz se está errada.
+  password: z.string().min(1, "Senha é obrigatória"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -18,6 +20,7 @@ export const registerSchema = z
   .object({
     name: z
       .string()
+      .trim()
       .min(1, "Nome é obrigatório")
       .min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: emailField,
@@ -25,9 +28,7 @@ export const registerSchema = z
       .string()
       .min(1, "Senha é obrigatória")
       .min(8, "Senha deve ter pelo menos 8 caracteres"),
-    confirmPassword: z
-      .string()
-      .min(1, "Confirmação de senha é obrigatória"),
+    confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem",
@@ -48,9 +49,7 @@ export const resetPasswordSchema = z
       .string()
       .min(1, "Senha é obrigatória")
       .min(8, "Senha deve ter pelo menos 8 caracteres"),
-    confirmPassword: z
-      .string()
-      .min(1, "Confirmação de senha é obrigatória"),
+    confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem",

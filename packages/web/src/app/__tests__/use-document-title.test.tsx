@@ -28,19 +28,23 @@ describe("useDocumentTitle", () => {
     ["/", "Painel · InvestPro"],
     ["/market", "Análise de Mercado · InvestPro"],
     ["/diversification", "Diversificação · InvestPro"],
-  ])("rota do menu %s vira \"%s\"", (path, expected) => {
+  ])('rota do menu %s vira "%s"', (path, expected) => {
     renderAt(path);
     expect(document.title).toBe(expected);
   });
 
   it.each([
-    ["/profile", "InvestPro"],
-    ["/admin/users", "InvestPro"],
-    ["/rota-desconhecida", "InvestPro"],
-  ])("rota fora do menu (%s) usa só \"InvestPro\", sem inventar label", (path, expected) => {
-    renderAt(path);
-    expect(document.title).toBe(expected);
-  });
+    ["/profile", "Perfil · InvestPro"],
+    ["/admin/users", "Administração · InvestPro"],
+    ["/login", "Entrar · InvestPro"],
+    ["/rota-desconhecida", "Página não encontrada · InvestPro"],
+  ])(
+    'rota fora do menu (%s) também tem título próprio: "%s"',
+    (path, expected) => {
+      renderAt(path);
+      expect(document.title).toBe(expected);
+    },
+  );
 
   it("atualiza ao trocar de rota", async () => {
     const { findByRole } = renderAt("/");
@@ -48,6 +52,6 @@ describe("useDocumentTitle", () => {
 
     (await findByRole("button", { name: "navegar" })).click();
 
-    await vi.waitFor(() => expect(document.title).toBe("InvestPro"));
+    await vi.waitFor(() => expect(document.title).toBe("Perfil · InvestPro"));
   });
 });

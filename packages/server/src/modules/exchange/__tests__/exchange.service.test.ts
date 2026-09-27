@@ -89,6 +89,14 @@ describe('convert', () => {
     expect(result).toHaveProperty('timestamp')
   })
 
+  it('arredonda para baixo como a execução: a estimativa nunca promete mais do que será creditado', async () => {
+    // R$ 13 → USD: (13 - 1%) / 5,05 = 2,5485… — "nearest" daria 2,55, a execução credita 2,54.
+    const result = await convert('BRL', 'USD', 13)
+    const raw = 13 * 0.99 * result.rate
+    expect(Math.round(raw * 100) / 100).not.toBe(Math.floor(raw * 100) / 100)
+    expect(result.convertedAmount).toBe(Math.floor(raw * 100) / 100)
+  })
+
   it('mantém convertedAmount positivo para EUR→BRL', async () => {
     const result = await convert('EUR', 'BRL', 50)
     expect(result.convertedAmount).toBeGreaterThanOrEqual(0)

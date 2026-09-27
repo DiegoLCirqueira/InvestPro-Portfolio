@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Clock, ExternalLink, ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  Newspaper,
+} from "lucide-react";
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -31,12 +37,7 @@ export function News() {
   const [page, setPage] = useState(1);
   const topRef = useRef<HTMLDivElement>(null);
 
-  const {
-    data,
-    error,
-    isLoading,
-    refetch,
-  } = useNewsFeed({
+  const { data, error, isLoading, refetch } = useNewsFeed({
     category: filter === "ALL" ? undefined : filter,
     page,
   });
@@ -46,6 +47,16 @@ export function News() {
   }, [page]);
 
   const items = data?.items ?? [];
+  // Só filtros com notícia (mais o selecionado, para não sumir enquanto está ativo).
+  const availableCategories = data?.categories;
+  const visibleFilters = availableCategories
+    ? CATEGORY_FILTERS.filter(
+        (option) =>
+          option.value === "ALL" ||
+          option.value === filter ||
+          availableCategories.includes(option.value),
+      )
+    : CATEGORY_FILTERS;
   const totalPage = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
 
   if (isLoading) {
@@ -85,9 +96,11 @@ export function News() {
       </header>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORY_FILTERS.map((option) => (
+        {visibleFilters.map((option) => (
           <button
             key={option.value}
+            type="button"
+            aria-pressed={filter === option.value}
             onClick={() => {
               setFilter(option.value);
               setPage(1);
@@ -105,7 +118,10 @@ export function News() {
 
       <div className="grid gap-4">
         {items.length === 0 ? (
-          <EmptyState icon={Newspaper} message="Nenhuma notícia encontrada para esta categoria." />
+          <EmptyState
+            icon={Newspaper}
+            message="Nenhuma notícia encontrada para esta categoria."
+          />
         ) : (
           items.map((item) => (
             <a

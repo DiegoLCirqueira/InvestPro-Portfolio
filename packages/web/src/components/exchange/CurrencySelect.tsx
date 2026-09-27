@@ -29,8 +29,6 @@ export function CurrencySelect({
         options={options}
         value={value}
         onValueChange={onChange}
-        className="font-mono"
-        optionClassName="font-mono"
       />
     </FormField>
   );

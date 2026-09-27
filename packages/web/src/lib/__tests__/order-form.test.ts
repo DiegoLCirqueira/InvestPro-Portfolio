@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTickerOptions,
   findOwnedQuantity,
+  getBuyQuantityError,
   getSellQuantityError,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
@@ -9,8 +10,22 @@ import type { MarketAsset } from "@/types/market";
 import type { SellableAsset } from "@/types/order";
 
 const market: MarketAsset[] = [
-  { id: "1", ticker: "PETR4", name: "Petrobras", type: "STOCK", price: 30, change24h: 0 },
-  { id: "2", ticker: "BTC", name: "Bitcoin", type: "CRYPTO", price: 300000, change24h: 0 },
+  {
+    id: "1",
+    ticker: "PETR4",
+    name: "Petrobras",
+    type: "STOCK",
+    price: 30,
+    change24h: 0,
+  },
+  {
+    id: "2",
+    ticker: "BTC",
+    name: "Bitcoin",
+    type: "CRYPTO",
+    price: 300000,
+    change24h: 0,
+  },
 ];
 const sellable: SellableAsset[] = [{ ticker: "BTC", quantity: 0.5 }];
 
@@ -43,5 +58,20 @@ describe("order-form", () => {
     expect(sanitizeDecimalInput("1,5")).toBe("1.5");
     expect(sanitizeDecimalInput("")).toBe("");
     expect(sanitizeDecimalInput("abc")).toBeNull();
+  });
+});
+
+describe("getBuyQuantityError (compra fracionada)", () => {
+  it("ação só aceita quantidade inteira", () => {
+    expect(getBuyQuantityError(1.5, market[0])).toMatch(/quantidade inteira/);
+    expect(getBuyQuantityError(2, market[0])).toBeNull();
+  });
+
+  it("cripto aceita fração", () => {
+    expect(getBuyQuantityError(0.001, market[1])).toBeNull();
+  });
+
+  it("sem ativo escolhido ainda, não acusa nada", () => {
+    expect(getBuyQuantityError(1.5, undefined)).toBeNull();
   });
 });

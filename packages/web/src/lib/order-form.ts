@@ -1,7 +1,31 @@
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { formatQuantity } from "@/lib/format";
 import type { MarketAsset } from "@/types/market";
-import type { OrderSide, SellableAsset } from "@/types/order";
+import type { OrderSide, OrderType, SellableAsset } from "@/types/order";
+
+/** Nome do tipo de ordem na interface (o enum da API fica só no código). */
+export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  MARKET: "Mercado",
+  LIMIT: "Limitada",
+  STOP: "Stop",
+};
+
+// Mesma regra do @investpro/shared (order/order.schema.ts; o web não importa o shared):
+// ações e renda fixa só em unidades inteiras na compra; cripto aceita fração.
+const WHOLE_QUANTITY_ASSET_TYPES: readonly string[] = ["STOCK", "FIXED_INCOME"];
+
+export function getBuyQuantityError(
+  quantity: number,
+  asset: MarketAsset | undefined,
+): string | null {
+  if (
+    !asset ||
+    Number.isInteger(quantity) ||
+    !WHOLE_QUANTITY_ASSET_TYPES.includes(asset.type)
+  )
+    return null;
+  return "Ações e renda fixa só podem ser compradas em quantidade inteira.";
+}
 
 export function normalizeTicker(ticker: string): string {
   return ticker.trim().toUpperCase();
@@ -20,7 +44,10 @@ export function buildTickerOptions(
   const options =
     side === "SELL"
       ? sellableAssets.map((asset) =>
-          toTickerOption(asset.ticker, `Você possui ${formatQuantity(asset.quantity)}`),
+          toTickerOption(
+            asset.ticker,
+            `Você possui ${formatQuantity(asset.quantity)}`,
+          ),
         )
       : marketAssets.map((asset) => toTickerOption(asset.ticker, asset.name));
   return options.sort((a, b) => a.value.localeCompare(b.value));

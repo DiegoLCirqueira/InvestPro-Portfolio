@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -7,7 +8,10 @@ import { EstimatedPriceTag } from "@/components/market/EstimatedPriceTag";
 import { EstimatedPricesBanner } from "@/components/market/EstimatedPricesBanner";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { useMarketAssets } from "@/hooks/use-market-assets";
-import { formatCurrency, formatPercent as formatPercentValue } from "@/lib/format";
+import {
+  formatCurrency,
+  formatPercent as formatPercentValue,
+} from "@/lib/format";
 import { isEstimatedPrice } from "@/lib/market";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
 
@@ -26,7 +30,7 @@ const ASSET_TYPE_TONES: Record<MarketAssetType, StatusTone> = {
 const SENTIMENT_TONES: Record<string, StatusTone> = {
   Oportunidade: "success",
   Risco: "danger",
-  Neutral: "neutral",
+  Neutro: "neutral",
 };
 
 const TYPE_FILTERS: { value: MarketAssetType | "ALL"; label: string }[] = [
@@ -48,14 +52,30 @@ function sentimentFor(asset: MarketAsset): string {
   const pct = asset.changePercent ?? asset.change24h;
   if (pct > 1) return "Oportunidade";
   if (pct < 0) return "Risco";
-  return "Neutral";
+  return "Neutro";
+}
+
+// Variação zero é neutra: nem verde de alta nem vermelho de queda.
+function changeToneClass(asset: MarketAsset): string {
+  const pct = asset.changePercent ?? asset.change24h;
+  if (pct > 0) return "text-brand-primary";
+  if (pct < 0) return "text-destructive";
+  return "text-muted-foreground";
+}
+
+// Clicar no ativo leva ao formulário de ordem já com ele escolhido.
+function orderLinkFor(asset: MarketAsset): string {
+  return `/orders?ticker=${encodeURIComponent(asset.ticker)}`;
 }
 
 function AssetCard({ asset }: { asset: MarketAsset }) {
-  const isUp = (asset.changePercent ?? asset.change24h) >= 0;
   const sentiment = sentimentFor(asset);
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2">
+    <Link
+      to={orderLinkFor(asset)}
+      aria-label={`Negociar ${asset.ticker} (${asset.name})`}
+      className="block p-4 rounded-xl border border-border bg-surface-2 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{asset.ticker}</span>
@@ -65,7 +85,11 @@ function AssetCard({ asset }: { asset: MarketAsset }) {
             uniformWidth
           />
         </div>
-        <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />
+        <StatusBadge
+          label={sentiment}
+          tone={SENTIMENT_TONES[sentiment]}
+          uniformWidth
+        />
       </div>
       <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
         {asset.name}
@@ -78,26 +102,19 @@ function AssetCard({ asset }: { asset: MarketAsset }) {
           {isEstimatedPrice(asset) && <EstimatedPriceTag />}
         </span>
         <span
-          className={`text-sm font-bold tabular-nums ${
-            isUp ? "text-brand-primary" : "text-destructive"
-          }`}
+          className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
         >
           {formatPercent(asset.changePercent)}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
 export function MarketAnalysis() {
   const [filter, setFilter] = useState<MarketAssetType | "ALL">("ALL");
 
-  const {
-    data,
-    error,
-    isLoading,
-    refetch,
-  } = useMarketAssets({
+  const { data, error, isLoading, refetch } = useMarketAssets({
     type: filter === "ALL" ? undefined : filter,
   });
 
@@ -105,7 +122,10 @@ export function MarketAnalysis() {
 
   const hasEstimatedPrices = assets.some(isEstimatedPrice);
   const highlights = [...assets]
-    .sort((a, b) => (b.changePercent ?? b.change24h) - (a.changePercent ?? a.change24h))
+    .sort(
+      (a, b) =>
+        (b.changePercent ?? b.change24h) - (a.changePercent ?? a.change24h),
+    )
     .slice(0, 3);
 
   if (isLoading) {
@@ -162,7 +182,6 @@ export function MarketAnalysis() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {highlights.map((index) => {
-          const isUp = (index.changePercent ?? index.change24h) >= 0;
           return (
             <div
               key={index.ticker}
@@ -171,7 +190,7 @@ export function MarketAnalysis() {
               <h4 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                 {index.ticker}
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-secondary border border-border">
-                  {index.type}
+                  {ASSET_TYPE_LABELS[index.type]}
                 </span>
               </h4>
 
@@ -183,14 +202,12 @@ export function MarketAnalysis() {
                   {isEstimatedPrice(index) && <EstimatedPriceTag />}
                 </div>
                 <div
-                  className={`flex items-center gap-2 text-sm font-semibold ${
-                    isUp ? "text-brand-primary" : "text-destructive"
-                  }`}
+                  className={`flex items-center gap-2 text-sm font-semibold ${changeToneClass(
+                    index,
+                  )}`}
                 >
                   <span>{formatPercent(index.changePercent)}</span>
-                  <span className="opacity-50 font-normal">
-                    ({index.name})
-                  </span>
+                  <span className="opacity-50 font-normal">({index.name})</span>
                 </div>
               </div>
             </div>
@@ -208,7 +225,10 @@ export function MarketAnalysis() {
 
         <div className="nav:max-h-[440px] overflow-y-auto pr-2 custom-scrollbar">
           {assets.length === 0 ? (
-            <EmptyState icon={SearchX} message="Nenhum ativo encontrado para este filtro." />
+            <EmptyState
+              icon={SearchX}
+              message="Nenhum ativo encontrado para este filtro."
+            />
           ) : (
             <>
               {/* Mobile/tablet (abaixo de nav): cards. A tabela exige largura para as colunas fazerem sentido. */}
@@ -240,18 +260,22 @@ export function MarketAnalysis() {
                 </thead>
                 <tbody>
                   {assets.map((asset) => {
-                    const isUp = (asset.changePercent ?? asset.change24h) >= 0;
                     const sentiment = sentimentFor(asset);
                     return (
                       <tr
                         key={asset.id}
-                        className="bg-secondary/40 hover:bg-secondary/70 transition-colors"
+                        className="relative bg-secondary/40 hover:bg-secondary/70 transition-colors"
                       >
                         <td className="py-3 pl-4 rounded-l-xl border-y border-l border-transparent">
                           <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-sm text-foreground transition-colors truncate">
+                            {/* after:inset-0 estica o link pela linha toda: um único link por ativo. */}
+                            <Link
+                              to={orderLinkFor(asset)}
+                              aria-label={`Negociar ${asset.ticker} (${asset.name})`}
+                              className="font-bold text-sm text-foreground transition-colors truncate after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                            >
                               {asset.ticker}
-                            </span>
+                            </Link>
                             <span className="text-[10px] text-muted-foreground font-medium truncate">
                               {asset.name}
                             </span>
@@ -271,14 +295,18 @@ export function MarketAnalysis() {
                           />
                         </td>
                         <td
-                          className={`py-3 text-sm font-bold tabular-nums truncate ${
-                            isUp ? "text-brand-primary" : "text-destructive"
-                          }`}
+                          className={`py-3 text-sm font-bold tabular-nums truncate ${changeToneClass(
+                            asset,
+                          )}`}
                         >
                           {formatPercent(asset.changePercent)}
                         </td>
                         <td className="py-3 pr-4 rounded-r-xl text-right border-y border-r border-transparent">
-                          <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />
+                          <StatusBadge
+                            label={sentiment}
+                            tone={SENTIMENT_TONES[sentiment]}
+                            uniformWidth
+                          />
                         </td>
                       </tr>
                     );

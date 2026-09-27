@@ -1,13 +1,27 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { ChevronLeft, ChevronRight, Compass, ShieldCheck, Wallet, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  ShieldCheck,
+  Wallet,
+  X,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import type { UpdateProfileInput } from "@/hooks/use-profile";
-import { usePortfolioPositions, useTopUpLimit, useTopUpPortfolio } from "@/hooks/usePortfolio";
-import { INVESTOR_PROFILE_LABELS, useInvestorProfile } from "@/hooks/use-investor-profile";
+import {
+  usePortfolioPositions,
+  useTopUpLimit,
+  useTopUpPortfolio,
+} from "@/hooks/usePortfolio";
+import {
+  INVESTOR_PROFILE_LABELS,
+  useInvestorProfile,
+} from "@/hooks/use-investor-profile";
 import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
@@ -57,7 +71,9 @@ function TopUpCard() {
       return;
     }
     if (remaining !== undefined && amountInput.amount > remaining) {
-      toast.error(`Você ainda pode adicionar até ${formatCurrency(remaining)}.`);
+      toast.error(
+        `Você ainda pode adicionar até ${formatCurrency(remaining)}.`,
+      );
       return;
     }
     try {
@@ -74,7 +90,9 @@ function TopUpCard() {
       <div className="flex items-center gap-3">
         <Wallet size={18} className="text-primary" />
         <div>
-          <p className="text-sm font-medium text-foreground">Simular Depósito</p>
+          <p className="text-sm font-medium text-foreground">
+            Simular Depósito
+          </p>
           <p className="text-xs text-muted-foreground">
             Funcionalidade de demonstração — não representa um pagamento real.
           </p>
@@ -110,6 +128,7 @@ function TopUpCard() {
           inputMode="numeric"
           value={amountInput.displayValue}
           onChange={amountInput.onChange}
+          onPaste={amountInput.onPaste}
           aria-label="Valor a adicionar"
           disabled={isLimitReached}
           className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-input text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
@@ -145,7 +164,11 @@ function InvestorProfileLink() {
             : "Descubra seu perfil em 7 perguntas"}
         </span>
       </span>
-      <ChevronRight size={18} className="text-muted-foreground" aria-hidden="true" />
+      <ChevronRight
+        size={18}
+        className="text-muted-foreground"
+        aria-hidden="true"
+      />
     </Link>
   );
 }
@@ -161,6 +184,11 @@ export function UserProfile() {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  // Erros de validação ficam abaixo de cada campo (todos de uma vez), não em toasts um por vez.
+  const [fieldErrors, setFieldErrors] = useState<{
+    fullName?: string;
+    phone?: string;
+  }>({});
   // Copia o perfil carregado para o formulário (uma vez por versão do perfil).
   const [syncedProfile, setSyncedProfile] = useState(profile);
   if (profile && profile !== syncedProfile) {
@@ -188,18 +216,23 @@ export function UserProfile() {
     const trimmedName = fullName.trim();
     const trimmedPhone = phone.trim();
 
-    if (trimmedName.length < 2) {
-      toast.error("Nome deve ter pelo menos 2 caracteres.");
-      return;
-    }
-    if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
-      toast.error("Telefone inválido. Use apenas números (10 a 15 dígitos), com +DDI opcional.");
-      return;
-    }
+    const errors = {
+      fullName:
+        trimmedName.length < 2
+          ? "Nome deve ter pelo menos 2 caracteres."
+          : undefined,
+      phone:
+        trimmedPhone && !PHONE_REGEX.test(trimmedPhone)
+          ? "Telefone inválido. Use apenas números (10 a 15 dígitos), com +DDI opcional."
+          : undefined,
+    };
+    setFieldErrors(errors);
+    if (errors.fullName || errors.phone) return;
 
     const payload: UpdateProfileInput = {};
     if (trimmedName !== profile.fullName) payload.fullName = trimmedName;
-    if (trimmedPhone && trimmedPhone !== (profile.phone ?? "")) payload.phone = trimmedPhone;
+    if (trimmedPhone && trimmedPhone !== (profile.phone ?? ""))
+      payload.phone = trimmedPhone;
 
     if (Object.keys(payload).length === 0) {
       toast("Nenhuma alteração para salvar.");
@@ -227,7 +260,13 @@ export function UserProfile() {
   ) : (
     <>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <ProfileField label="Nome Completo" value={fullName} onChange={setFullName} editable />
+        <ProfileField
+          label="Nome Completo"
+          value={fullName}
+          onChange={setFullName}
+          editable
+          error={fieldErrors.fullName}
+        />
         <ProfileField label="Email" value={profile.email} />
         <ProfileField
           label="Telefone"
@@ -235,6 +274,7 @@ export function UserProfile() {
           onChange={setPhone}
           editable
           placeholder="+5511999999999"
+          error={fieldErrors.phone}
         />
 
         <button
@@ -247,7 +287,11 @@ export function UserProfile() {
       </form>
 
       <div className="mt-6">
-        <CpfSection savedCpf={profile.cpf} onAlreadySet={refetch} shouldFocus={shouldFocusCpf} />
+        <CpfSection
+          savedCpf={profile.cpf}
+          onAlreadySet={refetch}
+          shouldFocus={shouldFocusCpf}
+        />
       </div>
 
       <div className="mt-6 space-y-3">
@@ -282,7 +326,9 @@ export function UserProfile() {
           </button>
 
           <div className="flex items-center justify-between mb-6 nav:mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Perfil do Usuário</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              Perfil do Usuário
+            </h2>
             <button
               onClick={() => navigate("/")}
               className="hidden nav:block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

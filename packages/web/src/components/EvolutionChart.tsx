@@ -7,7 +7,10 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import type { PortfolioHistoryPoint, PortfolioIntradayPoint } from "@/types/portfolio";
+import type {
+  PortfolioHistoryPoint,
+  PortfolioIntradayPoint,
+} from "@/types/portfolio";
 
 interface EvolutionChartProps {
   data: PortfolioHistoryPoint[];
@@ -21,13 +24,41 @@ interface ChartPoint {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    value,
+  );
+
+// Eixo Y: inteiro com separador de milhar ("R$ 10.110"). A partir de 1 milhão abrevia para
+// caber na largura do eixo ("R$ 3,01 mi"); o compacto em todos os valores repetiria o mesmo
+// rótulo quando a variação do período é pequena.
+const axisFormat = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  maximumFractionDigits: 0,
+});
+const axisFormatMillions = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const formatAxisCurrency = (value: number) =>
+  Math.abs(value) >= 1_000_000
+    ? axisFormatMillions.format(value)
+    : axisFormat.format(value);
 
 const formatDay = (isoDay: string) =>
-  new Date(`${isoDay}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  new Date(`${isoDay}T12:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
 
 const formatTime = (isoInstant: string) =>
-  new Date(isoInstant).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  new Date(isoInstant).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 // Altura mínima menor no desktop (nav:min-h-40): lá o gráfico já ocupa o
 // espaço livre (flex-1); em telas baixas ele encolhe para o Painel caber sem
@@ -57,8 +88,16 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
         <AreaChart data={points}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+              <stop
+                offset="5%"
+                stopColor="var(--color-primary)"
+                stopOpacity={0.3}
+              />
+              <stop
+                offset="95%"
+                stopColor="var(--color-primary)"
+                stopOpacity={0}
+              />
             </linearGradient>
           </defs>
 
@@ -69,12 +108,12 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
           />
           <XAxis dataKey="label" hide />
           <YAxis
-            width={60}
+            width={76}
             domain={["auto", "auto"]}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
-            tickFormatter={(value: number) => `R$${value}`}
+            tickFormatter={formatAxisCurrency}
           />
 
           <Tooltip

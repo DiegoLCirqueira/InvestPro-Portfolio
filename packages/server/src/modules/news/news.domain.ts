@@ -73,8 +73,12 @@ export function stripHtml(value: string): string {
   return decodeHtmlEntities(withoutTags).replace(/\s+/g, ' ').trim()
 }
 
+// Rodapé que o WordPress anexa ao RSS ("The post X appeared first on Y." / "O post X apareceu
+// primeiro em Y."): não faz parte da notícia e ocupava o resumo.
+const FEED_FOOTER = /\s*(?:The post .+ appeared first on|O post .+ apareceu primeiro em) .+$/i
+
 export function summarize(value: string, maxLength = 240): string {
-  const cleaned = stripHtml(value)
+  const cleaned = stripHtml(value).replace(FEED_FOOTER, '').trim()
   if (cleaned.length <= maxLength) return cleaned
   const truncated = cleaned.slice(0, maxLength)
   const lastSpace = truncated.lastIndexOf(' ')

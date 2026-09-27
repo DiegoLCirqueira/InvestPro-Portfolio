@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { useRisk } from "@/hooks/use-risk";
 import { ApiError } from "@/services/api";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDecimal, formatPercent } from "@/lib/format";
 import type { RiskReport } from "@/types/risk";
 
 interface MetricConfig {
@@ -15,34 +15,43 @@ interface MetricConfig {
   barValue: (v: number) => number;
 }
 
+// Métricas de série: com pouco histórico o valor é só um 0 sem significado.
+const SERIES_METRIC_NAMES = new Set([
+  "VaR 95%",
+  "Volatilidade anual",
+  "Drawdown máximo",
+  "Sharpe",
+]);
+const PENDING_VALUE = "—";
+
 const METRICS: MetricConfig[] = [
   {
     key: "var95",
     label: "VaR 95%",
-    format: (v) => v.toFixed(2) + "%",
+    format: (v) => formatPercent(v),
     good: "lower",
     barValue: (v) => Math.min(100, Math.max(0, v * 2)),
   },
   {
     key: "maxDrawdown",
     label: "Drawdown Máx.",
-    format: (v) => v.toFixed(2) + "%",
+    format: (v) => formatPercent(v),
     good: "lower",
     barValue: (v) => Math.min(100, Math.max(0, v * 2)),
   },
   {
     key: "sharpe",
     label: "Sharpe",
-    format: (v) => v.toFixed(2),
+    format: (v) => formatDecimal(v),
     good: "higher",
-    barValue: (v) => Math.min(100, Math.max(0, (v + 3) / 6 * 100)),
+    barValue: (v) => Math.min(100, Math.max(0, ((v + 3) / 6) * 100)),
   },
   {
     key: "volatility",
     label: "Volatilidade",
-    format: (v) => v.toFixed(2) + "%",
+    format: (v) => formatPercent(v),
     good: "lower",
-    barValue: (v) => Math.min(100, Math.max(0, v / 50 * 100)),
+    barValue: (v) => Math.min(100, Math.max(0, (v / 50) * 100)),
   },
 ];
 
@@ -72,7 +81,7 @@ export function RiskMetrics() {
           ? { ...m, format: config.format, good: config.good }
           : {
               ...m,
-              format: (v: number) => String(v),
+              format: (v: number) => formatDecimal(v, 4),
               good: null as "higher" | "lower" | null,
             };
       })
@@ -135,13 +144,17 @@ export function RiskMetrics() {
           role="status"
           className="flex gap-3 p-4 mb-6 rounded-2xl border border-border bg-surface-1 text-sm text-muted-foreground"
         >
-          <ShieldQuestion size={18} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+          <ShieldQuestion
+            size={18}
+            className="mt-0.5 shrink-0 text-warning"
+            aria-hidden="true"
+          />
           <p>
             Ainda há poucos dias de histórico do seu patrimônio
-            {data.historyDays ? ` (${data.historyDays} até agora)` : ""}. VaR, volatilidade,
-            drawdown e Sharpe precisam de cerca de 3 semanas de dados reais para
-            significar algo, então a nota de risco aparece depois disso. A
-            concentração da carteira já está disponível.
+            {data.historyDays ? ` (${data.historyDays} até agora)` : ""}. VaR,
+            volatilidade, drawdown e Sharpe precisam de cerca de 3 semanas de
+            dados reais para significar algo, então a nota de risco aparece
+            depois disso. A concentração da carteira já está disponível.
           </p>
         </div>
       )}
@@ -199,7 +212,13 @@ export function RiskMetrics() {
         {METRICS.map((metric) => {
           const value = data[metric.key];
           if (typeof value !== "number") return null;
+          const pending = data.insufficientHistory === true;
           const isGood = metric.good === "higher" ? value >= 0 : value <= 0;
+          const valueColor = pending
+            ? "text-muted-foreground"
+            : isGood
+              ? "text-brand-primary"
+              : "text-destructive";
           const barColor = isGood ? "bg-brand-primary" : "bg-destructive";
           return (
             <div
@@ -211,17 +230,15 @@ export function RiskMetrics() {
                   {metric.label}
                 </span>
                 <span
-                  className={`text-lg font-black tabular-nums ${
-                    isGood ? "text-brand-primary" : "text-destructive"
-                  }`}
+                  className={`text-lg font-black tabular-nums ${valueColor}`}
                 >
-                  {metric.format(value)}
+                  {pending ? PENDING_VALUE : metric.format(value)}
                 </span>
               </div>
               <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                  style={{ width: `${metric.barValue(value)}%` }}
+                  style={{ width: `${pending ? 0 : metric.barValue(value)}%` }}
                 />
               </div>
             </div>
@@ -242,7 +259,7 @@ export function RiskMetrics() {
                       isGood ? "text-brand-primary" : "text-destructive"
                     }`}
                   >
-                    {data.concentration!.toFixed(1)}%
+                    {formatPercent(data.concentration!, { decimals: 1 })}
                   </span>
                 </div>
                 <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -280,11 +297,16 @@ export function RiskMetrics() {
                     {String(m.metric)}
                   </p>
                   {m.description && (
-                    <p className="text-[10px] text-muted-foreground">{m.description}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {m.description}
+                    </p>
                   )}
                 </div>
                 <span className="font-bold text-foreground tabular-nums text-sm">
-                  {m.format(m.value)}
+                  {data.insufficientHistory &&
+                  SERIES_METRIC_NAMES.has(String(m.metric))
+                    ? PENDING_VALUE
+                    : m.format(m.value)}
                 </span>
               </div>
             ))}

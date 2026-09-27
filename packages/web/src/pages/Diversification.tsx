@@ -66,9 +66,7 @@ function CategoryCard({
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground text-xs">
-          {item.label}
-        </span>
+        <span className="text-muted-foreground text-xs">{item.label}</span>
         <span className="font-bold text-foreground tabular-nums">
           {formatCurrency(item.value)}
         </span>
@@ -78,12 +76,7 @@ function CategoryCard({
 }
 
 export function Diversification() {
-  const {
-    diversification,
-    error,
-    isLoading,
-    refetch,
-  } = usePortfolio();
+  const { diversification, error, isLoading, refetch } = usePortfolio();
 
   if (isLoading) {
     return (
@@ -97,7 +90,9 @@ export function Diversification() {
     return (
       <div className="flex flex-col animate-in fade-in duration-500">
         <header className="mb-4">
-          <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-1">
+            Diversificação
+          </h2>
         </header>
         <ErrorState
           title="Não foi possível carregar a diversificação"
@@ -113,14 +108,38 @@ export function Diversification() {
   const breakdown = diversification?.breakdown ?? [];
   const chartData = buildChartData(breakdown);
 
+  const header = (
+    <header className="mb-4">
+      <h2 className="text-2xl font-bold text-foreground mb-1">
+        Diversificação
+      </h2>
+      <p className="text-muted-foreground text-sm">
+        Veja onde seu dinheiro está investido.
+      </p>
+    </header>
+  );
+
+  // Sem nenhuma categoria (as moedas do Câmbio também entram no breakdown), gráfico, cards e
+  // Moedas ficariam todos vazios: um aviso único no lugar deles em vez de vários repetidos.
+  if (breakdown.length === 0) {
+    return (
+      <div className="flex flex-col animate-in fade-in duration-500">
+        {header}
+        <section className="rounded-2xl border border-border bg-surface-1">
+          <EmptyState
+            icon={PieChartIcon}
+            title="Sua carteira ainda está vazia"
+            message="A Diversificação mostra como seu dinheiro se divide entre ações, criptomoedas, renda fixa e moedas. Ela passa a funcionar assim que você fizer o seu primeiro investimento."
+            action={{ label: "Ver ativos disponíveis", to: "/market" }}
+          />
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-4">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Diversificação</h2>
-        <p className="text-muted-foreground text-sm">
-          Veja onde seu dinheiro está investido.
-        </p>
-      </header>
+      {header}
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
@@ -131,77 +150,60 @@ export function Diversification() {
               o gráfico ocupa essa altura (flex-1) em vez de ficar fixo e deixar
               um vão vazio embaixo. Mobile mantém 256px. */}
           <div className="h-64 nav:h-auto nav:flex-1 nav:min-h-64">
-            {chartData.length === 0 ? (
-              <EmptyState
-                icon={PieChartIcon}
-                message="Você ainda não possui investimentos na carteira. Compre ativos para ver a distribuição do seu portfólio."
-                action={{ label: "Ver ativos disponíveis", to: "/market" }}
-                className="py-20"
-              />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    // Proporcional ao espaço: a rosca cresce junto com o card.
-                    innerRadius="50%"
-                    outerRadius="78%"
-                    paddingAngle={2}
-                    dataKey="value"
-                    nameKey="name"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} stroke="none" />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [
-                      formatCurrency(Number(value)),
-                      "Valor",
-                    ]}
-                    contentStyle={{
-                      backgroundColor: "var(--color-surface-1)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend
-                    formatter={(value, entry) => (
-                      <span className="text-muted-foreground text-xs">
-                        {value} —{" "}
-                        {String(
-                          (entry?.payload as Record<string, unknown>)
-                            ?.percentage ?? "",
-                        )}
-                        %
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  // Proporcional ao espaço: a rosca cresce junto com o card.
+                  innerRadius="50%"
+                  outerRadius="78%"
+                  paddingAngle={2}
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value) => [
+                    formatCurrency(Number(value)),
+                    "Valor",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: "var(--color-surface-1)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend
+                  formatter={(value, entry) => (
+                    <span className="text-muted-foreground text-xs">
+                      {value} —{" "}
+                      {String(
+                        (entry?.payload as Record<string, unknown>)
+                          ?.percentage ?? "",
+                      )}
+                      %
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
-          {breakdown.length === 0 ? (
-            <EmptyState
-              icon={PieChartIcon}
-              message="Você ainda não possui investimentos na carteira. Compre ativos para ver a distribuição do seu portfólio."
-              action={{ label: "Ver ativos disponíveis", to: "/market" }}
+          {breakdown.map((item) => (
+            <CategoryCard
+              key={item.type}
+              item={item}
+              totalBalance={totalBalance}
             />
-          ) : (
-            breakdown.map((item) => (
-              <CategoryCard
-                key={item.type}
-                item={item}
-                totalBalance={totalBalance}
-              />
-            ))
-          )}
+          ))}
         </div>
       </div>
 

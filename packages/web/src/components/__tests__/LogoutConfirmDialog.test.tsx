@@ -98,3 +98,18 @@ describe("Confirmação ao sair da conta", () => {
     expect(logoutMock).not.toHaveBeenCalled();
   });
 });
+
+describe("Cabeçalho", () => {
+  it("o ícone de usuário é um link acessível para o Perfil", () => {
+    render(
+      <MemoryRouter>
+        <Header />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Perfil" })).toHaveAttribute(
+      "href",
+      "/profile",
+    );
+  });
+});

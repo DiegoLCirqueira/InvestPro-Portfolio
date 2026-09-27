@@ -513,8 +513,9 @@ describe('POST /api/v1/orders — execução FILLED atualiza Position/Portfolio'
       const totalBefore = await ordersTotalOf(priceToken)
 
       mockQuote(20)
+      // Cripto: ação não aceita fração na compra, e o que se testa aqui é o total que zera.
       const res = await createOrder(priceToken, {
-        ticker: 'VALE3',
+        ticker: 'BTC',
         side: 'BUY',
         quantity: 0.00000001, // 1e-8 * 20 = 2e-7 -> R$ 0,00
         type: 'MARKET',
@@ -524,6 +525,18 @@ describe('POST /api/v1/orders — execução FILLED atualiza Position/Portfolio'
 
       expect((await getPortfolioOf(priceToken)).balance).toBe(895)
       expect(await ordersTotalOf(priceToken)).toBe(totalBefore)
+    })
+
+    it('compra fracionada de ação é recusada (400 ORDER_INVALID) sem criar Order', async () => {
+      const totalBefore = await ordersTotalOf(priceToken)
+
+      mockQuote(20)
+      const stock = await createOrder(priceToken, { ticker: 'VALE3', side: 'BUY', quantity: 1.5, type: 'MARKET' })
+      expect(stock.statusCode).toBe(400)
+      expect(stock.json().error).toBe('ORDER_INVALID')
+      expect(stock.json().message).toMatch(/quantidade inteira/)
+      expect(await ordersTotalOf(priceToken)).toBe(totalBefore)
+      expect((await getPortfolioOf(priceToken)).balance).toBe(895)
     })
 
     it.each([

@@ -16,7 +16,7 @@ const emailSchema = z.string().trim().toLowerCase().pipe(z.email('Email inválid
 export const registerBodySchema = z.object({
   email: emailSchema,
   password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
-  fullName: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
+  fullName: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   cpf: z.string().regex(cpfRegex, 'CPF inválido (use XXX.XXX.XXX-XX ou 11 dígitos)').optional(),
 })
 

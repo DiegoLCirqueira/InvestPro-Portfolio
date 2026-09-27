@@ -25,6 +25,8 @@ export const newsListSchema = z.object({
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   limit: z.number().int().positive(),
+  /** Categorias com pelo menos uma notícia (independe do filtro): o site só oferece essas. */
+  categories: z.array(z.enum(NEWS_CATEGORIES)),
 });
 
 export type NewsItem = z.infer<typeof newsItemSchema>;

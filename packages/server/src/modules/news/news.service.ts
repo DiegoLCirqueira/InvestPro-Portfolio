@@ -11,6 +11,7 @@ import type { FastifyBaseLogger } from 'fastify'
 import { fetchFeedXml, parseFeed, type RawNewsItem } from './adapters/rss.js'
 import { NEWS_SOURCES, type NewsSource } from './sources.js'
 import {
+  CATEGORY_ORDER,
   applySourcePolicy,
   dedupeNews,
   normalizeInput,
@@ -132,5 +133,6 @@ export async function getNews(query: NewsQuery): Promise<NewsList> {
     total: filtered.length,
     page,
     limit,
+    categories: CATEGORY_ORDER.filter((category) => items.some((item) => item.category === category)),
   }
 }

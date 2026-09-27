@@ -19,6 +19,7 @@ export function CurrencyDigitsField({
       inputMode="numeric"
       value={input.displayValue}
       onChange={input.onChange}
+      onPaste={input.onPaste}
       aria-label={ariaLabel}
       className={`${fieldInputClassName} tabular-nums`}
     />

@@ -3,9 +3,9 @@ import { useLocation } from "react-router-dom";
 
 const APP_NAME = "InvestPro";
 
-// Só as rotas do menu (Layout/Sidebar) ganham um título próprio; qualquer outra
-// rota (perfil, admin, autenticação, 404...) fica só com o nome do app — sem
-// inventar um label pra uma página que não está navegável pelo menu.
+// Um título por página, igual ao nome que aparece no topo dela. Roda no nível do App
+// (não só no Layout logado): senão, ao sair da conta, a aba de /login ficava com o
+// título da última página interna.
 const PAGE_TITLES: Record<string, string> = {
   "/": "Painel",
   "/market": "Análise de Mercado",
@@ -16,14 +16,23 @@ const PAGE_TITLES: Record<string, string> = {
   "/exchange": "Câmbio",
   "/transfers": "Transferências",
   "/recommendations": "Recomendações",
+  "/profile": "Perfil",
+  "/profile/investor-profile": "Perfil de investidor",
+  "/admin/users": "Administração",
+  "/login": "Entrar",
+  "/register": "Criar conta",
+  "/forgot-password": "Esqueceu a senha",
+  "/reset-password": "Redefinir senha",
 };
 
-/** Título da aba do navegador conforme a rota: "<Página> · InvestPro", ou só "InvestPro". */
+const NOT_FOUND_TITLE = "Página não encontrada";
+
+/** Título da aba do navegador conforme a rota: "<Página> · InvestPro". */
 export function useDocumentTitle(): void {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const pageTitle = PAGE_TITLES[pathname];
-    document.title = pageTitle ? `${pageTitle} · ${APP_NAME}` : APP_NAME;
+    const pageTitle = PAGE_TITLES[pathname] ?? NOT_FOUND_TITLE;
+    document.title = `${pageTitle} · ${APP_NAME}`;
   }, [pathname]);
 }

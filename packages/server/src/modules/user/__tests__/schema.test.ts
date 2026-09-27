@@ -28,6 +28,12 @@ describe('updateUserBodySchema — CPF definido pelo perfil', () => {
   })
 })
 
+describe('updateUserBodySchema — nome', () => {
+  it('rejeita nome só com espaços', () => {
+    expect(updateUserBodySchema.safeParse({ fullName: '   ' }).success).toBe(false)
+  })
+})
+
 describe('updateUserBodySchema — validação de telefone', () => {
   it('aceita telefone com e sem DDI', () => {
     expect(updateUserBodySchema.safeParse({ phone: '+5511999998888' }).success).toBe(true)

@@ -5,6 +5,7 @@ import { computeOrderSettlement } from "@/lib/order-fee";
 import {
   buildTickerOptions,
   findOwnedQuantity,
+  getBuyQuantityError,
   getSellQuantityError,
   normalizeTicker,
   sanitizeDecimalInput,
@@ -22,6 +23,8 @@ interface UseOrderFormOptions {
   isMarketLoading: boolean;
   sellableAssets: SellableAsset[];
   isSellableLoading: boolean;
+  /** Ativo já escolhido ao abrir (ex.: vindo do clique no Mercado). */
+  initialTicker?: string;
 }
 
 /**
@@ -34,8 +37,9 @@ export function useOrderForm({
   isMarketLoading,
   sellableAssets,
   isSellableLoading,
+  initialTicker = "",
 }: UseOrderFormOptions) {
-  const [ticker, setTicker] = useState("");
+  const [ticker, setTicker] = useState(initialTicker);
   const [side, setSide] = useState<OrderSide>("BUY");
   const [type, setType] = useState<OrderType>("MARKET");
   const [quantity, setQuantity] = useState("");
@@ -55,14 +59,15 @@ export function useOrderForm({
   const ownedQuantity = isSell
     ? findOwnedQuantity(sellableAssets, normalizedTicker)
     : null;
-  const quantityError =
-    isSell && hasValidQuantity
-      ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
-      : null;
-
   const selectedAsset = marketAssets.find(
     (asset) => normalizeTicker(asset.ticker) === normalizedTicker,
   );
+
+  const quantityError = !hasValidQuantity
+    ? null
+    : isSell
+      ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
+      : getBuyQuantityError(quantityValue, selectedAsset);
   const settlement =
     selectedAsset && hasValidQuantity
       ? computeOrderSettlement(side, quantityValue * selectedAsset.price)
@@ -70,7 +75,11 @@ export function useOrderForm({
 
   const changeSide = (nextSide: OrderSide) => {
     setSide(nextSide);
-    const nextOptions = buildTickerOptions(nextSide, marketAssets, sellableAssets);
+    const nextOptions = buildTickerOptions(
+      nextSide,
+      marketAssets,
+      sellableAssets,
+    );
     const isNextListLoading =
       nextSide === "SELL" ? isSellableLoading : isMarketLoading;
     const isStillValid = nextOptions.some(
@@ -132,8 +141,11 @@ export function useOrderForm({
     hasNothingToSell,
     ownedQuantity,
     quantityError,
+    /** Campos obrigatórios ainda vazios: marcados na tela quando o envio é tentado. */
+    missingFields: { ticker: !normalizedTicker, quantity: !hasValidQuantity },
     settlement,
-    isPriceEstimated: selectedAsset !== undefined && isEstimatedPrice(selectedAsset),
+    isPriceEstimated:
+      selectedAsset !== undefined && isEstimatedPrice(selectedAsset),
     findSubmitError,
     buildInput,
     reset,

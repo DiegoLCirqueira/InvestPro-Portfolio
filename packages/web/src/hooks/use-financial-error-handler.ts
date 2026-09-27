@@ -22,7 +22,7 @@ export function useFinancialErrorHandler(
       insufficientBalanceCodes.includes(error.code);
 
     if (isInsufficientBalance) {
-      openInsufficientBalance();
+      openInsufficientBalance(error.code);
       return;
     }
     toast.error(userMessageFor(error), { id: FINANCIAL_ERROR_TOAST_ID });

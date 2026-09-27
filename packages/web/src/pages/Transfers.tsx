@@ -33,12 +33,41 @@ const TYPE_HELP: Partial<Record<TransferType, string>> = {
   DOC: "Transferência entre bancos diferentes, compensada em até 1 dia útil, para valores menores.",
 };
 
-const STATUS_CONFIG: Record<TransferStatus, { label: string; tone: StatusTone }> =
-  {
-    PENDING: { label: "Pendente", tone: "warning" },
-    COMPLETED: { label: "Concluída", tone: "success" },
-    FAILED: { label: "Falhou", tone: "danger" },
-  };
+const STATUS_CONFIG: Record<
+  TransferStatus,
+  { label: string; tone: StatusTone }
+> = {
+  PENDING: { label: "Pendente", tone: "warning" },
+  COMPLETED: { label: "Concluída", tone: "success" },
+  FAILED: { label: "Falhou", tone: "danger" },
+};
+
+// Ajuda do TED/DOC: o Tooltip do Radix só abre com hover/foco; aqui o toque também abre e fecha,
+// senão no celular a explicação fica inacessível.
+function TransferTypeHelp({ label, help }: { label: string; help: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => {
+            // preventDefault impede o Tooltip de fechar no clique (comportamento padrão dele).
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen((current) => !current);
+          }}
+          aria-label={`Saiba mais sobre ${label}`}
+          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Info size={13} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{help}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function TransferStatusBadge({ status }: { status: TransferStatus }) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
@@ -46,7 +75,8 @@ function TransferStatusBadge({ status }: { status: TransferStatus }) {
 }
 
 function destinationOf(transfer: Transfer): string {
-  if (transfer.pixKey) return `Chave PIX · ${formatStoredPixKey(transfer.pixKey)}`;
+  if (transfer.pixKey)
+    return `Chave PIX · ${formatStoredPixKey(transfer.pixKey)}`;
   if (!transfer.toAccount) return "Transferência externa";
   const { bank, agency, account } = transfer.toAccount;
   return [bank, agency && `Ag. ${agency}`, account && `Conta ${account}`]
@@ -72,7 +102,9 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
       </div>
       <p className="text-xs text-muted-foreground mb-0.5">{destination}</p>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="truncate">{transfer.description || "Sem descrição"}</span>
+        <span className="truncate">
+          {transfer.description || "Sem descrição"}
+        </span>
         <span className="tabular-nums shrink-0 ml-2">
           {formatDateTime(transfer.createdAt)}
         </span>
@@ -84,7 +116,9 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
 export function Transfers() {
   const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useTransfers();
-  const handleFinancialError = useFinancialErrorHandler(["TRANSFER_INSUFFICIENT_BALANCE"]);
+  const handleFinancialError = useFinancialErrorHandler([
+    "TRANSFER_INSUFFICIENT_BALANCE",
+  ]);
   const createTransfer = useCreateTransfer({
     onSuccess: () => toast.success("Transferência iniciada com sucesso!"),
     onError: (err) => {
@@ -116,15 +150,21 @@ export function Transfers() {
 
   const history = data?.items ?? [];
 
-  const destinationAccount = { bank: bank.trim(), agency: agency.trim(), account: account.trim() };
-  const accountFieldsFilled = Object.values(destinationAccount).filter(Boolean).length;
+  const destinationAccount = {
+    bank: bank.trim(),
+    agency: agency.trim(),
+    account: account.trim(),
+  };
+  const accountFieldsFilled =
+    Object.values(destinationAccount).filter(Boolean).length;
 
   // Mensagem do primeiro problema do formulário, ou null se pode enviar.
   const formError = (): string | null => {
     if (amountInput.amount <= 0) return "Informe um valor válido.";
     if (type === "PIX") {
       if (pixKeyInput.isEmpty) return "Informe a chave PIX de destino.";
-      if (pixKeyInput.ambiguousTypes.length > 0) return "Escolha se a chave é um CPF ou um celular.";
+      if (pixKeyInput.ambiguousTypes.length > 0)
+        return "Escolha se a chave é um CPF ou um celular.";
       if (!pixKeyInput.pixKey) {
         return "Chave PIX inválida. Use CPF, CNPJ, e-mail, celular com DDD ou chave aleatória.";
       }
@@ -155,7 +195,8 @@ export function Transfers() {
         type,
         amount: amountInput.amount,
         description: description.trim() || undefined,
-        toAccount: !pixKey && accountFieldsFilled === 3 ? destinationAccount : undefined,
+        toAccount:
+          !pixKey && accountFieldsFilled === 3 ? destinationAccount : undefined,
         pixKey: pixKey?.value,
         pixKeyType: pixKey?.type,
       });
@@ -215,7 +256,9 @@ export function Transfers() {
           onSubmit={handleSubmit}
           className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
-          <h3 className="text-base font-bold text-foreground">Nova Transferência</h3>
+          <h3 className="text-base font-bold text-foreground">
+            Nova Transferência
+          </h3>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Tipo</label>
@@ -248,19 +291,7 @@ export function Transfers() {
                     </button>
 
                     {help ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`Saiba mais sobre ${option.label}`}
-                            className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <Info size={13} />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>{help}</TooltipContent>
-                      </Tooltip>
+                      <TransferTypeHelp label={option.label} help={help} />
                     ) : null}
                   </div>
                 );
@@ -275,14 +306,21 @@ export function Transfers() {
               inputMode="numeric"
               value={amountInput.displayValue}
               onChange={amountInput.onChange}
+              onPaste={amountInput.onPaste}
               aria-label="Valor da transferência"
               className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-input text-foreground text-base focus:outline-none focus:border-brand-primary transition-colors duration-200 tabular-nums"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-muted-foreground">Descrição (opcional)</label>
+            <label
+              htmlFor="transfer-description"
+              className="text-sm text-muted-foreground"
+            >
+              Descrição (opcional)
+            </label>
             <input
+              id="transfer-description"
               type="text"
               value={description}
               maxLength={140}
@@ -340,24 +378,24 @@ export function Transfers() {
 
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
         <div className="nav:self-stretch nav:h-0 nav:min-h-full">
-        <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-          <h3 className="text-base font-bold text-foreground">
-            Histórico de Transferências
-          </h3>
+          <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+            <h3 className="text-base font-bold text-foreground">
+              Histórico de Transferências
+            </h3>
 
-          {history.length === 0 ? (
-            <EmptyState
-              icon={Receipt}
-              message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
-            />
-          ) : (
-            <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
-              {history.map((transfer) => (
-                <TransferItem key={transfer.id} transfer={transfer} />
-              ))}
-            </div>
-          )}
-        </div>
+            {history.length === 0 ? (
+              <EmptyState
+                icon={Receipt}
+                message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
+              />
+            ) : (
+              <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
+                {history.map((transfer) => (
+                  <TransferItem key={transfer.id} transfer={transfer} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

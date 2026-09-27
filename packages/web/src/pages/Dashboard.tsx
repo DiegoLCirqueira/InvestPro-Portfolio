@@ -7,11 +7,13 @@ import { useAuthStore } from "@/stores/auth";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import type { PortfolioPeriod } from "@/types/portfolio";
+import { formatPercent } from "@/lib/format";
 
 function MobileGreeting({ change }: { change?: number }) {
   const user = useAuthStore((s) => s.user);
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const greeting =
+    hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
   return (
     <div className="nav:hidden space-y-1 mb-6">
@@ -27,8 +29,7 @@ function MobileGreeting({ change }: { change?: number }) {
           <p className="text-muted-foreground text-xs font-medium">
             Seu portfólio {change >= 0 ? "rendeu" : "recuou"}{" "}
             <span className="text-primary">
-              {change >= 0 ? "+" : ""}
-              {change.toFixed(2)}%
+              {formatPercent(change, { showSign: true })}
             </span>{" "}
             no período.
           </p>
@@ -108,10 +109,16 @@ export function Dashboard() {
             <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
               <h3 className="text-lg font-bold">Evolução do Patrimônio</h3>
 
-              <div className="flex bg-secondary p-1 rounded-lg border border-border">
+              <div
+                role="group"
+                aria-label="Período do gráfico"
+                className="flex bg-secondary p-1 rounded-lg border border-border"
+              >
                 {PERIOD_OPTIONS.map((option) => (
                   <button
                     key={option.value}
+                    type="button"
+                    aria-pressed={period === option.value}
                     onClick={() => setPeriod(option.value)}
                     className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                       period === option.value

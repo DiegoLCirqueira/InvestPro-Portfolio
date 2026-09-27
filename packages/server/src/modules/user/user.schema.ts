@@ -14,7 +14,7 @@ import {
 // explícito a campos desconhecidos em vez de descartá-los silenciosamente.
 export const updateUserBodySchema = z
   .object({
-    fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
+    fullName: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres').optional(),
     phone: z.string().regex(/^\+?\d{10,15}$/, 'Telefone inválido').optional(),
     cpf: cpfInputSchema.optional(),
     currentPassword: z.string().min(1).optional(),

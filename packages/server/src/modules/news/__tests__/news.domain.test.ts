@@ -96,6 +96,19 @@ describe('stripHtml / summarize', () => {
     expect(result.endsWith('…')).toBe(true)
     expect(result.length).toBeLessThanOrEqual(81)
   })
+
+  it.each([
+    ['<p>Ibovespa sobe 1%.</p><p>The post <a href="https://x">Ibovespa sobe</a> appeared first on InfoMoney.</p>', 'Ibovespa sobe 1%.'],
+    ['Dólar cai. O post Dólar cai apareceu primeiro em Money Times.', 'Dólar cai.'],
+  ])('remove o rodapé do RSS do WordPress: %s', (html, expected) => {
+    expect(summarize(html)).toBe(expected)
+  })
+
+  it('mantém texto que só cita "the post" no meio da notícia', () => {
+    expect(summarize('Analysts read the post-earnings call as positive.')).toBe(
+      'Analysts read the post-earnings call as positive.'
+    )
+  })
 })
 
 describe('dedupeNews', () => {

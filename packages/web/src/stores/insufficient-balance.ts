@@ -2,7 +2,9 @@ import { create } from "zustand";
 
 interface InsufficientBalanceState {
   isOpen: boolean;
-  open: () => void;
+  /** Código do erro da API: define qual saldo faltou (conta, caixinha ou moeda). */
+  code: string | null;
+  open: (code?: string) => void;
   close: () => void;
 }
 
@@ -14,7 +16,8 @@ interface InsufficientBalanceState {
 export const useInsufficientBalanceStore = create<InsufficientBalanceState>()(
   (set) => ({
     isOpen: false,
-    open: () => set({ isOpen: true }),
+    code: null,
+    open: (code) => set({ isOpen: true, code: code ?? null }),
     close: () => set({ isOpen: false }),
   }),
 );

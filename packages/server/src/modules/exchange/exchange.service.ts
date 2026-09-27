@@ -100,7 +100,9 @@ export async function convert(
   amount: number
 ): Promise<ConvertResponse> {
   const { rate, approximate } = await getRate(from, to)
-  return { ...buildConversion(from, to, amount, rate), approximate }
+  // Mesmo arredondamento da execução ('down'): com 'nearest' a simulação prometia
+  // US$ 1,91 e a conversão creditava US$ 1,90 com a mesma cotação.
+  return { ...buildConversion(from, to, amount, rate, 'down'), approximate }
 }
 
 export function listCurrencies(base: Currency = 'BRL'): CurrencyListResponse {

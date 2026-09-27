@@ -1,10 +1,5 @@
 export type NewsCategory =
-  | "MARKET"
-  | "MACRO"
-  | "CRYPTO"
-  | "COMPANIES"
-  | "ECONOMY"
-  | "WORLD";
+  "MARKET" | "MACRO" | "CRYPTO" | "COMPANIES" | "ECONOMY" | "WORLD";
 
 export interface NewsItem {
   id: string;
@@ -21,6 +16,8 @@ export interface NewsList {
   total: number;
   page: number;
   limit: number;
+  /** Categorias com pelo menos uma notícia; ausente em respostas antigas da API. */
+  categories?: NewsCategory[];
 }
 
 export interface NewsQuery {

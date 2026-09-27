@@ -1,5 +1,6 @@
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { formatCurrency, formatDateTime, formatQuantity } from "@/lib/format";
+import { ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { Order, OrderSide, OrderStatus } from "@/types/order";
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; tone: StatusTone }> =
@@ -30,7 +31,9 @@ function OrderDetail({ label, value }: { label: string; value: string }) {
     <>
       {" · "}
       {label}:{" "}
-      <span className="text-foreground font-semibold tabular-nums">{value}</span>
+      <span className="text-foreground font-semibold tabular-nums">
+        {value}
+      </span>
     </>
   );
 }
@@ -45,7 +48,7 @@ export function OrderRow({ order }: { order: Order }) {
           <span className="font-bold text-foreground">{order.ticker}</span>
           <SideText side={order.side} />
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            {order.type}
+            {ORDER_TYPE_LABELS[order.type]}
           </span>
         </div>
         <OrderStatusBadge status={order.status} />
@@ -56,8 +59,12 @@ export function OrderRow({ order }: { order: Order }) {
           <span className="text-foreground font-semibold tabular-nums">
             {formatQuantity(order.quantity)}
           </span>
-          {typeof price === "number" && <OrderDetail label="Preço" value={formatCurrency(price)} />}
-          {typeof avgPrice === "number" && <OrderDetail label="PM" value={formatCurrency(avgPrice)} />}
+          {typeof price === "number" && (
+            <OrderDetail label="Preço" value={formatCurrency(price)} />
+          )}
+          {typeof avgPrice === "number" && (
+            <OrderDetail label="PM" value={formatCurrency(avgPrice)} />
+          )}
           {typeof fee === "number" && (
             <OrderDetail label="Taxa" value={formatCurrency(fee)} />
           )}

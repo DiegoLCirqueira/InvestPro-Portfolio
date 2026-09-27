@@ -21,6 +21,12 @@ describe('registerBodySchema', () => {
     expect(registerBodySchema.safeParse({ ...validRegistration, cpf: '12345678900' }).success).toBe(true)
   })
 
+  it('rejeita nome só com espaços e guarda o nome sem espaços nas pontas', () => {
+    expect(registerBodySchema.safeParse({ ...validRegistration, fullName: '   ' }).success).toBe(false)
+    const parsed = registerBodySchema.parse({ ...validRegistration, fullName: '  Ana Silva ' })
+    expect(parsed.fullName).toBe('Ana Silva')
+  })
+
   it('rejeita email inválido', () => {
     expect(registerBodySchema.safeParse({ ...validRegistration, email: 'nao-email' }).success).toBe(false)
   })

@@ -6,10 +6,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Transfers } from "@/pages/Transfers";
 import { ApiError } from "@/services/api";
 
-const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn() }));
+const apiMock = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  patch: vi.fn(),
+}));
 
 vi.mock("@/services/api", async () => {
-  const actual = await vi.importActual<typeof import("@/services/api")>("@/services/api");
+  const actual =
+    await vi.importActual<typeof import("@/services/api")>("@/services/api");
   return { ...actual, api: apiMock };
 });
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
@@ -25,7 +30,14 @@ async function renderTransfers() {
   render(
     <MemoryRouter initialEntries={["/transfers"]}>
       <Routes>
-        <Route path="/transfers" element={<TooltipProvider><Transfers /></TooltipProvider>} />
+        <Route
+          path="/transfers"
+          element={
+            <TooltipProvider>
+              <Transfers />
+            </TooltipProvider>
+          }
+        />
         <Route path="/profile" element={<p>Tela de perfil</p>} />
       </Routes>
       <LocationProbe />
@@ -36,20 +48,33 @@ async function renderTransfers() {
 
 describe("Transferências: CPF obrigatório", () => {
   beforeEach(() => {
-    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
-    apiMock.post.mockReset().mockRejectedValue(new ApiError(400, "CPF é obrigatório", "CPF_REQUIRED"));
+    apiMock.get
+      .mockReset()
+      .mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+    apiMock.post
+      .mockReset()
+      .mockRejectedValue(
+        new ApiError(400, "CPF é obrigatório", "CPF_REQUIRED"),
+      );
     vi.mocked(toast.error).mockClear();
   });
 
   it("o 'Completar CPF' do aviso leva ao campo de CPF no Perfil (#cpf)", async () => {
     await renderTransfers();
-    fireEvent.change(screen.getByLabelText("Valor da transferência"), { target: { value: "1000" } });
-    fireEvent.change(screen.getByLabelText("Chave PIX"), { target: { value: VALID_PIX_KEY } });
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), {
+      target: { value: "1000" },
+    });
+    fireEvent.change(screen.getByLabelText("Chave PIX"), {
+      target: { value: VALID_PIX_KEY },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
 
     await vi.waitFor(() => expect(toast.error).toHaveBeenCalled());
-    const [message, options] = vi.mocked(toast.error).mock.calls[0] as [string, { action: { label: string; onClick: () => void } }];
+    const [message, options] = vi.mocked(toast.error).mock.calls[0] as [
+      string,
+      { action: { label: string; onClick: () => void } },
+    ];
     expect(message).toMatch(/completar seu CPF/);
     expect(options.action.label).toBe("Completar CPF");
 
@@ -62,7 +87,9 @@ describe("Transferências: CPF obrigatório", () => {
 
 describe("Transferências: validação do formulário", () => {
   beforeEach(() => {
-    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+    apiMock.get
+      .mockReset()
+      .mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
     apiMock.post.mockReset().mockResolvedValue({
       id: "t-1",
       status: "COMPLETED",
@@ -74,7 +101,9 @@ describe("Transferências: validação do formulário", () => {
   });
 
   function fillAmount() {
-    fireEvent.change(screen.getByLabelText("Valor da transferência"), { target: { value: "1000" } });
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), {
+      target: { value: "1000" },
+    });
   }
 
   it.each([
@@ -83,33 +112,50 @@ describe("Transferências: validação do formulário", () => {
   ])("PIX %s não chega à API", async (_label, key, message) => {
     await renderTransfers();
     fillAmount();
-    fireEvent.change(screen.getByLabelText("Chave PIX"), { target: { value: key } });
+    fireEvent.change(screen.getByLabelText("Chave PIX"), {
+      target: { value: key },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
 
-    await vi.waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(message)));
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(message)),
+    );
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 
   it("PIX válido envia a chave e limpa o campo depois do sucesso", async () => {
     await renderTransfers();
     fillAmount();
-    fireEvent.change(screen.getByLabelText("Chave PIX"), { target: { value: ` ${VALID_PIX_KEY} ` } });
+    fireEvent.change(screen.getByLabelText("Chave PIX"), {
+      target: { value: ` ${VALID_PIX_KEY} ` },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
 
     await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
-    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ type: "PIX", pixKey: VALID_PIX_KEY });
-    await vi.waitFor(() => expect(screen.getByLabelText("Chave PIX")).toHaveValue(""));
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({
+      type: "PIX",
+      pixKey: VALID_PIX_KEY,
+    });
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText("Chave PIX")).toHaveValue(""),
+    );
   });
 
   it("TED com conta de destino envia banco, agência e conta", async () => {
     await renderTransfers();
     fireEvent.click(screen.getByRole("button", { name: "TED" }));
     fillAmount();
-    fireEvent.change(screen.getByLabelText("Banco"), { target: { value: "001" } });
-    fireEvent.change(screen.getByLabelText("Agência"), { target: { value: "1234" } });
-    fireEvent.change(screen.getByLabelText("Número da conta"), { target: { value: "56789-0" } });
+    fireEvent.change(screen.getByLabelText("Banco"), {
+      target: { value: "001" },
+    });
+    fireEvent.change(screen.getByLabelText("Agência"), {
+      target: { value: "1234" },
+    });
+    fireEvent.change(screen.getByLabelText("Número da conta"), {
+      target: { value: "56789-0" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
 
@@ -124,12 +170,16 @@ describe("Transferências: validação do formulário", () => {
     await renderTransfers();
     fireEvent.click(screen.getByRole("button", { name: "TED" }));
     fillAmount();
-    fireEvent.change(screen.getByLabelText("Banco"), { target: { value: "001" } });
+    fireEvent.change(screen.getByLabelText("Banco"), {
+      target: { value: "001" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
 
     await vi.waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/banco, agência e número da conta/)),
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringMatching(/banco, agência e número da conta/),
+      ),
     );
     expect(apiMock.post).not.toHaveBeenCalled();
   });
@@ -137,7 +187,9 @@ describe("Transferências: validação do formulário", () => {
 
 describe("Transferências: chave PIX só com números (reconhece e formata)", () => {
   beforeEach(() => {
-    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+    apiMock.get
+      .mockReset()
+      .mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
     apiMock.post.mockReset().mockResolvedValue({
       id: "t-1",
       status: "COMPLETED",
@@ -150,7 +202,9 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
 
   async function typeKey(value: string) {
     await renderTransfers();
-    fireEvent.change(screen.getByLabelText("Valor da transferência"), { target: { value: "1000" } });
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), {
+      target: { value: "1000" },
+    });
     fireEvent.change(screen.getByLabelText("Chave PIX"), { target: { value } });
   }
 
@@ -162,7 +216,10 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
     await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
-    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "+5582991234567", pixKeyType: "PHONE" });
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({
+      pixKey: "+5582991234567",
+      pixKeyType: "PHONE",
+    });
   });
 
   it("CPF: 52998224725 vira 529.982.247-25 e é enviado só com dígitos / CPF", async () => {
@@ -172,12 +229,17 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
     await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
-    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "52998224725", pixKeyType: "CPF" });
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({
+      pixKey: "52998224725",
+      pixKeyType: "CPF",
+    });
   });
 
   it("CNPJ: 11222333000181 vira 11.222.333/0001-81", async () => {
     await typeKey("11222333000181");
-    expect(screen.getByLabelText("Chave PIX")).toHaveValue("11.222.333/0001-81");
+    expect(screen.getByLabelText("Chave PIX")).toHaveValue(
+      "11.222.333/0001-81",
+    );
   });
 
   it("ambígua (CPF e celular): pergunta o tipo, bloqueia o envio até escolher", async () => {
@@ -185,7 +247,9 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
     await vi.waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/CPF ou um celular/)),
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringMatching(/CPF ou um celular/),
+      ),
     );
     expect(apiMock.post).not.toHaveBeenCalled();
 
@@ -195,6 +259,34 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
 
     fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
     await vi.waitFor(() => expect(apiMock.post).toHaveBeenCalled());
-    expect(apiMock.post.mock.calls[0][1]).toMatchObject({ pixKey: "+5582991234539", pixKeyType: "PHONE" });
+    expect(apiMock.post.mock.calls[0][1]).toMatchObject({
+      pixKey: "+5582991234539",
+      pixKeyType: "PHONE",
+    });
+  });
+});
+
+describe("Transferências: ajuda do TED/DOC", () => {
+  beforeEach(() => {
+    apiMock.get
+      .mockReset()
+      .mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+  });
+
+  it("tocar no ícone abre a explicação e tocar de novo fecha (funciona sem hover, no celular)", async () => {
+    await renderTransfers();
+    const helpButton = screen.getByRole("button", {
+      name: "Saiba mais sobre TED",
+    });
+
+    fireEvent.click(helpButton);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      /bancos diferentes/,
+    );
+
+    fireEvent.click(helpButton);
+    await vi.waitFor(() =>
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument(),
+    );
   });
 });

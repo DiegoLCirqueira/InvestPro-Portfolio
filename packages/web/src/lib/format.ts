@@ -6,14 +6,23 @@ export function formatCurrency(value: number, currency = "BRL"): string {
   }).format(value);
 }
 
+/** Número em formato pt-BR (vírgula decimal, ponto de milhar) com casas fixas. */
+export function formatDecimal(value: number, decimals = 2): string {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+/** Percentual já em pontos (1.5 → "1,50%"). Com showSign, só positivos ganham "+": zero não é alta. */
 export function formatPercent(
   value: number,
   options?: { decimals?: number; showSign?: boolean },
 ): string {
   const decimals = options?.decimals ?? 2;
   const showSign = options?.showSign ?? false;
-  const sign = showSign && value >= 0 ? "+" : "";
-  return `${sign}${value.toFixed(decimals)}%`;
+  const sign = showSign && value > 0 ? "+" : "";
+  return `${sign}${formatDecimal(value, decimals)}%`;
 }
 
 export function formatDateTime(iso: string): string {

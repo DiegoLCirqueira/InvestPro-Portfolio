@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { User, CalendarDays, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
@@ -9,7 +9,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
   const location = useLocation();
-  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
   const logoutButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -66,17 +65,18 @@ export function Header() {
             </p>
           </div>
 
-          <div
-            className="w-11 h-11 bg-linear-to-br to-secondary border border-border rounded-2xl flex items-center justify-center text-brand-primary shadow-lg shadow-black/20 group cursor-pointer hover:border-brand-primary/50 transition-colors"
-            onClick={() => navigate("/profile")}
-            role="button"
-            tabIndex={0}
+          <Link
+            to="/profile"
+            aria-label="Perfil"
+            title="Perfil"
+            className="w-11 h-11 bg-linear-to-br to-secondary border border-border rounded-2xl flex items-center justify-center text-brand-primary shadow-lg shadow-black/20 group hover:border-brand-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <User
               size={22}
+              aria-hidden="true"
               className="group-hover:scale-110 transition-transform"
             />
-          </div>
+          </Link>
 
           <button
             ref={logoutButtonRef}

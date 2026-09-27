@@ -2,7 +2,7 @@
 // Contratos de ordens (compra/venda de ativos). Base para WI-208.
 
 import { z } from 'zod';
-import { ORDER_SIDES, ORDER_STATUSES, ORDER_TYPES } from '../types/enums.js';
+import { ASSET_TYPES, ORDER_SIDES, ORDER_STATUSES, ORDER_TYPES } from '../types/enums.js';
 import { hasAtMostDecimalPlaces } from '../types/decimal.js';
 import { moneyAmountSchema } from '../types/money.js';
 
@@ -17,6 +17,15 @@ export const orderQuantityInputSchema = z
   .refine((value) => hasAtMostDecimalPlaces(value, ORDER_QUANTITY_DECIMAL_PLACES), {
     message: `Quantidade deve ter no máximo ${ORDER_QUANTITY_DECIMAL_PLACES} casas decimais`,
   });
+
+// Ações e renda fixa são negociadas em unidades inteiras; só cripto aceita fração (0,001 BTC).
+// Vale para a compra: a venda aceita a posição inteira, mesmo que fracionada por compras antigas.
+const WHOLE_QUANTITY_ASSET_TYPES: readonly (typeof ASSET_TYPES)[number][] = ['STOCK', 'FIXED_INCOME'];
+export const WHOLE_QUANTITY_MESSAGE = 'Ações e renda fixa só podem ser compradas em quantidade inteira';
+
+export function requiresWholeQuantity(assetType: string): boolean {
+  return (WHOLE_QUANTITY_ASSET_TYPES as readonly string[]).includes(assetType);
+}
 
 export const createOrderInputSchema = z
   .object({
