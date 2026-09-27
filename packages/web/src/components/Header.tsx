@@ -1,15 +1,17 @@
+import * as React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { User, CalendarDays, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
+import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { useAuthStore } from "@/stores/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
   const isDashboard = location.pathname === "/";
 
   const hour = new Date().getHours();
@@ -77,18 +79,23 @@ export function Header() {
 
           <button
             type="button"
-            onClick={async () => {
-              await logout();
-              navigate("/login");
-            }}
+            onClick={() => setConfirmLogoutOpen(true)}
             className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-all group"
             aria-label="Sair"
             title="Sair"
           >
-            <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+            <LogOut
+              size={18}
+              className="group-hover:scale-110 transition-transform"
+            />
           </button>
         </div>
       </div>
+
+      <LogoutConfirmDialog
+        open={confirmLogoutOpen}
+        onOpenChange={setConfirmLogoutOpen}
+      />
     </header>
   );
 }
