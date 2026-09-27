@@ -98,6 +98,26 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
       expect(link).toHaveAttribute("href", "/orders?ticker=PETR4");
   });
 
+  it("nome igual ao ticker não se repete no rótulo do link nem como subtítulo", async () => {
+    await renderMarket([{ ...asset("PETR4", "live"), name: "PETR4" }]);
+
+    const links = screen.getAllByRole("link", { name: "Negociar PETR4" });
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      const row = link.closest("a.p-4, tr") as HTMLElement;
+      expect(within(row).getAllByText("PETR4")).toHaveLength(1);
+    }
+  });
+
+  it("tipo em texto ('Renda fixa') e selo de sentimento só quando não é neutro", async () => {
+    await renderMarket([
+      { ...asset("SELIC", "live"), type: "FIXED_INCOME", changePercent: 0.5 },
+    ]);
+
+    expect(screen.getAllByText("Renda fixa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Neutro")).not.toBeInTheDocument();
+  });
+
   it("variação zero não aparece como alta", async () => {
     await renderMarket([
       { ...asset("PETR4", "live"), changePercent: 0, change24h: 0 },

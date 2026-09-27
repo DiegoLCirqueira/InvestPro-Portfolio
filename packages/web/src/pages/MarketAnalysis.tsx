@@ -14,32 +14,29 @@ import {
   formatCurrency,
   formatPercent as formatPercentValue,
 } from "@/lib/format";
-import { isEstimatedPrice } from "@/lib/market";
+import { assetDisplayName, isEstimatedPrice, tradeLinkLabel } from "@/lib/market";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
 
+// Tipo como texto simples (mesmo nome do filtro): com um selo colorido para o tipo e outro para
+// o sentimento, cada linha tinha duas pílulas disputando a atenção.
 const ASSET_TYPE_LABELS: Record<MarketAssetType, string> = {
   STOCK: "Ação",
   CRYPTO: "Cripto",
-  FIXED_INCOME: "RF",
+  FIXED_INCOME: "Renda fixa",
 };
 
-const ASSET_TYPE_TONES: Record<MarketAssetType, StatusTone> = {
-  STOCK: "info",
-  CRYPTO: "success",
-  FIXED_INCOME: "warning",
-};
+type Sentiment = "Oportunidade" | "Risco" | "Neutro";
 
-const SENTIMENT_TONES: Record<string, StatusTone> = {
+const SENTIMENT_TONES: Record<Exclude<Sentiment, "Neutro">, StatusTone> = {
   Oportunidade: "success",
   Risco: "danger",
-  Neutro: "neutral",
 };
 
 const TYPE_FILTERS: { value: MarketAssetType | "ALL"; label: string }[] = [
   { value: "ALL", label: "Todos" },
   { value: "STOCK", label: "Ações" },
   { value: "CRYPTO", label: "Cripto" },
-  { value: "FIXED_INCOME", label: "Renda Fixa" },
+  { value: "FIXED_INCOME", label: "Renda fixa" },
 ];
 
 function formatPrice(price: number): string {
@@ -50,11 +47,18 @@ function formatPercent(value?: number): string {
   return formatPercentValue(value ?? 0, { showSign: true });
 }
 
-function sentimentFor(asset: MarketAsset): string {
+function sentimentFor(asset: MarketAsset): Sentiment {
   const pct = asset.changePercent ?? asset.change24h;
   if (pct > 1) return "Oportunidade";
   if (pct < 0) return "Risco";
   return "Neutro";
+}
+
+// Selo só quando há algo a dizer: "Neutro" some (antes era um selo cinza quase invisível).
+function SentimentBadge({ asset }: { asset: MarketAsset }) {
+  const sentiment = sentimentFor(asset);
+  if (sentiment === "Neutro") return null;
+  return <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />;
 }
 
 // Variação zero é neutra: nem verde de alta nem vermelho de queda.
@@ -71,31 +75,27 @@ function orderLinkFor(asset: MarketAsset): string {
 }
 
 function AssetCard({ asset }: { asset: MarketAsset }) {
-  const sentiment = sentimentFor(asset);
+  const name = assetDisplayName(asset);
   return (
     <Link
       to={orderLinkFor(asset)}
-      aria-label={`Negociar ${asset.ticker} (${asset.name})`}
+      aria-label={tradeLinkLabel(asset)}
       className="block p-4 rounded-xl border border-border bg-surface-2 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-baseline gap-2 min-w-0">
           <span className="font-bold text-foreground">{asset.ticker}</span>
-          <StatusBadge
-            label={ASSET_TYPE_LABELS[asset.type]}
-            tone={ASSET_TYPE_TONES[asset.type]}
-            uniformWidth
-          />
+          <span className="text-xs text-muted-foreground">
+            {ASSET_TYPE_LABELS[asset.type]}
+          </span>
         </div>
-        <StatusBadge
-          label={sentiment}
-          tone={SENTIMENT_TONES[sentiment]}
-          uniformWidth
-        />
+        <SentimentBadge asset={asset} />
       </div>
-      <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
-        {asset.name}
-      </p>
+      {name && (
+        <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
+          {name}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-lg font-bold tabular-nums text-foreground">
@@ -207,7 +207,11 @@ export function MarketAnalysis() {
                   )}`}
                 >
                   <span>{formatPercent(index.changePercent)}</span>
-                  <span className="opacity-50 font-normal">({index.name})</span>
+                  {assetDisplayName(index) && (
+                    <span className="font-normal text-muted-foreground">
+                      {assetDisplayName(index)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -241,27 +245,29 @@ export function MarketAnalysis() {
 
               {/* Desktop (>=nav): tabela. table-fixed + colgroup: largura das colunas
                   não pode depender do conteúdo da seleção atual (senão o layout
-                  "pula" ao trocar o filtro Todos/Ações/Cripto/Renda Fixa). */}
+                  "pula" ao trocar o filtro Todos/Ações/Cripto/Renda fixa). */}
               <table className="hidden nav:table w-full table-fixed text-left border-separate border-spacing-y-2">
+                {/* Números à direita (tabular-nums) para as casas se alinharem entre as linhas;
+                    Ativo mais estreito para não abrir um vão até o preço. */}
                 <colgroup>
-                  <col className="w-[38%]" />
+                  <col className="w-[30%]" />
                   <col className="w-[16%]" />
+                  <col className="w-[20%]" />
                   <col className="w-[14%]" />
-                  <col className="w-[16%]" />
-                  <col className="w-[16%]" />
+                  <col className="w-[20%]" />
                 </colgroup>
                 <thead>
                   <tr className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
                     <th className="pb-2 pl-4">Ativo</th>
-                    <th className="pb-2">Preço</th>
                     <th className="pb-2">Tipo</th>
-                    <th className="pb-2">Variação</th>
+                    <th className="pb-2 text-right">Preço</th>
+                    <th className="pb-2 text-right">Variação</th>
                     <th className="pb-2 pr-4 text-right">Sentimento</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assets.map((asset) => {
-                    const sentiment = sentimentFor(asset);
+                    const name = assetDisplayName(asset);
                     return (
                       <tr
                         key={asset.id}
@@ -272,42 +278,36 @@ export function MarketAnalysis() {
                             {/* after:inset-0 estica o link pela linha toda: um único link por ativo. */}
                             <Link
                               to={orderLinkFor(asset)}
-                              aria-label={`Negociar ${asset.ticker} (${asset.name})`}
+                              aria-label={tradeLinkLabel(asset)}
                               className="font-bold text-sm text-foreground transition-colors truncate after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                             >
                               {asset.ticker}
                             </Link>
-                            <span className="text-[10px] text-muted-foreground font-medium truncate">
-                              {asset.name}
-                            </span>
+                            {name && (
+                              <span className="text-[10px] text-muted-foreground font-medium truncate">
+                                {name}
+                              </span>
+                            )}
                           </div>
+                        </td>
+                        <td className="py-3 text-sm text-muted-foreground">
+                          {ASSET_TYPE_LABELS[asset.type]}
                         </td>
                         <td className="py-3 text-sm font-medium tabular-nums">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span>{formatPrice(asset.price)}</span>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
                             {isEstimatedPrice(asset) && <EstimatedPriceTag />}
+                            <span>{formatPrice(asset.price)}</span>
                           </div>
                         </td>
-                        <td className="py-3">
-                          <StatusBadge
-                            label={ASSET_TYPE_LABELS[asset.type]}
-                            tone={ASSET_TYPE_TONES[asset.type]}
-                            uniformWidth
-                          />
-                        </td>
                         <td
-                          className={`py-3 text-sm font-bold tabular-nums truncate ${changeToneClass(
+                          className={`py-3 text-sm font-bold tabular-nums text-right truncate ${changeToneClass(
                             asset,
                           )}`}
                         >
                           {formatPercent(asset.changePercent)}
                         </td>
                         <td className="py-3 pr-4 rounded-r-xl text-right border-y border-r border-transparent">
-                          <StatusBadge
-                            label={sentiment}
-                            tone={SENTIMENT_TONES[sentiment]}
-                            uniformWidth
-                          />
+                          <SentimentBadge asset={asset} />
                         </td>
                       </tr>
                     );
