@@ -63,6 +63,7 @@ export function MoreMenu({ active }: MoreMenuProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
   const isAdmin = user?.role === "ADMIN";
   const items = isAdmin ? [...MORE_ITEMS, ADMIN_ITEM] : MORE_ITEMS;
 
@@ -71,6 +72,7 @@ export function MoreMenu({ active }: MoreMenuProps) {
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger asChild>
           <button
+            ref={triggerRef}
             type="button"
             className={bottomNavItemClassName(Boolean(active))}
             aria-label="Mais opções"
@@ -81,7 +83,13 @@ export function MoreMenu({ active }: MoreMenuProps) {
         </DialogPrimitive.Trigger>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-xl border-t border-border bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom">
+          <DialogPrimitive.Content
+            // Ao trocar o menu pela confirmação de saída, o foco fica no diálogo em vez de voltar ao "Mais" atrás dele.
+            onCloseAutoFocus={(event) =>
+              confirmLogoutOpen && event.preventDefault()
+            }
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-xl border-t border-border bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
+          >
             <DialogPrimitive.Title className="sr-only">
               Menu de navegação
             </DialogPrimitive.Title>
@@ -149,6 +157,7 @@ export function MoreMenu({ active }: MoreMenuProps) {
       <LogoutConfirmDialog
         open={confirmLogoutOpen}
         onOpenChange={setConfirmLogoutOpen}
+        returnFocusRef={triggerRef}
       />
     </>
   );

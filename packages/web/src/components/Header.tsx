@@ -12,6 +12,7 @@ export function Header() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
+  const logoutButtonRef = React.useRef<HTMLButtonElement>(null);
   const isDashboard = location.pathname === "/";
 
   const hour = new Date().getHours();
@@ -78,6 +79,7 @@ export function Header() {
           </div>
 
           <button
+            ref={logoutButtonRef}
             type="button"
             onClick={() => setConfirmLogoutOpen(true)}
             className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-all group"
@@ -95,6 +97,7 @@ export function Header() {
       <LogoutConfirmDialog
         open={confirmLogoutOpen}
         onOpenChange={setConfirmLogoutOpen}
+        returnFocusRef={logoutButtonRef}
       />
     </header>
   );

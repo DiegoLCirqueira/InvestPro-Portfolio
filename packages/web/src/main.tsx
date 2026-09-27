@@ -17,10 +17,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { InsufficientBalanceDialog } from "@/components/InsufficientBalanceDialog";
 import { ErrorBoundary } from "@/app/ErrorBoundary";
+import { registerStaleChunkReload } from "@/app/stale-chunk-reload";
 
 if (localStorage.getItem("investpro-theme") === "dark") {
   document.documentElement.setAttribute("data-theme", "dark");
 }
+
+registerStaleChunkReload();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
