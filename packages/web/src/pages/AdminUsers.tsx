@@ -64,11 +64,11 @@ export function AdminUsers() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="px-4 py-3 font-bold">ID</th>
-                <th className="px-4 py-3 font-bold">Email</th>
-                <th className="px-4 py-3 font-bold">Nome</th>
-                <th className="px-4 py-3 font-bold">Role</th>
-                <th className="px-4 py-3 font-bold">Criado em</th>
+                <th className="px-4 py-3 font-semibold">ID</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Nome</th>
+                <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Criado em</th>
               </tr>
             </thead>
             <tbody>

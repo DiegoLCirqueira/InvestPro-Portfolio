@@ -56,7 +56,7 @@ export function PixKeyField({
                 key={type}
                 type="button"
                 onClick={() => chooseType(type)}
-                className="min-h-11 px-4 rounded-lg border border-input bg-surface-2 text-foreground font-bold hover:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="min-h-11 px-4 rounded-lg border border-input bg-surface-2 text-foreground font-semibold hover:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {PIX_KEY_TYPE_LABELS[type]}
               </button>

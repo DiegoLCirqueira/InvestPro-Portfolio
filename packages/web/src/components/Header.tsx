@@ -41,7 +41,7 @@ export function Header() {
 
         <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-border">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-foreground leading-none">
+            <p className="text-sm font-semibold text-foreground leading-none">
               {user?.fullName || "Investidor"}
             </p>
           </div>

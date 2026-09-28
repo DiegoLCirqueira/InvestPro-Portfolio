@@ -262,7 +262,7 @@ export function RiskMetrics() {
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span
-                  className={`text-xl font-black tabular-nums ${riskScoreColor(data.score)}`}
+                  className={`text-xl font-bold tabular-nums ${riskScoreColor(data.score)}`}
                 >
                   {Math.round(data.score)}
                 </span>

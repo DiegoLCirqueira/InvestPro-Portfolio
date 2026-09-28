@@ -20,9 +20,9 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
 
 function SideText({ side }: { side: OrderSide }) {
   return side === "BUY" ? (
-    <span className="text-brand-primary font-bold">Compra</span>
+    <span className="text-brand-primary font-semibold">Compra</span>
   ) : (
-    <span className="text-destructive font-bold">Venda</span>
+    <span className="text-destructive font-semibold">Venda</span>
   );
 }
 

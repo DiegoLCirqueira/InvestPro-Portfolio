@@ -16,3 +16,17 @@ describe("fontes do app (Plus Jakarta Sans)", () => {
     expect(mainTsx).toContain(`import "@fontsource/plus-jakarta-sans/${weight}.css";`);
   });
 });
+
+// Só 400–700 são carregados: font-extrabold (800) e font-black (900) viravam 700 no navegador.
+const sources = import.meta.glob("/src/**/*.{ts,tsx}", { query: "?raw", import: "default", eager: true });
+
+describe("pesos de fonte usados nas classes", () => {
+  it("nenhum componente usa um peso que o site não carrega", () => {
+    expect(Object.keys(sources).length).toBeGreaterThan(50);
+    const offenders = Object.entries(sources)
+      .filter(([path]) => !path.includes("__tests__"))
+      .filter(([, code]) => /\bfont-(extrabold|black)\b/.test(String(code)))
+      .map(([path]) => path);
+    expect(offenders).toEqual([]);
+  });
+});

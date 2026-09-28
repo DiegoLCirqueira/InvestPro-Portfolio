@@ -9,7 +9,7 @@ export function MobileFooter() {
   return (
     <div className="nav:hidden mt-auto shrink-0 pt-8">
       <footer className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/50 py-4 text-xs text-muted-foreground">
-        <span className="font-bold uppercase tracking-wider text-foreground">
+        <span className="font-semibold uppercase tracking-wider text-foreground">
           InvestPro <span className="font-normal normal-case">&copy; {currentYear}</span>
         </span>
         <span className="basis-full order-last">{DEMO_NOTICE_SHORT}</span>

@@ -110,7 +110,7 @@ export function MoreMenu({ active }: MoreMenuProps) {
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-secondary text-primary">
                 <User size={22} />
               </div>
-              <p className="text-sm font-bold text-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 {user?.fullName || "Investidor"}
               </p>
             </button>

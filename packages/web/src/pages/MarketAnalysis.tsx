@@ -186,7 +186,7 @@ export function MarketAnalysis() {
               key={index.ticker}
               className="flex items-center justify-between gap-3 md:block p-4 md:p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
             >
-              <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider md:mb-4 flex items-center gap-2">
+              <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
                 <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
