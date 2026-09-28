@@ -55,6 +55,8 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     ]);
 
     expect(screen.getByRole("status")).toHaveTextContent(BANNER);
+    // Com algum preço estimado, o selo "Tempo real" não aparece.
+    expect(screen.queryByText("Tempo real")).not.toBeInTheDocument();
     const tags = screen.getAllByText("estimado");
     expect(tags.length).toBeGreaterThan(0);
     // O selo aparece junto do PETR4 (seed), nunca junto de VALE3/ITUB4 (ao vivo ou sem campo).
@@ -81,6 +83,7 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByText("estimado")).not.toBeInTheDocument();
+    expect(screen.getByText("Tempo real")).toBeInTheDocument();
   });
 });
 

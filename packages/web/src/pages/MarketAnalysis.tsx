@@ -224,9 +224,13 @@ export function MarketAnalysis() {
       <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
         <div className="flex flex-wrap justify-between items-center gap-2 mb-4 sm:mb-6">
           <SectionTitle>Composição e Performance</SectionTitle>
-          <span className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground bg-secondary px-3 py-1 rounded-full border border-border">
-            Tempo Real
-          </span>
+          {/* "Tempo real" só quando nenhum preço é estimado: com preço de referência (seed) o selo
+              mentia; o aviso acima da página já explica o que está estimado. */}
+          {!hasEstimatedPrices && (
+            <span className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground bg-secondary px-3 py-1 rounded-full border border-border">
+              Tempo real
+            </span>
+          )}
         </div>
 
         {/* Sem rolagem interna: com a barra oculta, linhas (ex.: SELIC) ficavam escondidas. A página rola. */}
