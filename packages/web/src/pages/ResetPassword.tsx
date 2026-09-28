@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthLayout } from "@/components/AuthLayout";
+import { StateIcon } from "@/components/StateIcon";
 import { useResetPassword } from "@/hooks/use-password-reset";
 import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
@@ -73,8 +74,13 @@ export function ResetPassword() {
 
   return (
     <AuthLayout
-      title="Redefinir senha"
-      subtitle="Escolha uma nova senha para sua conta InvestPro"
+      // Com o link inválido, "Escolha uma nova senha" contradizia o erro logo abaixo.
+      title={invalidLink ? "Link inválido" : "Redefinir senha"}
+      subtitle={
+        invalidLink
+          ? "Peça um novo link para redefinir sua senha."
+          : "Escolha uma nova senha para sua conta InvestPro"
+      }
       footer={
         <>
           Lembrou a senha?{" "}
@@ -89,8 +95,8 @@ export function ResetPassword() {
     >
       {status === "success" ? (
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <ShieldCheck size={24} className="text-primary" />
+          <div className="flex justify-center">
+            <StateIcon icon={ShieldCheck} tone="success" />
           </div>
           <p className="text-sm text-foreground">
             Sua senha foi redefinida com sucesso.
@@ -101,16 +107,13 @@ export function ResetPassword() {
         </div>
       ) : invalidLink ? (
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-            <ShieldAlert size={24} className="text-destructive" />
+          <div className="flex justify-center">
+            <StateIcon icon={ShieldAlert} tone="danger" />
           </div>
           <p className="text-sm text-foreground">{GENERIC_ERROR_MESSAGE}</p>
-          <Link
-            to="/forgot-password"
-            className="inline-block text-sm text-brand-primary hover:underline font-semibold"
-          >
-            Solicitar novo link
-          </Link>
+          <Button asChild className="w-full h-11 font-semibold">
+            <Link to="/forgot-password">Solicitar novo link</Link>
+          </Button>
         </div>
       ) : (
         <form

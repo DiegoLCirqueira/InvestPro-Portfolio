@@ -78,6 +78,10 @@ describe("ResetPassword", () => {
     renderResetPassword("/reset-password");
 
     expect(screen.getByText(/O link pode ser inválido/)).toBeInTheDocument();
+    // O título e o subtítulo não pedem mais "Escolha uma nova senha" junto do erro; a ação é um botão.
+    expect(screen.getByRole("heading", { level: 1, name: "Link inválido" })).toBeInTheDocument();
+    expect(screen.queryByText(/Escolha uma nova senha/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Solicitar novo link" })).toHaveClass("bg-primary-solid");
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 
