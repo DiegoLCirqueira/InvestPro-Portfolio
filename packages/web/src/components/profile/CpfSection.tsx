@@ -82,7 +82,7 @@ export function CpfSection({ savedCpf, onAlreadySet, shouldFocus }: CpfSectionPr
         <Button
           type="submit"
           variant="outline"
-          className="h-auto min-h-11"
+         
           disabled={cpfSetup.isSaving}
         >
           {cpfSetup.isSaving ? "Salvando..." : "Salvar CPF"}

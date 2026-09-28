@@ -34,11 +34,11 @@ export function EmptyState({
       <p className="text-sm text-muted-foreground max-w-sm">{message}</p>
       {action &&
         (action.to ? (
-          <Button asChild className="mt-1 h-auto min-h-11">
+          <Button asChild className="mt-1">
             <Link to={action.to}>{action.label}</Link>
           </Button>
         ) : (
-          <Button type="button" onClick={action.onClick} className="mt-1 h-auto min-h-11">
+          <Button type="button" onClick={action.onClick} className="mt-1">
             {action.label}
           </Button>
         ))}

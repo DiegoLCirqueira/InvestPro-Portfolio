@@ -126,7 +126,7 @@ function TopUpCard() {
         <Button
           type="submit"
           variant="outline"
-          className="h-auto min-h-11 shrink-0"
+          className="shrink-0"
           disabled={topUp.isPending || isLimitReached}
         >
           {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
@@ -151,7 +151,7 @@ function InvestorProfileSection() {
       }
     >
       <div className="flex justify-end">
-        <Button asChild variant="outline" className="min-h-11">
+        <Button asChild variant="outline">
           <Link to="/profile/investor-profile">
             {profile ? "Ver ou refazer" : "Descobrir meu perfil"}
             <ChevronRight aria-hidden="true" />
@@ -297,7 +297,7 @@ export function UserProfile() {
       {/* A única ação principal da página (verde cheio); as outras seções usam outline. */}
       <Button
         type="submit"
-        className="h-auto min-h-11 self-end"
+        className="self-end"
         disabled={updateProfile.isPending}
       >
         {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
@@ -346,7 +346,7 @@ export function UserProfile() {
                 description="Lista de todos os usuários cadastrados."
               >
                 <div className="flex justify-end">
-                  <Button asChild variant="outline" className="min-h-11">
+                  <Button asChild variant="outline">
                     <Link to="/admin/users">
                       <ShieldCheck aria-hidden="true" />
                       Abrir administração

@@ -14,6 +14,7 @@ import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   InvestorProfile as SavedProfile,
@@ -21,11 +22,6 @@ import type {
   InvestorProfileDefinition,
   InvestorQuestion,
 } from "@/types/investor-profile";
-
-const BUTTON_BASE =
-  "min-h-11 inline-flex items-center justify-center gap-2 px-5 rounded-xl text-sm font-bold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50";
-const PRIMARY_BUTTON = `${BUTTON_BASE} bg-primary-solid text-primary-foreground hover:opacity-90`;
-const SECONDARY_BUTTON = `${BUTTON_BASE} border border-border bg-surface-2 text-foreground hover:bg-surface-3`;
 
 // Questionário de perfil de investidor: uma pergunta por vez e, no fim, o
 // perfil calculado pelo servidor com a carteira de referência.
@@ -193,13 +189,13 @@ function Questionnaire({ questions, onDone }: QuestionnaireProps) {
 
       <div className="flex gap-3">
         {step > 0 && (
-          <button type="button" onClick={() => setStep((current) => current - 1)} className={SECONDARY_BUTTON}>
+          <Button type="button" variant="outline" onClick={() => setStep((current) => current - 1)}>
             Voltar
-          </button>
+          </Button>
         )}
-        <button type="submit" disabled={!selected || save.isPending} className={`${PRIMARY_BUTTON} flex-1`}>
+        <Button type="submit" className="flex-1" disabled={!selected || save.isPending}>
           {isLast ? (save.isPending ? "Calculando..." : "Ver meu perfil") : "Próxima"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -234,13 +230,13 @@ function ProfileResult({ profile, definition, onRetake }: ProfileResultProps) {
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Link to="/recommendations" className={`${PRIMARY_BUTTON} flex-1`}>
-          Ver recomendações para mim
-        </Link>
-        <button type="button" onClick={onRetake} className={SECONDARY_BUTTON}>
+        <Button asChild className="flex-1">
+          <Link to="/recommendations">Ver recomendações para mim</Link>
+        </Button>
+        <Button type="button" variant="outline" onClick={onRetake}>
           <RotateCcw size={16} aria-hidden="true" />
           Refazer questionário
-        </button>
+        </Button>
       </div>
     </div>
   );

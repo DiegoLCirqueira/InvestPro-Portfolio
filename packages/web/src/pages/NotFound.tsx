@@ -15,7 +15,7 @@ export function NotFound() {
     >
       <div className="flex flex-col items-center gap-6 text-center">
         <StateIcon icon={Compass} />
-        <Button asChild className="h-auto min-h-11">
+        <Button asChild>
           <Link to="/">Voltar ao início</Link>
         </Button>
       </div>

@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
@@ -66,20 +67,14 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             <div className="flex gap-3 justify-center">
-              <button
-                onClick={this.handleReset}
-                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-foreground text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
+              <Button type="button" variant="secondary" onClick={this.handleReset}>
                 <RefreshCw size={14} />
                 Tentar novamente
-              </button>
-              <button
-                onClick={this.handleGoHome}
-                className="min-h-11 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-solid hover:opacity-90 transition-opacity text-primary-foreground text-sm font-bold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
+              </Button>
+              <Button type="button" onClick={this.handleGoHome}>
                 <Home size={14} />
                 Voltar ao início
-              </button>
+              </Button>
             </div>
           </div>
         </div>

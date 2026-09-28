@@ -14,6 +14,7 @@ import { useOrderForm } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { OrderType } from "@/types/order";
+import { Button } from "@/components/ui/button";
 
 const TYPE_OPTIONS = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map(
   (value) => ({
@@ -179,13 +180,13 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         </FormField>
       )}
 
-      <button
+      <Button
         type="submit"
+        className="w-full"
         disabled={isSubmitBlocked}
-        className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {createOrder.isPending ? "Enviando..." : "Enviar Ordem"}
-      </button>
+      </Button>
     </form>
   );
 }

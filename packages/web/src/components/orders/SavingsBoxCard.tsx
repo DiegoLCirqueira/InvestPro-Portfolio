@@ -13,6 +13,7 @@ import {
   useSavingsBoxWithdraw,
 } from "@/hooks/use-savings-box";
 import { formatCurrency } from "@/lib/format";
+import { Button } from "@/components/ui/button";
 
 type SavingsBoxMode = "DEPOSIT" | "WITHDRAW";
 
@@ -107,15 +108,15 @@ export function SavingsBoxCard() {
             ariaLabel="Valor a movimentar na caixinha"
           />
         </FormField>
-        <button
+        <Button
           type="submit"
+          className="w-full"
           disabled={activeMutation.isPending}
-          className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {activeMutation.isPending
             ? "Enviando..."
             : SAVINGS_BOX_MODE_OPTIONS.find((o) => o.value === mode)?.label}
-        </button>
+        </Button>
       </form>
     </section>
   );

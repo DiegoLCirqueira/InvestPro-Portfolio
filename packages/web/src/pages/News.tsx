@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { FilterChips } from "@/components/FilterChips";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { useNewsFeed } from "@/hooks/use-news-feed";
 import { formatDateShort } from "@/lib/format";
 import type { NewsCategory } from "@/types/news";
@@ -155,25 +156,27 @@ export function News() {
 
       {data && data.total > data.limit && (
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
-          <button
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronLeft size={15} />
             Anterior
-          </button>
+          </Button>
           <span className="text-xs text-muted-foreground font-medium">
             Página {data.page} de {totalPage}
           </span>
-          <button
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPage, p + 1))}
             disabled={page >= totalPage}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Próxima
             <ChevronRight size={15} />
-          </button>
+          </Button>
         </div>
       )}
     </div>

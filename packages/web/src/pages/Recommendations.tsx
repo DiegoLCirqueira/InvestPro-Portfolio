@@ -109,7 +109,7 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
         <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />
       </div>
       {action && (
-        <Button asChild variant="link" className="mt-2 h-auto min-h-11 px-0">
+        <Button asChild variant="link" className="mt-2 px-0">
           <Link to={action.to}>
             {action.label}
             <ArrowRight aria-hidden="true" />
@@ -117,13 +117,12 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
         </Button>
       )}
       {item.category === "PROFILE" && (
-        <Link
-          to="/profile/investor-profile"
-          className="mt-4 min-h-11 inline-flex items-center gap-2 rounded-xl bg-primary-solid px-4 text-sm font-bold text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <Compass size={16} aria-hidden="true" />
-          Responder o questionário
-        </Link>
+        <Button asChild className="mt-4">
+          <Link to="/profile/investor-profile">
+            <Compass aria-hidden="true" />
+            Responder o questionário
+          </Link>
+        </Button>
       )}
     </article>
   );

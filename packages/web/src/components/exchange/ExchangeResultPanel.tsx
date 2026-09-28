@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
+import { Button } from "@/components/ui/button";
 
 interface ExchangeResultPanelProps {
   simulation: ExchangeSummary | null;
@@ -21,13 +22,13 @@ export function ExchangeResultPanel({
     return (
       <ExchangeResultCard variant="simulation" summary={simulation} revealOnMobile>
         <form onSubmit={onExecute} className="flex flex-col gap-2">
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={isExecuting}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {isExecuting ? "Realizando..." : "Realizar conversão"}
-          </button>
+          </Button>
           <p className="text-xs text-muted-foreground text-center">
             A cotação pode variar até a conversão ser realizada.
           </p>

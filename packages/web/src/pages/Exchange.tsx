@@ -16,6 +16,7 @@ import { useAvailableBalance } from "@/hooks/use-available-balance";
 import { formatCurrency } from "@/lib/format";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
+import { Button } from "@/components/ui/button";
 
 export function Exchange() {
   const { currencies, base, isLoading, error, refetch } = useExchange();
@@ -123,13 +124,13 @@ export function Exchange() {
             </button>
           </div>
 
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={flow.isSimulating}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer"
           >
             {flow.isSimulating ? "Simulando..." : "Converter"}
-          </button>
+          </Button>
           <p className="text-xs text-muted-foreground text-center">
             Converter apenas simula: nada é debitado até você realizar a conversão.
           </p>

@@ -21,6 +21,7 @@ import { PixKeyField } from "@/components/transfers/PixKeyField";
 import { segmentClassName } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
+import { Button } from "@/components/ui/button";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
   { value: "PIX", label: "PIX" },
@@ -363,13 +364,13 @@ export function Transfers() {
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={createTransfer.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
-          </button>
+          </Button>
         </form>
 
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
