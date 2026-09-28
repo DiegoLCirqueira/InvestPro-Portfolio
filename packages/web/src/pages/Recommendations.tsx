@@ -101,15 +101,15 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
   const action = recommendationAction(item);
   return (
     <article className={cardClassName}>
-      {/* Celular: selo acima do título (numa coluna à direita ele espremia o texto em ~5
-          palavras por linha); a partir de sm, à direita. */}
-      <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <SectionTitle className="mb-2">{item.title}</SectionTitle>
-          <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-        </div>
-        <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />
+      {/* Selo ao lado do título (também no celular) e descrição em largura total embaixo: antes,
+          numa coluna à direita de título + descrição, o selo espremia o texto em ~5 palavras. */}
+      <div className="flex items-start justify-between gap-3">
+        <SectionTitle className="min-w-0 flex-1">{item.title}</SectionTitle>
+        <span className="shrink-0">
+          <StatusBadge label={badge.label} tone={badge.tone} />
+        </span>
       </div>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
       {action && (
         <Button asChild variant="link" className="mt-2 px-0">
           <Link to={action.to}>
