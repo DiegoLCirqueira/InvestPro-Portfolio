@@ -21,7 +21,7 @@ export function ExchangeSkeleton() {
                 <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-3 w-28" />
               </div>
-              <Skeleton className="h-6 w-20 rounded-md" />
+              <Skeleton className="h-6 w-20 rounded-lg" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">

@@ -86,7 +86,7 @@ export function AdminUsers() {
                   <td className="px-4 py-3 text-foreground">{user.fullName}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-2xs font-semibold px-2 py-1 rounded-md uppercase tracking-wide ${
+                      className={`text-2xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide ${
                         user.role === "ADMIN"
                           ? "bg-brand-primary/15 text-brand-primary"
                           : "bg-secondary text-muted-foreground"

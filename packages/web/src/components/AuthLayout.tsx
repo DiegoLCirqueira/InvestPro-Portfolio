@@ -45,7 +45,7 @@ export function AuthLayout({
 
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-110 space-y-4">
-          <section className="rounded-3xl border border-border bg-surface-1/90 p-6 backdrop-blur-xl sm:p-10">
+          <section className="rounded-2xl border border-border bg-surface-1/90 p-6 backdrop-blur-xl sm:p-10">
             <div className="space-y-2 text-center">
               {eyebrow && (
                 <p className="text-sm font-semibold text-muted-foreground tabular-nums">{eyebrow}</p>

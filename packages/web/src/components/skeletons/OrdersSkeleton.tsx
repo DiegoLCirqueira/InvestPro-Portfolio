@@ -40,7 +40,7 @@ export function OrdersSkeleton() {
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-32" />
                 </div>
-                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-5 w-20 rounded-lg" />
               </div>
             ))}
           </div>

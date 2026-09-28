@@ -193,7 +193,7 @@ export function MarketAnalysis() {
             >
               <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
-                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-secondary border border-border">
+                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-lg bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
                 </span>
               </h2>
@@ -281,13 +281,13 @@ export function MarketAnalysis() {
                         key={asset.id}
                         className="relative bg-secondary/40 hover:bg-secondary/70 transition-colors"
                       >
-                        <td className="py-3 pl-4 rounded-l-xl border-y border-l border-transparent">
+                        <td className="py-3 pl-4 rounded-l-lg border-y border-l border-transparent">
                           <div className="flex flex-col min-w-0">
                             {/* after:inset-0 estica o link pela linha toda: um único link por ativo. */}
                             <Link
                               to={orderLinkFor(asset)}
                               aria-label={tradeLinkLabel(asset)}
-                              className="font-bold text-sm text-foreground transition-colors truncate after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                              className="font-bold text-sm text-foreground transition-colors truncate after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                             >
                               {asset.ticker}
                             </Link>
@@ -314,7 +314,7 @@ export function MarketAnalysis() {
                         >
                           {formatPercent(asset.changePercent)}
                         </td>
-                        <td className="py-3 pr-4 rounded-r-xl text-right border-y border-r border-transparent">
+                        <td className="py-3 pr-4 rounded-r-lg text-right border-y border-r border-transparent">
                           <SentimentBadge asset={asset} />
                         </td>
                       </tr>

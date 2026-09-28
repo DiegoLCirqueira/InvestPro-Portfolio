@@ -65,7 +65,7 @@ function TransferTypeHelp({ label, help }: { label: string; help: string }) {
           side="top"
           sideOffset={4}
           collisionPadding={16}
-          className="z-50 max-w-64 rounded-md border border-border bg-surface-3 px-3 py-1.5 text-xs text-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+          className="z-50 max-w-64 rounded-lg border border-border bg-surface-3 px-3 py-1.5 text-xs text-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
         >
           {help}
         </PopoverPrimitive.Content>

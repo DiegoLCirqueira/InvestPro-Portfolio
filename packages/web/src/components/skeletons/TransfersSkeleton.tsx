@@ -36,7 +36,7 @@ export function TransfersSkeleton() {
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-3 w-36" />
                 </div>
-                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-5 w-20 rounded-lg" />
               </div>
             ))}
           </div>

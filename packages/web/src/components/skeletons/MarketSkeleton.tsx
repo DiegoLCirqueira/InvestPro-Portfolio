@@ -49,7 +49,7 @@ export function MarketSkeleton() {
               <Skeleton className="h-3.5 w-12" />
               <Skeleton className="h-3.5 w-14" />
               <div className="ml-auto">
-                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-5 w-20 rounded-lg" />
               </div>
             </div>
           ))}

@@ -30,7 +30,7 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
   const { label, icon: TypeIcon } = TYPE_META[position.type];
 
   return (
-    <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-xl transition-colors">
+    <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
       <div className="flex items-center gap-3">
         <div
           className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center ${TYPE_COLORS[position.type]}`}
@@ -67,7 +67,7 @@ export function Assets() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 animate-pulse"
+              className="flex items-center justify-between p-3 rounded-lg bg-secondary/40 animate-pulse"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-secondary" />

@@ -92,6 +92,8 @@
   --text-2xs--line-height: 1rem;
 
   /* ── Border radius ───────────────────────────── */
+  /* Papéis: controle (botão, campo, seletor) rounded-xl; contêiner (card, diálogo) rounded-2xl;
+     item interno (linha, selo, ícone, tooltip) rounded-lg; pílula rounded-full. */
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
