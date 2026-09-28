@@ -66,6 +66,24 @@ describe("Recommendations (pelo perfil de investidor)", () => {
     expect(screen.getByText("Renda Fixa")).toBeInTheDocument();
   });
 
+  it("cada sugestão leva à próxima ação, já no destino certo", async () => {
+    renderWith({
+      profile: "MODERATE",
+      allocation: [],
+      items: [
+        { id: "idle-cash", category: "OPPORTUNITY", title: "Dinheiro parado em conta", description: "..." },
+        { id: "increase-FIXED_INCOME", category: "DIVERSIFICATION", title: "Aumentar a posição em renda fixa", description: "..." },
+        { id: "increase-FOREIGN_CURRENCY", category: "DIVERSIFICATION", title: "Aumentar a posição em moedas", description: "..." },
+        { id: "aligned", category: "ALIGNED", title: "Carteira alinhada ao seu perfil", description: "..." },
+      ],
+    });
+
+    expect(await screen.findByRole("link", { name: /Depositar na caixinha/ })).toHaveAttribute("href", "/orders#caixinha");
+    expect(screen.getByRole("link", { name: /Ver ativos no Mercado/ })).toHaveAttribute("href", "/market?tipo=FIXED_INCOME");
+    expect(screen.getByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
+    expect(screen.getAllByRole("link", { name: /Depositar|Ver ativos|Ir para/ })).toHaveLength(3);
+  });
+
   it("deixa claro que é conteúdo educativo, sem alegar inteligência artificial", async () => {
     const { container } = renderWith({ profile: null, allocation: [], items: [] });
     await screen.findByRole("note");

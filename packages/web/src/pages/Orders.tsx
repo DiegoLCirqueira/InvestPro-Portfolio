@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { ClipboardList, LogIn } from "lucide-react";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,7 +15,17 @@ import { ApiError } from "@/services/api";
 export function Orders() {
   const { data, error, isLoading, refetch } = useOrders();
 
+  const { hash } = useLocation();
+
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+
+  // /orders#caixinha (vindo das Recomendações): a Caixinha fica no fim da página, então rola
+  // até ela quando a página termina de carregar.
+  useEffect(() => {
+    if (hash === "#caixinha" && !isLoading) {
+      document.getElementById("caixinha")?.scrollIntoView({ block: "start" });
+    }
+  }, [hash, isLoading]);
 
   const orders = [...(data?.items ?? [])].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

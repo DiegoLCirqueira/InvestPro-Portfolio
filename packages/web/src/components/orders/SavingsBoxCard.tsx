@@ -67,8 +67,9 @@ export function SavingsBoxCard() {
   const handleSubmit = useSubmitOnce(submitSavingsBox);
 
   return (
-    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
-      <SectionTitle>Caixinha</SectionTitle>
+    // id="caixinha": destino do "Depositar na caixinha" das Recomendações (/orders#caixinha).
+    <section id="caixinha" aria-labelledby="caixinha-title" className="scroll-mt-4 p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
+      <SectionTitle id="caixinha-title">Caixinha</SectionTitle>
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Saldo na caixinha</span>
@@ -116,6 +117,6 @@ export function SavingsBoxCard() {
             : SAVINGS_BOX_MODE_OPTIONS.find((o) => o.value === mode)?.label}
         </button>
       </form>
-    </div>
+    </section>
   );
 }

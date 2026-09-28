@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -117,7 +116,13 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
 }
 
 export function MarketAnalysis() {
-  const [filter, setFilter] = useState<MarketAssetType | "ALL">("ALL");
+  // Filtro na URL (?tipo=STOCK): dá para compartilhar e as Recomendações abrem o Mercado já filtrado.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tipo = searchParams.get("tipo");
+  const filter: MarketAssetType | "ALL" =
+    TYPE_FILTERS.find((option) => option.value === tipo)?.value ?? "ALL";
+  const setFilter = (value: MarketAssetType | "ALL") =>
+    setSearchParams(value === "ALL" ? {} : { tipo: value }, { replace: true });
 
   const { data, error, isLoading, refetch } = useMarketAssets({
     type: filter === "ALL" ? undefined : filter,

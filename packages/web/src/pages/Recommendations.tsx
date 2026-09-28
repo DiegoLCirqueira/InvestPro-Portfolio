@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Compass } from "lucide-react";
+import { ArrowRight, Compass } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
@@ -77,17 +78,44 @@ export function Recommendations() {
   );
 }
 
+// Próxima ação de cada sugestão, pelo id estável que o servidor gera
+// (recommendations.domain.ts): antes nenhuma levava a lugar nenhum.
+const MARKET_TYPES = new Set(["STOCK", "CRYPTO", "FIXED_INCOME"]);
+
+function recommendationAction(item: PersonalizedRecommendation): { label: string; to: string } | null {
+  if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: "/orders#caixinha" };
+  if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
+  const [direction, type] = item.id.split("-");
+  if (direction === "increase" && type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
+  if (direction === "increase" && MARKET_TYPES.has(type)) {
+    return { label: "Ver ativos no Mercado", to: `/market?tipo=${type}` };
+  }
+  if (direction === "reduce") return { label: "Ir para Ordens", to: "/orders" };
+  return null;
+}
+
 function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
   const badge = CATEGORY_BADGES[item.category];
+  const action = recommendationAction(item);
   return (
     <article className="rounded-2xl border border-border bg-surface-1 p-5">
-      <div className="flex items-start justify-between gap-4">
+      {/* Celular: selo acima do título (numa coluna à direita ele espremia o texto em ~5
+          palavras por linha); a partir de sm, à direita. */}
+      <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
           <SectionTitle className="mb-2">{item.title}</SectionTitle>
           <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
         </div>
         <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />
       </div>
+      {action && (
+        <Button asChild variant="link" className="mt-2 h-auto min-h-11 px-0">
+          <Link to={action.to}>
+            {action.label}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      )}
       {item.category === "PROFILE" && (
         <Link
           to="/profile/investor-profile"
