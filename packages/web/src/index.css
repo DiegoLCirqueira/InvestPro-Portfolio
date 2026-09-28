@@ -68,6 +68,8 @@
 
   /* ── Semantic extras ─────────────────────────── */
   --color-warning: #8a5d00;
+  /* Borda de aviso (preço estimado): âmbar que ainda lê como amarelo no claro, >= 3:1 sobre os cards. */
+  --color-warning-border: #b97f00;
   --color-success: #077455;
   /* Azul "info": 4,5:1+ como texto do selo sobre o próprio fundo a 15%. */
   --color-info: #2f5bd0;
@@ -212,6 +214,7 @@
   --color-ring: #25c68d;
 
   --color-warning: #d9a441;
+  --color-warning-border: #d9a441;
   --color-success: #25c68d;
   --color-info: #6b98f7;
   --color-highlight: #a78bfa;

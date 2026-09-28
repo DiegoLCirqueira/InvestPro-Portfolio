@@ -65,7 +65,13 @@ function sentimentFor(asset: MarketAsset): Sentiment {
 function SentimentBadge({ asset }: { asset: MarketAsset }) {
   const sentiment = sentimentFor(asset);
   if (sentiment === "Neutro") return null;
-  return <StatusBadge label={sentiment} tone={SENTIMENT_TONES[sentiment]} uniformWidth />;
+  return (
+    <StatusBadge
+      label={sentiment}
+      tone={SENTIMENT_TONES[sentiment]}
+      uniformWidth
+    />
+  );
 }
 
 // Variação zero é neutra: nem verde de alta nem vermelho de queda.
@@ -97,7 +103,9 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
         {...estimatedProps(asset)}
         className={cn(
           "block -mx-2 px-2 py-3 rounded-lg border hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          isEstimatedPrice(asset) ? "border-warning" : "border-transparent",
+          isEstimatedPrice(asset)
+            ? "border-warning-border ring-1 ring-inset ring-warning-border"
+            : "border-transparent",
         )}
       >
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
@@ -110,9 +118,7 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
           <SentimentBadge asset={asset} />
         </div>
         {name && (
-          <p className="text-xs text-muted-foreground mb-2 truncate">
-            {name}
-          </p>
+          <p className="text-xs text-muted-foreground mb-2 truncate">{name}</p>
         )}
         <div className="flex items-center justify-between">
           <span className="flex flex-wrap items-center gap-2">
@@ -206,7 +212,8 @@ export function MarketAnalysis() {
               className={cn(
                 cardClassName,
                 "flex items-center justify-between gap-3 md:block md:p-6 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                isEstimatedPrice(index) && "border-warning hover:border-warning",
+                isEstimatedPrice(index) &&
+                  "border-warning-border ring-1 ring-inset ring-warning-border hover:border-warning-border",
               )}
             >
               <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
@@ -294,14 +301,18 @@ export function MarketAnalysis() {
                   {assets.map((asset) => {
                     const name = assetDisplayName(asset);
                     // Com border-separate a borda da linha é a das células: todas levam o tom de aviso.
-                    const rowBorder = isEstimatedPrice(asset) ? "border-warning" : "border-transparent";
+                    const rowBorder = isEstimatedPrice(asset)
+                      ? "border-warning-border"
+                      : "border-transparent";
                     return (
                       <tr
                         key={asset.id}
                         {...estimatedProps(asset)}
                         className="relative bg-secondary/40 hover:bg-secondary/70 transition-colors"
                       >
-                        <td className={`py-3 pl-4 rounded-l-lg border-y border-l ${rowBorder}`}>
+                        <td
+                          className={`py-3 pl-4 rounded-l-lg border-y-2 border-l-2 ${rowBorder}`}
+                        >
                           <div className="flex flex-col min-w-0">
                             {/* after:inset-0 estica o link pela linha toda: um único link por ativo. */}
                             <Link
@@ -318,23 +329,29 @@ export function MarketAnalysis() {
                             )}
                           </div>
                         </td>
-                        <td className={`py-3 text-sm text-muted-foreground border-y ${rowBorder}`}>
+                        <td
+                          className={`py-3 text-sm text-muted-foreground border-y-2 ${rowBorder}`}
+                        >
                           {ASSET_TYPE_LABELS[asset.type]}
                         </td>
-                        <td className={`py-3 text-sm font-medium tabular-nums border-y ${rowBorder}`}>
+                        <td
+                          className={`py-3 text-sm font-medium tabular-nums border-y-2 ${rowBorder}`}
+                        >
                           <div className="flex flex-wrap items-center justify-end gap-2">
                             {isEstimatedPrice(asset) && <EstimatedPriceNote />}
                             <span>{formatPrice(asset.price)}</span>
                           </div>
                         </td>
                         <td
-                          className={`py-3 text-sm font-bold tabular-nums text-right truncate border-y ${rowBorder} ${changeToneClass(
+                          className={`py-3 text-sm font-bold tabular-nums text-right truncate border-y-2 ${rowBorder} ${changeToneClass(
                             asset,
                           )}`}
                         >
                           {formatPercent(asset.changePercent)}
                         </td>
-                        <td className={`py-3 pr-4 rounded-r-lg text-right border-y border-r ${rowBorder}`}>
+                        <td
+                          className={`py-3 pr-4 rounded-r-lg text-right border-y-2 border-r-2 ${rowBorder}`}
+                        >
                           <SentimentBadge asset={asset} />
                         </td>
                       </tr>
