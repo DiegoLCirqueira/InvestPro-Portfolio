@@ -3,6 +3,7 @@ import { SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { FilterChips } from "@/components/FilterChips";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { EstimatedPriceTag } from "@/components/market/EstimatedPriceTag";
@@ -165,24 +166,12 @@ export function MarketAnalysis() {
       <PageHeader
         title="Análise de Mercado"
         actions={
-          // No celular os filtros rolam na horizontal: a borda direita esmaece para indicar que há mais.
-          <div className="flex gap-2 overflow-x-auto scrollbar-none pr-6 [mask-image:linear-gradient(to_right,black_85%,transparent)] nav:overflow-visible nav:pr-0 nav:[mask-image:none]">
-            {TYPE_FILTERS.map((filterOption) => (
-              <button
-                key={filterOption.value}
-                type="button"
-                aria-pressed={filter === filterOption.value}
-                onClick={() => setFilter(filterOption.value)}
-                className={`shrink-0 whitespace-nowrap min-h-11 text-2xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                  filter === filterOption.value
-                    ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                    : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
-                }`}
-              >
-                {filterOption.label}
-              </button>
-            ))}
-          </div>
+          <FilterChips
+            options={TYPE_FILTERS}
+            value={filter}
+            onChange={setFilter}
+            ariaLabel="Filtrar por tipo de ativo"
+          />
         }
       />
 

@@ -9,6 +9,7 @@ import {
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { FilterChips } from "@/components/FilterChips";
 import { PageHeader } from "@/components/PageHeader";
 import { useNewsFeed } from "@/hooks/use-news-feed";
 import { formatDateShort } from "@/lib/format";
@@ -88,25 +89,16 @@ export function News() {
         description="Fique por dentro do que move o seu dinheiro hoje."
       />
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {visibleFilters.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
-            onClick={() => {
-              setFilter(option.value);
-              setPage(1);
-            }}
-            className={`min-h-11 text-2xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              filter === option.value
-                ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <FilterChips
+          options={visibleFilters}
+          value={filter}
+          onChange={(value) => {
+            setFilter(value);
+            setPage(1);
+          }}
+          ariaLabel="Filtrar notícias por categoria"
+        />
       </div>
 
       <div className="grid gap-4">
@@ -124,18 +116,19 @@ export function News() {
               rel="noopener noreferrer"
               className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
             >
-              <div className="flex justify-between items-start mb-3 gap-3">
+              <div className="flex flex-wrap justify-between items-start mb-3 gap-x-3 gap-y-2">
                 <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-2xs font-semibold rounded-full uppercase tracking-wide">
                   {CATEGORY_LABELS[item.category] ?? item.category}
                 </span>
-                <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
+                <div className="flex min-w-0 items-center gap-3 text-muted-foreground text-xs">
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} />
                     <span className="min-w-[64px] text-right tabular-nums">
                       {formatDateShort(item.publishedAt)}
                     </span>
                   </span>
-                  <span className="hidden sm:inline-block min-w-[140px] truncate text-muted-foreground">
+                  {/* A fonte aparece também no celular (antes sumia), truncada se for longa. */}
+                  <span className="max-w-[9rem] sm:max-w-none sm:min-w-[140px] truncate text-muted-foreground">
                     {item.source}
                   </span>
                   <ExternalLink
@@ -149,8 +142,9 @@ export function News() {
                 {item.title}
               </h2>
 
+              {/* ~70 caracteres por linha e 2 linhas: no desktop o resumo corria por ~1.300px. */}
               {item.summary && (
-                <p className="text-muted-foreground text-xs leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-[70ch] line-clamp-2">
                   {item.summary}
                 </p>
               )}
