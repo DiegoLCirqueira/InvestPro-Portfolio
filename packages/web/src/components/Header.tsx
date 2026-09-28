@@ -28,8 +28,8 @@ export function Header() {
       {/* Só a data: a saudação virou o título (PageHeader) do Painel, e o topo das outras
           páginas não reserva mais uma faixa vazia para ela. */}
       <div className="hidden nav:flex items-center gap-2 text-brand-primary">
-        <CalendarDays size={14} className="opacity-80" />
-        <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">
+        <CalendarDays size={14} aria-hidden="true" />
+        <span className="text-2xs font-semibold uppercase tracking-wider">
           {dateStr}
         </span>
       </div>

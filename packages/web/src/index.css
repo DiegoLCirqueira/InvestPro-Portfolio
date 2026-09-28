@@ -86,6 +86,11 @@
     "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
+  /* Menor texto do site (11px): rótulos de grupo/coluna e selos, sempre em text-2xs
+     font-semibold uppercase tracking-wider. Descrições e metadados usam text-xs (12px). */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
   /* ── Border radius ───────────────────────────── */
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;

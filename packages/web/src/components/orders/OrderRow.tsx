@@ -47,7 +47,7 @@ export function OrderRow({ order }: { order: Order }) {
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{order.ticker}</span>
           <SideText side={order.side} />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
             {ORDER_TYPE_LABELS[order.type]}
           </span>
         </div>

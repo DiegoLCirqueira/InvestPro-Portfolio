@@ -13,7 +13,7 @@ const TONE_CLASSES: Record<StatusTone, string> = {
 // A decoração é medida em em: padding e largura acompanham a fonte, então o
 // texto sempre cabe dentro dela, em qualquer viewport.
 const BASE_CLASSES =
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md px-[0.7em] py-[0.4em] text-[0.6875rem] font-semibold uppercase tracking-wide";
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md px-[0.7em] py-[0.4em] text-2xs font-semibold uppercase tracking-wide";
 
 // "Oportunidade" (o rótulo mais longo) ocupa ~7,5em + 1,4em de padding.
 const UNIFORM_WIDTH_CLASS = "min-w-[9em]";

@@ -78,7 +78,7 @@ export function Sidebar() {
       <nav className="flex-1 px-4 space-y-6 overflow-y-auto">
         {MENU_GROUPS.map((group) => (
           <div key={group.label} className="space-y-2">
-            <p className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="px-4 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
               {group.label}
             </p>
             {group.items.map((item) => (

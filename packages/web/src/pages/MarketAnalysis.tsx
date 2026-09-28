@@ -94,7 +94,7 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
           <SentimentBadge asset={asset} />
         </div>
         {name && (
-          <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
+          <p className="text-xs text-muted-foreground mb-2 truncate">
             {name}
           </p>
         )}
@@ -168,7 +168,7 @@ export function MarketAnalysis() {
                 type="button"
                 aria-pressed={filter === filterOption.value}
                 onClick={() => setFilter(filterOption.value)}
-                className={`shrink-0 whitespace-nowrap min-h-11 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`shrink-0 whitespace-nowrap min-h-11 text-2xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   filter === filterOption.value
                     ? "bg-primary-solid text-primary-foreground border-brand-primary"
                     : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
@@ -194,7 +194,7 @@ export function MarketAnalysis() {
             >
               <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-secondary border border-border">
+                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
                 </span>
               </h2>
@@ -227,7 +227,7 @@ export function MarketAnalysis() {
       <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
         <div className="flex flex-wrap justify-between items-center gap-2 mb-4 sm:mb-6">
           <SectionTitle>Composição e Performance</SectionTitle>
-          <span className="whitespace-nowrap text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">
+          <span className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground bg-secondary px-3 py-1 rounded-full border border-border">
             Tempo Real
           </span>
         </div>
@@ -262,7 +262,7 @@ export function MarketAnalysis() {
                   <col className="w-[20%]" />
                 </colgroup>
                 <thead>
-                  <tr className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
+                  <tr className="text-muted-foreground text-2xs font-semibold uppercase tracking-wider">
                     <th className="pb-2 pl-4">Ativo</th>
                     <th className="pb-2">Tipo</th>
                     <th className="pb-2 text-right">Preço</th>
@@ -289,7 +289,7 @@ export function MarketAnalysis() {
                               {asset.ticker}
                             </Link>
                             {name && (
-                              <span className="text-[10px] text-muted-foreground font-medium truncate">
+                              <span className="text-xs text-muted-foreground truncate">
                                 {name}
                               </span>
                             )}

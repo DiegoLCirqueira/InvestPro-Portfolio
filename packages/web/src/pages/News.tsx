@@ -98,7 +98,7 @@ export function News() {
               setFilter(option.value);
               setPage(1);
             }}
-            className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            className={`min-h-11 text-2xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               filter === option.value
                 ? "bg-primary-solid text-primary-foreground border-brand-primary"
                 : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
@@ -125,7 +125,7 @@ export function News() {
               className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
             >
               <div className="flex justify-between items-start mb-3 gap-3">
-                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-[10px] font-bold rounded-full uppercase">
+                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-2xs font-semibold rounded-full uppercase tracking-wide">
                   {CATEGORY_LABELS[item.category] ?? item.category}
                 </span>
                 <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
