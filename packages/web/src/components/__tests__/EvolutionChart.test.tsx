@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { EvolutionChart } from "@/components/EvolutionChart";
-import { evolutionAxis } from "@/lib/chart-axis";
+import { axisCurrencyFormatter } from "@/lib/chart-axis";
 
 const ONE_DAY = [{ date: "2026-09-25", balance: 1500, netFlow: 1500 }];
 
@@ -35,30 +35,25 @@ describe("EvolutionChart", () => {
   });
 });
 
-describe("evolutionAxis (eixo Y do patrimônio)", () => {
-  it("variação de ~1% não ocupa a altura inteira do gráfico", () => {
-    const [lower, upper] = evolutionAxis(10_000, 10_100).domain;
-    expect((10_100 - 10_000) / (upper - lower)).toBeLessThan(0.25);
+describe("axisCurrencyFormatter (eixo Y do patrimônio)", () => {
+  it("variação pequena mostra centavos, para os rótulos não se repetirem", () => {
+    const axis = axisCurrencyFormatter(9_998.9, 10_000.25);
+    const labels = [9_999, 9_999.5, 10_000].map(axis.format);
+    expect(new Set(labels).size).toBe(3);
+    expect(labels[1]).toMatch(/9\.999,50/);
   });
 
-  it("marcas redondas com rótulos compactos e sem repetição", () => {
-    const axis = evolutionAxis(10_000, 10_000);
-    const labels = axis.ticks.map(axis.format);
-    expect(new Set(labels).size).toBe(axis.ticks.length);
-    expect(labels.some((label) => /^R\$\s?10\s?mil$/.test(label))).toBe(true);
-    expect(labels.some((label) => /10,2\s?mil/.test(label))).toBe(true);
+  it("variação normal usa reais inteiros com milhar", () => {
+    expect(axisCurrencyFormatter(10_000, 10_500).format(10_110)).toMatch(
+      /R\$\s?10\.110$/,
+    );
   });
 
-  it("não desce abaixo de zero numa conta que começou vazia", () => {
-    expect(evolutionAxis(0, 1_500).domain[0]).toBe(0);
-  });
-
-  it("acima de 1 milhão abrevia em mi", () => {
-    const axis = evolutionAxis(2_000_000, 3_000_000);
-    expect(axis.format(2_500_000)).toMatch(/2,5\s?mi/);
-  });
-
-  it("abaixo de mil mostra reais sem abreviar", () => {
-    expect(evolutionAxis(400, 600).format(500)).toMatch(/R\$\s?500$/);
+  it("acima de 1 milhão abrevia só se a variação for grande", () => {
+    expect(
+      axisCurrencyFormatter(2_000_000, 3_000_000).format(3_010_000),
+    ).toMatch(/3,01\s?mi/);
+    const flat = axisCurrencyFormatter(3_010_000, 3_010_020);
+    expect(flat.format(3_010_010)).not.toMatch(/mi/);
   });
 });
