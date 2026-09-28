@@ -126,6 +126,17 @@ describe("NewOrderForm", () => {
     expect(screen.getByText(/1\.010,00/)).toBeTruthy();
   });
 
+  it("Valor total é uma linha de resumo calculada, não um campo para digitar", () => {
+    renderForm();
+    typeTicker("BTC");
+    fireEvent.change(screen.getByLabelText("Quantidade"), {
+      target: { value: "10" },
+    });
+
+    expect(screen.getByText("Valor total")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Valor total" })).not.toBeInTheDocument();
+  });
+
   it("ativo com preço 'seed' mostra a nota de preço estimado sob o Valor total; ao vivo não", () => {
     renderForm();
     fireEvent.change(screen.getByLabelText("Quantidade"), {
