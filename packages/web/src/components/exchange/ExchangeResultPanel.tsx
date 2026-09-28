@@ -19,7 +19,7 @@ export function ExchangeResultPanel({
 }: ExchangeResultPanelProps) {
   if (simulation) {
     return (
-      <ExchangeResultCard variant="simulation" summary={simulation}>
+      <ExchangeResultCard variant="simulation" summary={simulation} revealOnMobile>
         <form onSubmit={onExecute} className="flex flex-col gap-2">
           <button
             type="submit"
@@ -40,8 +40,9 @@ export function ExchangeResultPanel({
     return <ExchangeResultCard variant="confirmation" summary={executed} />;
   }
 
+  // Vazio, o card só ocupava espaço abaixo da dobra no celular: aparece só no desktop.
   return (
-    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+    <div className="hidden nav:flex p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex-col gap-4">
       <SectionTitle>Resultado</SectionTitle>
       <p className="text-sm text-muted-foreground text-center py-16">
         Preencha o valor e clique em Converter para simular a conversão.

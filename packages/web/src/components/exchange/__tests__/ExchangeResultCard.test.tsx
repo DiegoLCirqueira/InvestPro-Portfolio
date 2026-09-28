@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
 
@@ -34,5 +34,34 @@ describe("ExchangeResultCard", () => {
     expect(text).toContain("Você recebeu");
     expect(text).toMatch(/R\$\s10,00/);
     expect(text).toMatch(/US\$\s1,93/);
+  });
+});
+
+describe("ExchangeResultCard no celular (resultado abaixo da dobra)", () => {
+  const mockViewport = (isMobile: boolean) =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("max-width") ? isMobile : false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("no celular, a simulação recebe o foco no título ao aparecer", () => {
+    mockViewport(true);
+    render(<ExchangeResultCard variant="simulation" summary={summary} revealOnMobile />);
+    expect(screen.getByRole("heading", { name: "Simulação" })).toHaveFocus();
+  });
+
+  it("no desktop nada rola nem rouba o foco", () => {
+    mockViewport(false);
+    render(<ExchangeResultCard variant="simulation" summary={summary} revealOnMobile />);
+    expect(screen.getByRole("heading", { name: "Simulação" })).not.toHaveFocus();
+  });
+
+  it("a confirmação (depois de Realizar conversão) não rouba o foco", () => {
+    mockViewport(true);
+    render(<ExchangeResultCard variant="confirmation" summary={summary} />);
+    expect(screen.getByRole("heading", { name: /Conversão realizada/ })).not.toHaveFocus();
   });
 });
