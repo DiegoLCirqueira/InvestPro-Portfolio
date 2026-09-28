@@ -132,7 +132,7 @@ export function ResetPassword() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••"
+                placeholder="Nova senha"
                 autoComplete="new-password"
                 aria-invalid={!!errors.password}
                 {...register("password")}
@@ -165,7 +165,7 @@ export function ResetPassword() {
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••"
+                placeholder="Repita a nova senha"
                 autoComplete="new-password"
                 aria-invalid={!!errors.confirmPassword}
                 {...register("confirmPassword")}

@@ -122,7 +122,7 @@ export function Register() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••"
+              placeholder="Crie uma senha"
               autoComplete="new-password"
               aria-invalid={!!errors.password}
               {...register("password")}
@@ -155,7 +155,7 @@ export function Register() {
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="••••••"
+              placeholder="Repita a senha"
               autoComplete="new-password"
               aria-invalid={!!errors.confirmPassword}
               {...register("confirmPassword")}
