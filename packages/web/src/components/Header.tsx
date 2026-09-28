@@ -63,7 +63,7 @@ export function Header() {
             ref={logoutButtonRef}
             type="button"
             onClick={() => setConfirmLogoutOpen(true)}
-            className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-all group"
+            className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-colors group"
             aria-label="Sair"
             title="Sair"
           >

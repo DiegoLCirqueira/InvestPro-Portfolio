@@ -118,7 +118,7 @@ export function Dashboard() {
                   type="button"
                   aria-pressed={period === option.value}
                   onClick={() => setPeriod(option.value)}
-                  className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  className={`min-h-11 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                     // Seletor, não ação: sem o verde cheio do botão principal (ver ui/segmented.ts).
                     period === option.value
                       ? "bg-primary/8 text-primary ring-1 ring-primary"

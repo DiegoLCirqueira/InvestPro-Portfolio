@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useNewsFeed } from "@/hooks/use-news-feed";
 import { formatDateShort } from "@/lib/format";
+import { preferredScrollBehavior } from "@/lib/motion";
 import type { NewsCategory } from "@/types/news";
 
 const CATEGORY_FILTERS: { value: NewsCategory | "ALL"; label: string }[] = [
@@ -46,7 +47,7 @@ export function News() {
   });
 
   useEffect(() => {
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    topRef.current?.scrollIntoView({ behavior: preferredScrollBehavior(), block: "start" });
   }, [page]);
 
   const items = data?.items ?? [];
@@ -115,7 +116,7 @@ export function News() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
+              className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-colors group block"
             >
               <div className="flex flex-wrap justify-between items-start mb-3 gap-x-3 gap-y-2">
                 <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-2xs font-semibold rounded-full uppercase tracking-wide">

@@ -55,7 +55,7 @@ const MENU_GROUPS: MenuGroup[] = [
 ];
 
 function menuLinkClass({ isActive }: { isActive: boolean }) {
-  return `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+  return `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 group ${
     isActive
       ? "bg-secondary text-primary"
       : "text-muted-foreground hover:text-foreground hover:bg-secondary"

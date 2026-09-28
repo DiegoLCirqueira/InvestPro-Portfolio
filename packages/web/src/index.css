@@ -292,6 +292,23 @@ body {
     scroll-behavior: smooth;
   }
 
+  /* "Reduzir movimento" no sistema: sem rolagem suave, zoom, pulsar nem animação de diálogo.
+     Duração quase zero (não "none"): o Radix espera o fim da animação para desmontar o diálogo. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
   }

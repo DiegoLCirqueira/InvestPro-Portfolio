@@ -10,7 +10,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     <button
       type="button"
       onClick={toggle}
-      className={`flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${className}`}
+      className={`flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${className}`}
       aria-label={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
       aria-pressed={isDark}
     >

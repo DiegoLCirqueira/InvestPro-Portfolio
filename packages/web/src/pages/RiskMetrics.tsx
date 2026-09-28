@@ -167,7 +167,7 @@ function MetricCard({ metric }: { metric: MetricView }) {
       <p className="text-xs text-muted-foreground">{metric.description}</p>
       <div className="mt-auto h-1.5 overflow-hidden rounded-full bg-secondary">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${good ? "bg-brand-primary" : "bg-destructive"}`}
+          className={`h-full rounded-full transition-[width] duration-500 ${good ? "bg-brand-primary" : "bg-destructive"}`}
           style={{ width: `${metric.barValue(metric.value)}%` }}
         />
       </div>
@@ -278,7 +278,7 @@ export function RiskMetrics() {
 
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${riskScoreBar(data.score)}`}
+              className={`h-full rounded-full transition-[width] duration-500 ${riskScoreBar(data.score)}`}
               style={{ width: `${Math.min(100, Math.max(0, data.score))}%` }}
             />
           </div>

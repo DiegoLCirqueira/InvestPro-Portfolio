@@ -32,7 +32,7 @@ export function NotificationsMenu() {
         aria-label="Notificações"
         aria-haspopup="true"
         aria-expanded={isOpen}
-        className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Bell size={20} />
       </button>
