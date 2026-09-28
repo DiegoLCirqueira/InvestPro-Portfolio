@@ -182,9 +182,12 @@ export function MarketAnalysis() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
         {highlights.map((index) => {
           return (
-            <div
+            // Destaque clicável como as linhas da tabela: no celular é o primeiro alvo de toque.
+            <Link
               key={index.ticker}
-              className="flex items-center justify-between gap-3 md:block p-4 md:p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
+              to={orderLinkFor(index)}
+              aria-label={tradeLinkLabel(index)}
+              className="flex items-center justify-between gap-3 md:block p-4 md:p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
@@ -213,7 +216,7 @@ export function MarketAnalysis() {
                   )}
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

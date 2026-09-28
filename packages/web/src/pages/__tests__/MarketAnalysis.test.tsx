@@ -98,13 +98,22 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
       expect(link).toHaveAttribute("href", "/orders?ticker=PETR4");
   });
 
+  it("os cards de destaque do topo também levam à ordem do ativo", async () => {
+    await renderMarket([asset("PETR4", "live")]);
+
+    const highlight = screen
+      .getAllByRole("link", { name: "Negociar PETR4 (PETR4 SA)" })
+      .find((link) => link.querySelector("h2"));
+    expect(highlight).toHaveAttribute("href", "/orders?ticker=PETR4");
+  });
+
   it("nome igual ao ticker não se repete no rótulo do link nem como subtítulo", async () => {
     await renderMarket([{ ...asset("PETR4", "live"), name: "PETR4" }]);
 
     const links = screen.getAllByRole("link", { name: "Negociar PETR4" });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
-      const row = link.closest("li, tr") as HTMLElement;
+      const row = (link.closest("li, tr") ?? link) as HTMLElement;
       expect(within(row).getAllByText("PETR4")).toHaveLength(1);
     }
   });
