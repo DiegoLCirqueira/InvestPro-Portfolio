@@ -10,13 +10,20 @@ import { Combobox } from "@/components/ui/combobox";
 import { useMarketAssets } from "@/hooks/use-market-assets";
 import { useCreateOrder, useSellableAssets } from "@/hooks/use-orders";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
-import { useOrderForm } from "@/hooks/use-order-form";
+import { useOrderForm, type OrderEntryMode } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
+import { formatQuantity } from "@/lib/format";
 import { ORDER_TYPE_LABELS } from "@/lib/order-form";
+import { segmentClassName } from "@/components/ui/segmented";
 import type { OrderType } from "@/types/order";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+const ENTRY_MODE_OPTIONS: { value: OrderEntryMode; label: string }[] = [
+  { value: "QUANTITY", label: "Quantidade" },
+  { value: "AMOUNT", label: "Valor em R$" },
+];
 
 const TYPE_OPTIONS = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map(
   (value) => ({
@@ -143,28 +150,74 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         />
       </FormField>
 
-      <FormField label="Quantidade" htmlFor="order-quantity">
-        <input
-          id="order-quantity"
-          type="text"
-          inputMode="decimal"
-          value={form.quantity}
-          onChange={(e) => form.changeQuantity(e.target.value)}
-          placeholder="0"
-          aria-invalid={form.quantityError !== null || quantityRequired}
-          className={fieldInputClassName}
-        />
-        {form.quantityError && (
-          <p role="alert" className="text-xs text-destructive">
-            {form.quantityError}
+      {form.canBuyByAmount && (
+        <FormField label="Comprar por">
+          <div role="group" aria-label="Comprar por" className="grid grid-cols-2 gap-2">
+            {ENTRY_MODE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={form.entryMode === option.value}
+                onClick={() => form.setEntryMode(option.value)}
+                className={segmentClassName(form.entryMode === option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </FormField>
+      )}
+
+      {form.entryMode === "AMOUNT" ? (
+        <FormField label="Valor em R$" htmlFor="order-amount">
+          <CurrencyDigitsField
+            id="order-amount"
+            input={form.amountInput}
+            ariaLabel="Valor em R$"
+            invalid={form.quantityError !== null || quantityRequired}
+          />
+          {/* A API recebe quantidade: mostra a que o valor compra (truncada em 8 casas). */}
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            Quantidade estimada:{" "}
+            <span className="font-semibold text-foreground tabular-nums">
+              {formatQuantity(form.estimatedQuantity ?? 0)} {form.ticker.toUpperCase()}
+            </span>
           </p>
-        )}
-        {quantityRequired && (
-          <p role="alert" className="text-xs text-destructive">
-            Informe uma quantidade maior que zero.
-          </p>
-        )}
-      </FormField>
+          {form.quantityError && (
+            <p role="alert" className="text-xs text-destructive">
+              {form.quantityError}
+            </p>
+          )}
+          {quantityRequired && (
+            <p role="alert" className="text-xs text-destructive">
+              Informe um valor maior que R$ 0,00.
+            </p>
+          )}
+        </FormField>
+      ) : (
+        <FormField label="Quantidade" htmlFor="order-quantity">
+          <input
+            id="order-quantity"
+            type="text"
+            inputMode="decimal"
+            value={form.quantity}
+            onChange={(e) => form.changeQuantity(e.target.value)}
+            placeholder="0"
+            aria-invalid={form.quantityError !== null || quantityRequired}
+            className={fieldInputClassName}
+          />
+          {form.quantityError && (
+            <p role="alert" className="text-xs text-destructive">
+              {form.quantityError}
+            </p>
+          )}
+          {quantityRequired && (
+            <p role="alert" className="text-xs text-destructive">
+              Informe uma quantidade maior que zero.
+            </p>
+          )}
+        </FormField>
+      )}
 
       <OrderSummary
         side={form.side}

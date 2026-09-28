@@ -27,6 +27,21 @@ export function getBuyQuantityError(
   return "Ações e renda fixa só podem ser compradas em quantidade inteira.";
 }
 
+// Mesma precisão do @investpro/shared (ORDER_QUANTITY_DECIMAL_PLACES): Order.quantity é Decimal(15,8).
+export const ORDER_QUANTITY_DECIMAL_PLACES = 8;
+const QUANTITY_SCALE = 10 ** ORDER_QUANTITY_DECIMAL_PLACES;
+
+/**
+ * Quantidade que um valor em R$ compra a um preço, truncada em 8 casas: arredondar para cima
+ * compraria mais do que o valor informado. O toFixed(4) só limpa o ruído de ponto flutuante
+ * (0,3 / 0,1 = 2,9999999999999996) antes de cortar as casas.
+ */
+export function quantityForAmount(amount: number, price: number): number {
+  if (!(amount > 0) || !(price > 0)) return 0;
+  const scaled = Number(((amount / price) * QUANTITY_SCALE).toFixed(4));
+  return Math.floor(scaled) / QUANTITY_SCALE;
+}
+
 export function normalizeTicker(ticker: string): string {
   return ticker.trim().toUpperCase();
 }
