@@ -63,7 +63,7 @@
   --color-input: #e2e2df;
   /* Borda de campo de digitação: >= 3:1 (WCAG 1.4.11) contra o fundo do campo e do card.
      Separada de --color-input, que também pinta seletores e o botão outline. */
-  --color-field: #868b94;
+  --color-field: #7b8089;
   --color-ring: #077455;
 
   /* ── Semantic extras ─────────────────────────── */

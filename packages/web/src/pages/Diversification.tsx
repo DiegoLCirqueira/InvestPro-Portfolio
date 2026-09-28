@@ -186,6 +186,8 @@ export function Diversification() {
                 />
                 <Legend
                   iconType="circle"
+                  // Recharts ordena a legenda por nome por padrão: sem isso ela não segue a ordem dos cards.
+                  itemSorter={null}
                   formatter={(value, entry) => (
                     <span className="text-muted-foreground text-xs">
                       {value} —{" "}
