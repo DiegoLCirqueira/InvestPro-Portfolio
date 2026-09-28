@@ -42,12 +42,12 @@ async function renderMarket(items: ReturnType<typeof asset>[]) {
 }
 
 const BANNER =
-  "Alguns preços estão estimados: a fonte de cotações está indisponível no momento.";
+  /Alguns preços estão estimados: a fonte de cotações está indisponível no momento\. Os ativos\s+com borda amarela usam preço estimado\./;
 
 describe("MarketAnalysis: preços estimados (priceSource)", () => {
   beforeEach(() => apiMock.get.mockReset());
 
-  it("com algum ativo 'seed': faixa de aviso (role=status) e selo 'estimado' só nos ativos afetados", async () => {
+  it("com algum ativo 'seed': faixa de aviso e borda de aviso só nos itens afetados, sem selo de texto", async () => {
     await renderMarket([
       asset("PETR4", "seed"),
       asset("VALE3", "live"),
@@ -57,32 +57,31 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     expect(screen.getByRole("status")).toHaveTextContent(BANNER);
     // Com algum preço estimado, o selo "Tempo real" não aparece.
     expect(screen.queryByText("Tempo real")).not.toBeInTheDocument();
-    const tags = screen.getAllByText("estimado");
-    expect(tags.length).toBeGreaterThan(0);
-    // O selo aparece junto do PETR4 (seed), nunca junto de VALE3/ITUB4 (ao vivo ou sem campo).
-    const petrCards = screen
-      .getAllByText("PETR4")
-      .map((el) => el.closest("li, tr") as HTMLElement)
-      .filter(Boolean);
-    expect(petrCards.some((card) => within(card).queryByText("estimado"))).toBe(
-      true,
-    );
+    // O selo de texto saiu (poluía o item); a marca é a borda no tom de aviso, com title explicando.
+    expect(screen.queryByText("estimado")).not.toBeInTheDocument();
+    const estimated = screen.getAllByRole("link", { name: /Negociar PETR4.*preço estimado/ });
+    expect(estimated).toHaveLength(3); // lista do celular, destaque e linha da tabela
+    for (const link of estimated) {
+      const item = (link.closest("tr") ?? link) as HTMLElement;
+      expect(item).toHaveAttribute("title", expect.stringMatching(/Preço estimado/));
+      expect(item.outerHTML).toMatch(/border-warning/);
+    }
+    // Na tabela o aviso também vai em texto para leitor de tela, na célula do preço.
+    expect(screen.getByText("preço estimado")).toHaveClass("sr-only");
     for (const liveTicker of ["VALE3", "ITUB4"]) {
-      const liveCards = screen
-        .getAllByText(liveTicker)
-        .map((el) => el.closest("li, tr") as HTMLElement)
-        .filter(Boolean);
-      expect(
-        liveCards.some((card) => within(card).queryByText("estimado")),
-      ).toBe(false);
+      for (const link of screen.getAllByRole("link", { name: new RegExp(`Negociar ${liveTicker}`) })) {
+        expect(link.getAttribute("aria-label")).not.toMatch(/estimado/);
+        expect((link.closest("tr") ?? link).outerHTML).not.toMatch(/border-warning/);
+      }
     }
   });
 
-  it("todos ao vivo (ou backend antigo, sem o campo): sem faixa e sem selo", async () => {
+  it("todos ao vivo (ou backend antigo, sem o campo): sem faixa e sem marca de estimado", async () => {
     await renderMarket([asset("PETR4", "live"), asset("VALE3")]);
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    expect(screen.queryByText("estimado")).not.toBeInTheDocument();
+    expect(screen.queryByText("preço estimado")).not.toBeInTheDocument();
+    expect(document.querySelector(".border-warning")).toBeNull();
     expect(screen.getByText("Tempo real")).toBeInTheDocument();
   });
 });
