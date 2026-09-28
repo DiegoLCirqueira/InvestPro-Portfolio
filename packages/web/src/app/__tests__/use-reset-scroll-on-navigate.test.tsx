@@ -42,7 +42,9 @@ describe("useResetScrollOnNavigate", () => {
     (await findByText("ir para /b")).click();
 
     await findByText("Página B");
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+    // O useEffect roda depois da pintura: com a máquina carregada, "Página B" pode aparecer antes
+    // dele. Esperar a chamada (em vez de conferir na hora) tirava a intermitência do teste.
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }));
   });
 
   it("não mexe no scroll se a rota não mudou (evita chamadas redundantes a cada render)", () => {
