@@ -3,6 +3,8 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
 import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface ExchangeResultPanelProps {
   simulation: ExchangeSummary | null;
@@ -43,7 +45,7 @@ export function ExchangeResultPanel({
 
   // Vazio, o card só ocupava espaço abaixo da dobra no celular: aparece só no desktop.
   return (
-    <div className="hidden nav:flex p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex-col gap-4">
+    <div className={cn(cardClassName, "hidden nav:flex flex-col gap-4")}>
       <SectionTitle>Resultado</SectionTitle>
       <p className="text-sm text-muted-foreground text-center py-16">
         Preencha o valor e clique em Converter para simular a conversão.

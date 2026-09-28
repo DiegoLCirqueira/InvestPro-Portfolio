@@ -22,6 +22,7 @@ import { segmentClassName } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
 import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
   { value: "PIX", label: "PIX" },
@@ -254,7 +255,7 @@ export function Transfers() {
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
-          className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className={cn(cardClassName, "flex flex-col gap-5")}
         >
           <SectionTitle>Nova Transferência</SectionTitle>
 
@@ -375,7 +376,7 @@ export function Transfers() {
 
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
         <div className="nav:self-stretch nav:h-0 nav:min-h-full">
-          <div className="nav:max-h-full p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+          <div className={cn(cardClassName, "nav:max-h-full flex flex-col gap-4")}>
             <SectionTitle>Histórico de Transferências</SectionTitle>
 
             {history.length === 0 ? (

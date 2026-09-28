@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Ícone da categoria no lugar de siglas ("CR", "AC") que não diziam nada; o nome vai para leitor de tela.
 const TYPE_META: Record<
@@ -59,7 +61,7 @@ export function Assets() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-1 p-4 sm:p-6 nav:h-full">
+      <div className={cn(cardClassName, "nav:h-full")}>
         <SectionTitle className="mb-4">Seus Ativos</SectionTitle>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -84,7 +86,7 @@ export function Assets() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-1 p-4 sm:p-6 nav:h-full">
+      <div className={cn(cardClassName, "nav:h-full")}>
         <SectionTitle className="mb-3">Seus Ativos</SectionTitle>
         <ErrorState
           message={error.message}
@@ -99,7 +101,7 @@ export function Assets() {
   // Desktop: o card tem a altura da linha do grid; a lista ocupa o que
   // sobra (min-h-0 + overflow) e rola.
   return (
-    <div className="rounded-2xl border border-border bg-surface-1 p-4 sm:p-6 nav:h-full flex flex-col nav:min-h-0">
+    <div className={cn(cardClassName, "nav:h-full flex flex-col nav:min-h-0")}>
       <SectionTitle className="mb-4 shrink-0">Seus Ativos</SectionTitle>
 
       {positions.length === 0 ? (

@@ -15,6 +15,8 @@ import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { OrderType } from "@/types/order";
 import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const TYPE_OPTIONS = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map(
   (value) => ({
@@ -91,7 +93,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="nav:col-span-2 p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+      className={cn(cardClassName, "nav:col-span-2 flex flex-col gap-5")}
     >
       <SectionTitle>Nova Ordem</SectionTitle>
 

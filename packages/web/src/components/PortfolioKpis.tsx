@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +29,11 @@ function KpiTile({
   children: ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-1 rounded-2xl border bg-surface-1 p-4 sm:p-5",
-        highlight ? "border-primary/40" : "border-border",
-      )}
-    >
+    <Card className={cn("flex flex-col gap-1", highlight && "border-primary/40")}>
       <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
       <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1">{children}</dd>
       <dd className="text-xs text-muted-foreground">{hint}</dd>
-    </div>
+    </Card>
   );
 }
 

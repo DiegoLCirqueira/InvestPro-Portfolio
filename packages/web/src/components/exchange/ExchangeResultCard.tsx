@@ -5,6 +5,8 @@ import { BELOW_NAV_QUERY } from "@/hooks/use-media-query";
 import { preferredScrollBehavior } from "@/lib/motion";
 import { formatCurrency, formatDateTime, formatExchangeRate } from "@/lib/format";
 import type { ExchangeSummary } from "@/types/exchange";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export type ExchangeResultVariant = "simulation" | "confirmation";
 
@@ -62,7 +64,7 @@ export function ExchangeResultCard({
   }, [revealOnMobile, summary]);
 
   return (
-    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+    <div className={cn(cardClassName, "flex flex-col gap-4")}>
       <SectionTitle
         ref={titleRef}
         tabIndex={-1}

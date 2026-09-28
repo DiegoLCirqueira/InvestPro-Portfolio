@@ -14,6 +14,8 @@ import {
 } from "@/hooks/use-savings-box";
 import { formatCurrency } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type SavingsBoxMode = "DEPOSIT" | "WITHDRAW";
 
@@ -69,7 +71,7 @@ export function SavingsBoxCard() {
 
   return (
     // id="caixinha": destino do "Depositar na caixinha" das Recomendações (/orders#caixinha).
-    <section id="caixinha" aria-labelledby="caixinha-title" className="scroll-mt-4 p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
+    <section id="caixinha" aria-labelledby="caixinha-title" className={cn(cardClassName, "scroll-mt-4 flex flex-col gap-5")}>
       <SectionTitle id="caixinha-title">Caixinha</SectionTitle>
 
       <div className="flex items-center justify-between text-sm">

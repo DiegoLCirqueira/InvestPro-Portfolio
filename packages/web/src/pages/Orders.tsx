@@ -11,6 +11,8 @@ import { OrderRow } from "@/components/orders/OrderRow";
 import { SavingsBoxCard } from "@/components/orders/SavingsBoxCard";
 import { useOrders } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function Orders() {
   const { data, error, isLoading, refetch } = useOrders();
@@ -76,7 +78,7 @@ export function Orders() {
             ela vem do formulário, e o histórico usa essa altura como máximo,
             rolando por dentro quando passa dela. */}
         <div className="nav:col-span-3 nav:self-stretch nav:h-0 nav:min-h-full">
-        <div className="nav:max-h-full p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+        <div className={cn(cardClassName, "nav:max-h-full flex flex-col gap-4")}>
           <SectionTitle>Histórico de Ordens</SectionTitle>
 
           {orders.length === 0 ? (

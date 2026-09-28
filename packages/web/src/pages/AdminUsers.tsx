@@ -8,6 +8,8 @@ import { ApiError } from "@/services/api";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatDateTime } from "@/lib/format";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
@@ -60,7 +62,7 @@ export function AdminUsers() {
       {users.length === 0 ? (
         <EmptyState icon={UserX} message="Nenhum usuário encontrado." />
       ) : (
-        <div className="rounded-2xl border border-border bg-surface-1 overflow-x-auto">
+        <div className={cn(cardClassName, "p-0 sm:p-0 overflow-x-auto")}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">

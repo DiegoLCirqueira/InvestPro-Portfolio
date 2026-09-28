@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useCurrencyHoldings, type CurrencyHolding } from "@/hooks/use-currency-holdings";
 import { currencyName } from "@/lib/currency";
 import { formatCurrency } from "@/lib/format";
+import { cardClassName } from "@/components/ui/card";
 
 function CurrencyHoldingRow({ holding }: { holding: CurrencyHolding }) {
   return (
@@ -65,7 +66,7 @@ export function CurrencyHoldingsCard() {
   return (
     <section
       aria-labelledby="currency-holdings-title"
-      className="p-4 rounded-2xl border border-border bg-surface-1"
+      className={cardClassName}
     >
       <SectionTitle id="currency-holdings-title" className="mb-1">
         Moedas

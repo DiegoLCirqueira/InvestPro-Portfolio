@@ -1,4 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Mesma forma do Painel carregado: faixa de KPIs e, abaixo, gráfico + lista de ativos.
 export function DashboardSkeleton() {
@@ -8,7 +10,7 @@ export function DashboardSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="p-4 sm:p-5 rounded-2xl border border-border bg-surface-1 space-y-3"
+            className={cn(cardClassName, "space-y-3")}
           >
             <Skeleton className="h-3.5 w-28" />
             <Skeleton className="h-8 w-40" />
@@ -18,7 +20,7 @@ export function DashboardSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-6 items-stretch flex-1 min-h-0">
-        <div className="nav:col-span-2 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
+        <div className={cn(cardClassName, "nav:col-span-2 flex flex-col min-h-0")}>
           <div className="flex justify-between items-center mb-6">
             <Skeleton className="h-5 w-52" />
             <Skeleton className="h-7 w-24 rounded-lg" />
@@ -26,7 +28,7 @@ export function DashboardSkeleton() {
           <Skeleton className="h-48 w-full flex-1 rounded-xl" />
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface-1 p-6 space-y-4">
+        <div className={cn(cardClassName, "space-y-4")}>
           <Skeleton className="h-5 w-28" />
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between p-3">

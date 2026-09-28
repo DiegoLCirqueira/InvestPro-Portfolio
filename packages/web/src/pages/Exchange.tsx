@@ -17,6 +17,8 @@ import { formatCurrency } from "@/lib/format";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function Exchange() {
   const { currencies, base, isLoading, error, refetch } = useExchange();
@@ -84,7 +86,7 @@ export function Exchange() {
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSimulate}
-          className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className={cn(cardClassName, "flex flex-col gap-5")}
         >
           <SectionTitle>Conversor</SectionTitle>
 

@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { cardClassName } from "@/components/ui/card";
 
 const PHONE_REGEX = /^\+?\d{10,15}$/;
 
@@ -180,7 +181,7 @@ function ProfileSection({
     <section
       id={id}
       aria-labelledby={titleId}
-      className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-1 p-4 sm:p-6"
+      className={cn(cardClassName, "flex flex-col gap-4")}
     >
       <div className="space-y-1">
         <SectionTitle id={titleId}>{title}</SectionTitle>

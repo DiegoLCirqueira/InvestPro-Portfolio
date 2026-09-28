@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
 import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_BADGES: Record<RecommendationCategory, { label: string; tone: StatusTone }> = {
   PROFILE: { label: "Perfil", tone: "info" },
@@ -51,7 +53,7 @@ export function Recommendations() {
           </section>
 
           {data.profile && (
-            <aside className="space-y-5 rounded-2xl border border-border bg-surface-1 p-5">
+            <aside className={cn(cardClassName, "space-y-5")}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground">Seu perfil</p>
@@ -98,7 +100,7 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
   const badge = CATEGORY_BADGES[item.category];
   const action = recommendationAction(item);
   return (
-    <article className="rounded-2xl border border-border bg-surface-1 p-5">
+    <article className={cardClassName}>
       {/* Celular: selo acima do título (numa coluna à direita ele espremia o texto em ~5
           palavras por linha); a partir de sm, à direita. */}
       <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-4">

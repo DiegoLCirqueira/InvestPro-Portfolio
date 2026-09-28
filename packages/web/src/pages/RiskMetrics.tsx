@@ -8,6 +8,8 @@ import { useRisk } from "@/hooks/use-risk";
 import { ApiError } from "@/services/api";
 import { formatDateTime, formatDecimal, formatPercent } from "@/lib/format";
 import type { RiskReport } from "@/types/risk";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Mesma regra do servidor (risk.service.ts, MIN_DAILY_RETURNS_FOR_RISK; o web não importa o
 // server): VaR, volatilidade, drawdown e Sharpe só significam algo com ~20 dias de retornos.
@@ -115,7 +117,7 @@ function HistoryProgress({ days, hasConcentration }: { days: number; hasConcentr
   return (
     <section
       aria-labelledby="risk-history-title"
-      className="mb-6 flex flex-col gap-3 rounded-2xl border border-border bg-surface-1 p-4 sm:p-6"
+      className={cn(cardClassName, "mb-6 flex flex-col gap-3")}
     >
       <div className="flex items-start gap-3">
         <Hourglass size={20} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
@@ -155,7 +157,7 @@ function HistoryProgress({ days, hasConcentration }: { days: number; hasConcentr
 function MetricCard({ metric }: { metric: MetricView }) {
   const good = metric.isGood(metric.value);
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-1 p-4 sm:p-5">
+    <div className={cn(cardClassName, "flex flex-col gap-2")}>
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-semibold text-foreground">{metric.label}</p>
         <span
@@ -237,7 +239,7 @@ export function RiskMetrics() {
       )}
 
       {data.score !== undefined && (
-        <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 mb-6">
+        <div className={cn(cardClassName, "mb-6")}>
           <div className="flex items-center gap-4 mb-4">
             <div className="relative h-20 w-20 shrink-0">
               <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
