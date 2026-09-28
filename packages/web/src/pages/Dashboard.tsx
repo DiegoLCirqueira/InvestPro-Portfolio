@@ -103,7 +103,7 @@ export function Dashboard() {
       />
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-6 items-stretch flex-1 nav:min-h-0">
-        <div className="nav:col-span-2 p-6 rounded-2xl border border-border bg-surface-1 flex flex-col nav:min-h-0">
+        <div className="nav:col-span-2 p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col nav:min-h-0">
           <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
             <SectionTitle>Evolução do Patrimônio</SectionTitle>
 

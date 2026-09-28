@@ -41,7 +41,7 @@ export function ExchangeResultPanel({
   }
 
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
       <SectionTitle>Resultado</SectionTitle>
       <p className="text-sm text-muted-foreground text-center py-16">
         Preencha o valor e clique em Converter para simular a conversão.

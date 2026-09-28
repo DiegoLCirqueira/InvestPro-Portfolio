@@ -60,7 +60,7 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     // O selo aparece junto do PETR4 (seed), nunca junto de VALE3/ITUB4 (ao vivo ou sem campo).
     const petrCards = screen
       .getAllByText("PETR4")
-      .map((el) => el.closest("a.p-4, tr") as HTMLElement)
+      .map((el) => el.closest("li, tr") as HTMLElement)
       .filter(Boolean);
     expect(petrCards.some((card) => within(card).queryByText("estimado"))).toBe(
       true,
@@ -68,7 +68,7 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     for (const liveTicker of ["VALE3", "ITUB4"]) {
       const liveCards = screen
         .getAllByText(liveTicker)
-        .map((el) => el.closest("a.p-4, tr") as HTMLElement)
+        .map((el) => el.closest("li, tr") as HTMLElement)
         .filter(Boolean);
       expect(
         liveCards.some((card) => within(card).queryByText("estimado")),
@@ -104,7 +104,7 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
     const links = screen.getAllByRole("link", { name: "Negociar PETR4" });
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
-      const row = link.closest("a.p-4, tr") as HTMLElement;
+      const row = link.closest("li, tr") as HTMLElement;
       expect(within(row).getAllByText("PETR4")).toHaveLength(1);
     }
   });

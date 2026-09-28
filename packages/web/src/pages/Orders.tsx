@@ -64,7 +64,7 @@ export function Orders() {
             ela vem do formulário, e o histórico usa essa altura como máximo,
             rolando por dentro quando passa dela. */}
         <div className="nav:col-span-3 nav:self-stretch nav:h-0 nav:min-h-full">
-        <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+        <div className="nav:max-h-full p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
           <SectionTitle>Histórico de Ordens</SectionTitle>
 
           {orders.length === 0 ? (
@@ -74,7 +74,7 @@ export function Orders() {
               action={{ label: "Ver ativos disponíveis", to: "/market" }}
             />
           ) : (
-            <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex flex-col divide-y divide-border nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (
                 <OrderRow key={order.id} order={order} />
               ))}

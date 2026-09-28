@@ -74,42 +74,45 @@ function orderLinkFor(asset: MarketAsset): string {
   return `/orders?ticker=${encodeURIComponent(asset.ticker)}`;
 }
 
-function AssetCard({ asset }: { asset: MarketAsset }) {
+// Linha da lista do celular: só divisória, sem card próprio dentro do card (o recuo dobrava).
+function AssetRow({ asset }: { asset: MarketAsset }) {
   const name = assetDisplayName(asset);
   return (
-    <Link
-      to={orderLinkFor(asset)}
-      aria-label={tradeLinkLabel(asset)}
-      className="block p-4 rounded-xl border border-border bg-surface-2 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="font-bold text-foreground">{asset.ticker}</span>
-          <span className="text-xs text-muted-foreground">
-            {ASSET_TYPE_LABELS[asset.type]}
+    <li>
+      <Link
+        to={orderLinkFor(asset)}
+        aria-label={tradeLinkLabel(asset)}
+        className="block -mx-2 px-2 py-3 rounded-lg hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="font-bold text-foreground">{asset.ticker}</span>
+            <span className="text-xs text-muted-foreground">
+              {ASSET_TYPE_LABELS[asset.type]}
+            </span>
+          </div>
+          <SentimentBadge asset={asset} />
+        </div>
+        {name && (
+          <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
+            {name}
+          </p>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-lg font-bold tabular-nums text-foreground">
+              {formatPrice(asset.price)}
+            </span>
+            {isEstimatedPrice(asset) && <EstimatedPriceTag />}
+          </span>
+          <span
+            className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
+          >
+            {formatPercent(asset.changePercent)}
           </span>
         </div>
-        <SentimentBadge asset={asset} />
-      </div>
-      {name && (
-        <p className="text-[10px] text-muted-foreground font-medium mb-2 truncate">
-          {name}
-        </p>
-      )}
-      <div className="flex items-center justify-between">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-lg font-bold tabular-nums text-foreground">
-            {formatPrice(asset.price)}
-          </span>
-          {isEstimatedPrice(asset) && <EstimatedPriceTag />}
-        </span>
-        <span
-          className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
-        >
-          {formatPercent(asset.changePercent)}
-        </span>
-      </div>
-    </Link>
+      </Link>
+    </li>
   );
 }
 
@@ -180,29 +183,31 @@ export function MarketAnalysis() {
 
       {hasEstimatedPrices && <EstimatedPricesBanner />}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Celular: cada destaque é uma linha compacta (ticker à esquerda, preço à direita); antes
+          os 3 cards ocupavam a primeira tela inteira. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
         {highlights.map((index) => {
           return (
             <div
               key={index.ticker}
-              className="p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
+              className="flex items-center justify-between gap-3 md:block p-4 md:p-6 rounded-2xl border border-border bg-surface-1 hover:border-brand-primary/30 transition-colors"
             >
-              <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
                 </span>
               </h2>
 
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-3xl font-bold tabular-nums text-foreground">
+              <div className="min-w-0 space-y-1 text-right md:text-left">
+                <div className="flex flex-wrap items-center justify-end md:justify-start gap-x-3 gap-y-1">
+                  <span className="text-xl md:text-3xl font-bold tabular-nums text-foreground">
                     {formatPrice(index.price)}
                   </span>
                   {isEstimatedPrice(index) && <EstimatedPriceTag />}
                 </div>
                 <div
-                  className={`flex items-center gap-2 text-sm font-semibold ${changeToneClass(
+                  className={`flex items-center justify-end md:justify-start gap-2 text-sm font-semibold ${changeToneClass(
                     index,
                   )}`}
                 >
@@ -219,10 +224,10 @@ export function MarketAnalysis() {
         })}
       </div>
 
-      <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-4 sm:mb-6">
           <SectionTitle>Composição e Performance</SectionTitle>
-          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">
+          <span className="whitespace-nowrap text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] bg-secondary px-3 py-1 rounded-full border border-border">
             Tempo Real
           </span>
         </div>
@@ -236,12 +241,12 @@ export function MarketAnalysis() {
             />
           ) : (
             <>
-              {/* Mobile/tablet (abaixo de nav): cards. A tabela exige largura para as colunas fazerem sentido. */}
-              <div className="flex flex-col gap-3 nav:hidden">
+              {/* Mobile/tablet (abaixo de nav): lista. A tabela exige largura para as colunas fazerem sentido. */}
+              <ul className="flex flex-col divide-y divide-border nav:hidden">
                 {assets.map((asset) => (
-                  <AssetCard key={asset.id} asset={asset} />
+                  <AssetRow key={asset.id} asset={asset} />
                 ))}
-              </div>
+              </ul>
 
               {/* Desktop (>=nav): tabela. table-fixed + colgroup: largura das colunas
                   não pode depender do conteúdo da seleção atual (senão o layout

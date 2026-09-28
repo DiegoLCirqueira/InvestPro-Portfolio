@@ -220,7 +220,7 @@ function ProfileResult({ profile, definition, onRetake }: ProfileResultProps) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
+      <section className="rounded-2xl border border-primary/30 bg-primary/10 p-4 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">Seu perfil</p>
         <p className="mt-1 text-3xl font-bold text-foreground">{definition.label}</p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{definition.description}</p>

@@ -42,7 +42,7 @@ export function OrderRow({ order }: { order: Order }) {
   const { price, avgPrice, fee } = order;
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2">
+    <div className="py-3">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{order.ticker}</span>

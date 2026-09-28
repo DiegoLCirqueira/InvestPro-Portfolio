@@ -67,7 +67,7 @@ export function SavingsBoxCard() {
   const handleSubmit = useSubmitOnce(submitSavingsBox);
 
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
+    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
       <SectionTitle>Caixinha</SectionTitle>
 
       <div className="flex items-center justify-between text-sm">

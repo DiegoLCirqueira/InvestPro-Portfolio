@@ -237,7 +237,7 @@ export function RiskMetrics() {
       )}
 
       {data.score !== undefined && (
-        <div className="p-6 rounded-2xl border border-border bg-surface-1 mb-6">
+        <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative h-20 w-20 shrink-0">
               <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">

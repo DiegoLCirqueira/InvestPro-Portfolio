@@ -45,7 +45,7 @@ export function ExchangeResultCard({ variant, summary, children }: ExchangeResul
   const text = VARIANT_TEXT[variant];
 
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+    <div className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
       <SectionTitle className="flex items-center gap-2">
         {variant === "confirmation" && (
           <CheckCircle2 size={18} className="text-brand-primary" aria-hidden="true" />

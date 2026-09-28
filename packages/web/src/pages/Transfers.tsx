@@ -91,7 +91,7 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
   const destination = destinationOf(transfer);
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2">
+    <div className="py-3">
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="min-w-0">
           <span className="font-bold text-foreground tabular-nums">
@@ -253,7 +253,7 @@ export function Transfers() {
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
-          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
           <SectionTitle>Nova Transferência</SectionTitle>
 
@@ -374,7 +374,7 @@ export function Transfers() {
 
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
         <div className="nav:self-stretch nav:h-0 nav:min-h-full">
-          <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+          <div className="nav:max-h-full p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
             <SectionTitle>Histórico de Transferências</SectionTitle>
 
             {history.length === 0 ? (
@@ -383,7 +383,7 @@ export function Transfers() {
                 message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
               />
             ) : (
-              <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
+              <div className="flex flex-col divide-y divide-border nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
                 {history.map((transfer) => (
                   <TransferItem key={transfer.id} transfer={transfer} />
                 ))}

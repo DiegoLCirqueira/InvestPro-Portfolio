@@ -83,7 +83,7 @@ export function Exchange() {
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSimulate}
-          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className="p-4 sm:p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
         >
           <SectionTitle>Conversor</SectionTitle>
 
