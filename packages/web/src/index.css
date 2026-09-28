@@ -111,6 +111,16 @@
   --spacing-75: 18.75rem;
 }
 
+/* Controles nativos (autofill, select, barras de rolagem, calendário) no esquema do tema: sem
+   isso ficavam claros no tema escuro. */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 /* Altura da barra de navegação inferior (mobile); o layout reserva esse espaço para o conteúdo não ficar atrás dela. */
 :root {
   --bottom-nav-height: 3.5rem;

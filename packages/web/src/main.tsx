@@ -18,10 +18,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { InsufficientBalanceDialog } from "@/components/InsufficientBalanceDialog";
 import { ErrorBoundary } from "@/app/ErrorBoundary";
 import { registerStaleChunkReload } from "@/app/stale-chunk-reload";
+import { applyTheme, isStoredThemeDark } from "@/hooks/use-theme";
 
-if (localStorage.getItem("investpro-theme") === "dark") {
-  document.documentElement.setAttribute("data-theme", "dark");
-}
+applyTheme(isStoredThemeDark());
 
 registerStaleChunkReload();
 
