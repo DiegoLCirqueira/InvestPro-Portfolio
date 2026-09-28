@@ -84,6 +84,13 @@ function typeTicker(ticker: string) {
   fireEvent.change(getTickerInput(), { target: { value: ticker } });
 }
 
+const chooseEntryMode = (label: "Quantidade" | "Valor em R$") =>
+  fireEvent.click(screen.getByRole("button", { name: label }));
+
+// Dígitos do campo de moeda: "10000" = R$ 100,00.
+const typeAmount = (digits: string) =>
+  fireEvent.change(screen.getByLabelText("Valor em R$"), { target: { value: digits } });
+
 describe("NewOrderForm", () => {
   beforeEach(() => {
     mockSellable.assets = [];
@@ -117,6 +124,7 @@ describe("NewOrderForm", () => {
   it("compra mostra a taxa de 1% e 'Você pagará' somando-a ao total", () => {
     renderForm();
     typeTicker("BTC");
+    chooseEntryMode("Quantidade");
     fireEvent.change(screen.getByLabelText("Quantidade"), {
       target: { value: "10" },
     });
@@ -124,6 +132,18 @@ describe("NewOrderForm", () => {
     expect(screen.getByText("Taxa InvestPro (1%)")).toBeTruthy();
     expect(screen.getByText("Você pagará")).toBeTruthy();
     expect(screen.getByText(/1\.010,00/)).toBeTruthy();
+  });
+
+  it("Valor total é uma linha de resumo calculada, não um campo para digitar", () => {
+    renderForm();
+    typeTicker("BTC");
+    chooseEntryMode("Quantidade");
+    fireEvent.change(screen.getByLabelText("Quantidade"), {
+      target: { value: "10" },
+    });
+
+    expect(screen.getByText("Valor total")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Valor total" })).not.toBeInTheDocument();
   });
 
   it("ativo com preço 'seed' mostra a nota de preço estimado sob o Valor total; ao vivo não", () => {
@@ -184,9 +204,62 @@ describe("NewOrderForm", () => {
     ).toBe(true);
   });
 
+  describe("compra de cripto por valor em R$", () => {
+    it("cripto abre no modo Valor: mostra a quantidade estimada, a taxa e 'Você pagará'", () => {
+      renderForm();
+      typeTicker("BTC");
+
+      expect(screen.getByRole("button", { name: "Valor em R$" })).toHaveAttribute("aria-pressed", "true");
+      typeAmount("10000"); // R$ 100,00 a R$ 100 por BTC
+
+      expect(screen.getByText(/Quantidade estimada/)).toHaveTextContent("1 BTC");
+      expect(screen.getByText("Você pagará")).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s?101,00/)).toBeInTheDocument();
+    });
+
+    it("envia a quantidade calculada (a API continua recebendo quantity)", async () => {
+      mockCreateOrder.mutate.mockResolvedValue({} as Order);
+      renderForm();
+      typeTicker("BTC");
+      typeAmount("7"); // R$ 0,07 / R$ 100 = 0,0007 BTC
+
+      fireEvent.click(screen.getByRole("button", { name: "Enviar Ordem" }));
+
+      await waitFor(() =>
+        expect(mockCreateOrder.mutate).toHaveBeenCalledWith(
+          expect.objectContaining({ ticker: "BTC", side: "BUY", quantity: 0.0007 }),
+        ),
+      );
+    });
+
+    it("sem valor, marca o campo e não envia", async () => {
+      renderForm();
+      typeTicker("BTC");
+
+      fireEvent.click(screen.getByRole("button", { name: "Enviar Ordem" }));
+
+      expect(await screen.findByText("Informe um valor maior que R$ 0,00.")).toBeInTheDocument();
+      expect(screen.getByLabelText("Valor em R$")).toHaveAttribute("aria-invalid", "true");
+      expect(mockCreateOrder.mutate).not.toHaveBeenCalled();
+    });
+
+    it("ações e venda não oferecem o modo Valor", () => {
+      mockSellable.assets = [{ ticker: "BTC", quantity: 2 }];
+      renderForm();
+      typeTicker("PETR4");
+      expect(screen.queryByRole("button", { name: "Valor em R$" })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Venda" }));
+      typeTicker("BTC");
+      expect(screen.queryByRole("button", { name: "Valor em R$" })).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Quantidade")).toBeInTheDocument();
+    });
+  });
+
   describe("envio", () => {
     const fillBuyOrder = () => {
       typeTicker("BTC");
+      chooseEntryMode("Quantidade");
       fireEvent.change(screen.getByLabelText("Quantidade"), {
         target: { value: "1" },
       });

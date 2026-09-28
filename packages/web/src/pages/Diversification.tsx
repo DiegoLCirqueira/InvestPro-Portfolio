@@ -10,6 +10,8 @@ import { PieChart as PieChartIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CurrencyHoldingsCard } from "@/components/diversification/CurrencyHoldingsCard";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type {
@@ -17,6 +19,8 @@ import type {
   PortfolioDiversificationItem,
 } from "@/types/portfolio";
 import { CATEGORY_COLORS } from "@/lib/allocation";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const FALLBACK_CATEGORY_COLOR = "var(--color-muted-foreground)";
 
@@ -49,7 +53,7 @@ function CategoryCard({
   const width = totalBalance > 0 ? (item.value / totalBalance) * 100 : 0;
 
   return (
-    <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col gap-3">
+    <div className={cn(cardClassName, "flex flex-col gap-3")}>
       <div className="flex items-center gap-2">
         <span
           className="w-2.5 h-2.5 rounded-full"
@@ -60,7 +64,7 @@ function CategoryCard({
 
       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full rounded-full transition-[width] duration-500"
           style={{ width: `${width}%`, backgroundColor: color }}
         />
       </div>
@@ -91,11 +95,7 @@ export function Diversification() {
   if (error) {
     return (
       <div className="flex flex-col animate-in fade-in duration-500">
-        <header className="mb-4">
-          <h2 className="text-2xl font-bold text-foreground mb-1">
-            Diversificação
-          </h2>
-        </header>
+        <PageHeader title="Diversificação" />
         <ErrorState
           title="Não foi possível carregar a diversificação"
           message={error.message}
@@ -114,14 +114,10 @@ export function Diversification() {
   const chartData = buildChartData(breakdown);
 
   const header = (
-    <header className="mb-4">
-      <h2 className="text-2xl font-bold text-foreground mb-1">
-        Diversificação
-      </h2>
-      <p className="text-muted-foreground text-sm">
-        Veja onde seu dinheiro está investido.
-      </p>
-    </header>
+    <PageHeader
+      title="Diversificação"
+      description="Veja onde seu dinheiro está investido."
+    />
   );
 
   // Sem nenhuma categoria (as moedas do Câmbio também entram no breakdown), gráfico, cards e
@@ -130,7 +126,7 @@ export function Diversification() {
     return (
       <div className="flex flex-col animate-in fade-in duration-500">
         {header}
-        <section className="rounded-2xl border border-border bg-surface-1">
+        <section className={cn(cardClassName, "p-0 sm:p-0")}>
           <EmptyState
             icon={PieChartIcon}
             title="Sua carteira ainda está vazia"
@@ -147,10 +143,8 @@ export function Diversification() {
       {header}
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
-        <div className="p-4 rounded-2xl border border-border bg-surface-1 flex flex-col min-h-0">
-          <h3 className="text-base font-bold text-foreground mb-2">
-            Distribuição do portfólio
-          </h3>
+        <div className={cn(cardClassName, "flex flex-col min-h-0")}>
+          <SectionTitle className="mb-2">Distribuição do portfólio</SectionTitle>
           {/* Desktop: o card estica até a altura da coluna de categorias ao lado;
               o gráfico ocupa essa altura (flex-1) em vez de ficar fixo e deixar
               um vão vazio embaixo. Mobile mantém 256px. */}
@@ -227,7 +221,7 @@ export function Diversification() {
 function PieSkeleton() {
   return (
     <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
-      <div className="p-4 rounded-2xl border border-border bg-surface-1 h-80 animate-pulse">
+      <div className={cn(cardClassName, "h-80 animate-pulse")}>
         <div className="h-4 w-48 bg-secondary rounded mb-6" />
         <div className="w-56 h-56 rounded-full bg-secondary/50 mx-auto" />
       </div>
@@ -235,7 +229,7 @@ function PieSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="p-4 rounded-2xl border border-border bg-surface-1 h-24 animate-pulse"
+            className={cn(cardClassName, "h-24 animate-pulse")}
           >
             <div className="h-3.5 w-32 bg-secondary rounded mb-3" />
             <div className="h-1.5 bg-secondary rounded-full mb-3" />

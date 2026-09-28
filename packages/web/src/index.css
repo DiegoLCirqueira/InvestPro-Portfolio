@@ -68,6 +68,8 @@
 
   /* ── Semantic extras ─────────────────────────── */
   --color-warning: #8a5d00;
+  /* Borda de aviso (preço estimado): âmbar que ainda lê como amarelo no claro, >= 3:1 sobre os cards. */
+  --color-warning-border: #b97f00;
   --color-success: #077455;
   /* Azul "info": 4,5:1+ como texto do selo sobre o próprio fundo a 15%. */
   --color-info: #2f5bd0;
@@ -86,7 +88,14 @@
     "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
+  /* Menor texto do site (11px): rótulos de grupo/coluna e selos, sempre em text-2xs
+     font-semibold uppercase tracking-wider. Descrições e metadados usam text-xs (12px). */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
   /* ── Border radius ───────────────────────────── */
+  /* Papéis: controle (botão, campo, seletor) rounded-xl; contêiner (card, diálogo) rounded-2xl;
+     item interno (linha, selo, ícone, tooltip) rounded-lg; pílula rounded-full. */
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
@@ -102,6 +111,16 @@
 
   /* ── Spacing ─────────────────────────────────── */
   --spacing-75: 18.75rem;
+}
+
+/* Controles nativos (autofill, select, barras de rolagem, calendário) no esquema do tema: sem
+   isso ficavam claros no tema escuro. */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* Altura da barra de navegação inferior (mobile); o layout reserva esse espaço para o conteúdo não ficar atrás dela. */
@@ -195,6 +214,7 @@
   --color-ring: #25c68d;
 
   --color-warning: #d9a441;
+  --color-warning-border: #d9a441;
   --color-success: #25c68d;
   --color-info: #6b98f7;
   --color-highlight: #a78bfa;
@@ -285,6 +305,23 @@ body {
 
   html {
     scroll-behavior: smooth;
+  }
+
+  /* "Reduzir movimento" no sistema: sem rolagem suave, zoom, pulsar nem animação de diálogo.
+     Duração quase zero (não "none"): o Radix espera o fim da animação para desmontar o diálogo. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   body {

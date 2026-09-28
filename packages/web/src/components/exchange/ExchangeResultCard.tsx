@@ -1,7 +1,12 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CheckCircle2 } from "lucide-react";
+import { BELOW_NAV_QUERY } from "@/hooks/use-media-query";
+import { preferredScrollBehavior } from "@/lib/motion";
 import { formatCurrency, formatDateTime, formatExchangeRate } from "@/lib/format";
 import type { ExchangeSummary } from "@/types/exchange";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export type ExchangeResultVariant = "simulation" | "confirmation";
 
@@ -38,19 +43,38 @@ interface ExchangeResultCardProps {
   variant: ExchangeResultVariant;
   summary: ExchangeSummary;
   children?: ReactNode;
+  /** No celular, rola até o card e foca o título quando ele aparece (fica abaixo da dobra). */
+  revealOnMobile?: boolean;
 }
 
-export function ExchangeResultCard({ variant, summary, children }: ExchangeResultCardProps) {
+export function ExchangeResultCard({
+  variant,
+  summary,
+  children,
+  revealOnMobile = false,
+}: ExchangeResultCardProps) {
   const text = VARIANT_TEXT[variant];
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // No desktop o resultado já está visível ao lado do formulário: rolar lá só incomodaria.
+  useEffect(() => {
+    if (!revealOnMobile || !window.matchMedia(BELOW_NAV_QUERY).matches) return;
+    titleRef.current?.scrollIntoView({ behavior: preferredScrollBehavior(), block: "start" });
+    titleRef.current?.focus({ preventScroll: true });
+  }, [revealOnMobile, summary]);
 
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-      <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
+    <div className={cn(cardClassName, "flex flex-col gap-4")}>
+      <SectionTitle
+        ref={titleRef}
+        tabIndex={-1}
+        className="flex items-center gap-2 scroll-mt-4 focus:outline-none"
+      >
         {variant === "confirmation" && (
           <CheckCircle2 size={18} className="text-brand-primary" aria-hidden="true" />
         )}
         {text.title}
-      </h3>
+      </SectionTitle>
 
       <div className="flex flex-col gap-2">
         <ResultRow label={text.sends}>

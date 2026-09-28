@@ -1,11 +1,16 @@
 import { Link } from "react-router-dom";
-import { Compass, Lightbulb } from "lucide-react";
+import { ArrowRight, Compass } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
 import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_BADGES: Record<RecommendationCategory, { label: string; tone: StatusTone }> = {
   PROFILE: { label: "Perfil", tone: "info" },
@@ -25,16 +30,15 @@ export function Recommendations() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-8 space-y-2">
-        <div className="flex items-center gap-2">
-          <Lightbulb size={24} className="text-brand-primary" aria-hidden="true" />
-          <h2 className="text-2xl font-bold text-foreground">Recomendações</h2>
-        </div>
-        <p role="note" className="text-muted-foreground text-sm">
-          Sugestões educativas geradas por regras, a partir do seu perfil de investidor e da sua
-          carteira. Não são uma recomendação de investimento.
-        </p>
-      </header>
+      <PageHeader
+        title="Recomendações"
+        description={
+          <span role="note">
+            Sugestões educativas geradas por regras, a partir do seu perfil de investidor e da sua
+            carteira. Não são uma recomendação de investimento.
+          </span>
+        }
+      />
 
       {isLoading ? (
         <RecommendationsSkeleton />
@@ -49,7 +53,7 @@ export function Recommendations() {
           </section>
 
           {data.profile && (
-            <aside className="space-y-5 rounded-2xl border border-border bg-surface-1 p-5">
+            <aside className={cn(cardClassName, "space-y-5")}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground">Seu perfil</p>
@@ -58,7 +62,7 @@ export function Recommendations() {
                 <Compass size={20} className="text-brand-primary" aria-hidden="true" />
               </div>
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Sua carteira x referência</h3>
+                <SectionTitle>Sua carteira x referência</SectionTitle>
                 <AllocationBars rows={data.allocation} />
                 <p className="text-xs text-muted-foreground">
                   A barra mostra quanto você tem hoje em cada classe (sobre o total investido); o traço
@@ -76,25 +80,51 @@ export function Recommendations() {
   );
 }
 
+// Próxima ação de cada sugestão, pelo id estável que o servidor gera
+// (recommendations.domain.ts): antes nenhuma levava a lugar nenhum.
+const MARKET_TYPES = new Set(["STOCK", "CRYPTO", "FIXED_INCOME"]);
+
+function recommendationAction(item: PersonalizedRecommendation): { label: string; to: string } | null {
+  if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: "/orders#caixinha" };
+  if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
+  const [direction, type] = item.id.split("-");
+  if (direction === "increase" && type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
+  if (direction === "increase" && MARKET_TYPES.has(type)) {
+    return { label: "Ver ativos no Mercado", to: `/market?tipo=${type}` };
+  }
+  if (direction === "reduce") return { label: "Ir para Ordens", to: "/orders" };
+  return null;
+}
+
 function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
   const badge = CATEGORY_BADGES[item.category];
+  const action = recommendationAction(item);
   return (
-    <article className="rounded-2xl border border-border bg-surface-1 p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="mb-2 text-lg font-bold text-foreground">{item.title}</h3>
-          <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-        </div>
-        <StatusBadge label={badge.label} tone={badge.tone} uniformWidth />
+    <article className={cardClassName}>
+      {/* Selo ao lado do título (também no celular) e descrição em largura total embaixo: antes,
+          numa coluna à direita de título + descrição, o selo espremia o texto em ~5 palavras. */}
+      <div className="flex items-start justify-between gap-3">
+        <SectionTitle className="min-w-0 flex-1">{item.title}</SectionTitle>
+        <span className="shrink-0">
+          <StatusBadge label={badge.label} tone={badge.tone} />
+        </span>
       </div>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+      {action && (
+        <Button asChild variant="link" className="mt-2 px-0">
+          <Link to={action.to}>
+            {action.label}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      )}
       {item.category === "PROFILE" && (
-        <Link
-          to="/profile/investor-profile"
-          className="mt-4 min-h-11 inline-flex items-center gap-2 rounded-xl bg-primary-solid px-4 text-sm font-bold text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <Compass size={16} aria-hidden="true" />
-          Responder o questionário
-        </Link>
+        <Button asChild className="mt-4">
+          <Link to="/profile/investor-profile">
+            <Compass aria-hidden="true" />
+            Responder o questionário
+          </Link>
+        </Button>
       )}
     </article>
   );

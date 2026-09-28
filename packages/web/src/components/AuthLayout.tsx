@@ -6,6 +6,8 @@ import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/company";
 
 interface AuthLayoutProps {
   title: string;
+  /** Rótulo pequeno acima do título (ex.: "404"). */
+  eyebrow?: string;
   subtitle: string;
   children: ReactNode;
   /** Link de troca de tela ("Não tem conta? Criar conta"), no rodapé do card. */
@@ -19,6 +21,7 @@ interface AuthLayoutProps {
 // usa só os tokens do tema ativo.
 export function AuthLayout({
   title,
+  eyebrow,
   subtitle,
   children,
   footer,
@@ -42,8 +45,11 @@ export function AuthLayout({
 
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-110 space-y-4">
-          <section className="rounded-3xl border border-border bg-surface-1/90 p-6 shadow-[0_24px_64px_-32px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-10">
+          <section className="rounded-2xl border border-border bg-surface-1/90 p-6 backdrop-blur-xl sm:p-10">
             <div className="space-y-2 text-center">
+              {eyebrow && (
+                <p className="text-sm font-semibold text-muted-foreground tabular-nums">{eyebrow}</p>
+              )}
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 {title}
               </h1>

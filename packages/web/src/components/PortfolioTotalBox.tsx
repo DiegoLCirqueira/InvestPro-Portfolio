@@ -44,7 +44,7 @@ export function PortfolioTotalBox({
           </span>
         )}
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
+      <p className="mt-1 text-xs text-muted-foreground">
         Saldo em conta + investimentos + caixinha + moedas estrangeiras.
       </p>
     </div>

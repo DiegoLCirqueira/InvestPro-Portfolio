@@ -55,7 +55,7 @@ const MENU_GROUPS: MenuGroup[] = [
 ];
 
 function menuLinkClass({ isActive }: { isActive: boolean }) {
-  return `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+  return `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 group ${
     isActive
       ? "bg-secondary text-primary"
       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -70,14 +70,15 @@ export function Sidebar() {
       <div className="p-8">
         <div className="flex items-center gap-3">
           <BrandMark />
-          <h1 className="text-xl font-bold tracking-tight">InvestPro</h1>
+          {/* Marca, não título: o h1 é o nome de cada página (PageHeader). */}
+          <p className="text-xl font-bold tracking-tight">InvestPro</p>
         </div>
       </div>
 
       <nav className="flex-1 px-4 space-y-6 overflow-y-auto">
         {MENU_GROUPS.map((group) => (
           <div key={group.label} className="space-y-2">
-            <p className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="px-4 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
               {group.label}
             </p>
             {group.items.map((item) => (

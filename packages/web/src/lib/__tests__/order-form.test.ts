@@ -4,6 +4,7 @@ import {
   findOwnedQuantity,
   getBuyQuantityError,
   getSellQuantityError,
+  quantityForAmount,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
@@ -73,5 +74,31 @@ describe("getBuyQuantityError (compra fracionada)", () => {
 
   it("sem ativo escolhido ainda, não acusa nada", () => {
     expect(getBuyQuantityError(1.5, undefined)).toBeNull();
+  });
+});
+
+describe("quantityForAmount (compra de cripto por valor)", () => {
+  it("divide o valor pelo preço", () => {
+    expect(quantityForAmount(100, 400_000)).toBe(0.00025);
+  });
+
+  it("trunca em 8 casas, nunca arredonda para cima", () => {
+    // 100 / 300.000 = 0,000333333333…; arredondar daria o mesmo, mas 2/3 mostra o corte:
+    expect(quantityForAmount(100, 300_000)).toBe(0.00033333);
+    expect(quantityForAmount(2, 3)).toBe(0.66666666);
+  });
+
+  it("não perde uma unidade por ruído de ponto flutuante", () => {
+    // 0,3 / 0,1 em ponto flutuante dá 2,9999999999999996.
+    expect(quantityForAmount(0.3, 0.1)).toBe(3);
+  });
+
+  it("valor ou preço zerados não compram nada", () => {
+    expect(quantityForAmount(0, 100)).toBe(0);
+    expect(quantityForAmount(100, 0)).toBe(0);
+  });
+
+  it("valor pequeno demais para 1 satoshi dá zero", () => {
+    expect(quantityForAmount(0.01, 2_000_000_000)).toBe(0);
   });
 });

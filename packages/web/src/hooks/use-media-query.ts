@@ -1,5 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 
+// Abaixo do breakpoint `nav` (1120 px): layout de celular/tablet, com a barra de navegação inferior.
+export const BELOW_NAV_QUERY = "(max-width: 1119.98px)";
+
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (notify: () => void) => {

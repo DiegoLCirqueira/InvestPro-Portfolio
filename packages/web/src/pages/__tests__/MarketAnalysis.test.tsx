@@ -42,12 +42,12 @@ async function renderMarket(items: ReturnType<typeof asset>[]) {
 }
 
 const BANNER =
-  "Alguns preços estão estimados: a fonte de cotações está indisponível no momento.";
+  /Alguns preços estão estimados: a fonte de cotações está indisponível no momento\. Os ativos\s+com borda amarela usam preço estimado\./;
 
 describe("MarketAnalysis: preços estimados (priceSource)", () => {
   beforeEach(() => apiMock.get.mockReset());
 
-  it("com algum ativo 'seed': faixa de aviso (role=status) e selo 'estimado' só nos ativos afetados", async () => {
+  it("com algum ativo 'seed': faixa de aviso e borda de aviso só nos itens afetados, sem selo de texto", async () => {
     await renderMarket([
       asset("PETR4", "seed"),
       asset("VALE3", "live"),
@@ -55,32 +55,34 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     ]);
 
     expect(screen.getByRole("status")).toHaveTextContent(BANNER);
-    const tags = screen.getAllByText("estimado");
-    expect(tags.length).toBeGreaterThan(0);
-    // O selo aparece junto do PETR4 (seed), nunca junto de VALE3/ITUB4 (ao vivo ou sem campo).
-    const petrCards = screen
-      .getAllByText("PETR4")
-      .map((el) => el.closest("a.p-4, tr") as HTMLElement)
-      .filter(Boolean);
-    expect(petrCards.some((card) => within(card).queryByText("estimado"))).toBe(
-      true,
-    );
+    // Com algum preço estimado, o selo "Tempo real" não aparece.
+    expect(screen.queryByText("Tempo real")).not.toBeInTheDocument();
+    // O selo de texto saiu (poluía o item); a marca é a borda no tom de aviso, com title explicando.
+    expect(screen.queryByText("estimado")).not.toBeInTheDocument();
+    const estimated = screen.getAllByRole("link", { name: /Negociar PETR4.*preço estimado/ });
+    expect(estimated).toHaveLength(3); // lista do celular, destaque e linha da tabela
+    for (const link of estimated) {
+      const item = (link.closest("tr") ?? link) as HTMLElement;
+      expect(item).toHaveAttribute("title", expect.stringMatching(/Preço estimado/));
+      expect(item.outerHTML).toMatch(/border-warning/);
+    }
+    // Na tabela o aviso também vai em texto para leitor de tela, na célula do preço.
+    expect(screen.getByText("preço estimado")).toHaveClass("sr-only");
     for (const liveTicker of ["VALE3", "ITUB4"]) {
-      const liveCards = screen
-        .getAllByText(liveTicker)
-        .map((el) => el.closest("a.p-4, tr") as HTMLElement)
-        .filter(Boolean);
-      expect(
-        liveCards.some((card) => within(card).queryByText("estimado")),
-      ).toBe(false);
+      for (const link of screen.getAllByRole("link", { name: new RegExp(`Negociar ${liveTicker}`) })) {
+        expect(link.getAttribute("aria-label")).not.toMatch(/estimado/);
+        expect((link.closest("tr") ?? link).outerHTML).not.toMatch(/border-warning/);
+      }
     }
   });
 
-  it("todos ao vivo (ou backend antigo, sem o campo): sem faixa e sem selo", async () => {
+  it("todos ao vivo (ou backend antigo, sem o campo): sem faixa e sem marca de estimado", async () => {
     await renderMarket([asset("PETR4", "live"), asset("VALE3")]);
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    expect(screen.queryByText("estimado")).not.toBeInTheDocument();
+    expect(screen.queryByText("preço estimado")).not.toBeInTheDocument();
+    expect(document.querySelector(".border-warning")).toBeNull();
+    expect(screen.getByText("Tempo real")).toBeInTheDocument();
   });
 });
 
@@ -96,6 +98,35 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
     expect(links.length).toBeGreaterThan(0);
     for (const link of links)
       expect(link).toHaveAttribute("href", "/orders?ticker=PETR4");
+  });
+
+  it("os cards de destaque do topo também levam à ordem do ativo", async () => {
+    await renderMarket([asset("PETR4", "live")]);
+
+    const highlight = screen
+      .getAllByRole("link", { name: "Negociar PETR4 (PETR4 SA)" })
+      .find((link) => link.querySelector("h2"));
+    expect(highlight).toHaveAttribute("href", "/orders?ticker=PETR4");
+  });
+
+  it("nome igual ao ticker não se repete no rótulo do link nem como subtítulo", async () => {
+    await renderMarket([{ ...asset("PETR4", "live"), name: "PETR4" }]);
+
+    const links = screen.getAllByRole("link", { name: "Negociar PETR4" });
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      const row = (link.closest("li, tr") ?? link) as HTMLElement;
+      expect(within(row).getAllByText("PETR4")).toHaveLength(1);
+    }
+  });
+
+  it("tipo em texto ('Renda fixa') e selo de sentimento só quando não é neutro", async () => {
+    await renderMarket([
+      { ...asset("SELIC", "live"), type: "FIXED_INCOME", changePercent: 0.5 },
+    ]);
+
+    expect(screen.getAllByText("Renda fixa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Neutro")).not.toBeInTheDocument();
   });
 
   it("variação zero não aparece como alta", async () => {

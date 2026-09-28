@@ -36,7 +36,8 @@ function mockApi({ convert = () => Promise.resolve(QUOTE), execute = () => Promi
 
 async function renderExchange() {
   render(<MemoryRouter><Exchange /></MemoryRouter>);
-  await screen.findByText("Câmbio de Moedas");
+  // O título é o mesmo nome do item do menu, como h1 da página.
+  await screen.findByRole("heading", { level: 1, name: "Câmbio" });
 }
 
 const typeAmount = (digits: string) =>

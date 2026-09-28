@@ -8,6 +8,7 @@ import {
   getBuyQuantityError,
   getSellQuantityError,
   normalizeTicker,
+  quantityForAmount,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
@@ -17,6 +18,9 @@ import type {
   OrderType,
   SellableAsset,
 } from "@/types/order";
+
+/** Como a compra é informada: pela quantidade de unidades ou pelo valor em R$ (só cripto). */
+export type OrderEntryMode = "QUANTITY" | "AMOUNT";
 
 interface UseOrderFormOptions {
   marketAssets: MarketAsset[];
@@ -43,11 +47,12 @@ export function useOrderForm({
   const [side, setSide] = useState<OrderSide>("BUY");
   const [type, setType] = useState<OrderType>("MARKET");
   const [quantity, setQuantity] = useState("");
+  // Padrão "Valor" para cripto: ninguém pensa em "0,00025 BTC", e sim em "R$ 100 de BTC".
+  const [entryMode, setEntryMode] = useState<OrderEntryMode>("AMOUNT");
   const priceInput = useCurrencyDigitsInput();
+  const amountInput = useCurrencyDigitsInput();
 
   const normalizedTicker = normalizeTicker(ticker);
-  const quantityValue = Number(quantity);
-  const hasValidQuantity = Number.isFinite(quantityValue) && quantityValue > 0;
   const needsPrice = type === "LIMIT" || type === "STOP";
   const isSell = side === "SELL";
 
@@ -63,14 +68,31 @@ export function useOrderForm({
     (asset) => normalizeTicker(asset.ticker) === normalizedTicker,
   );
 
-  const quantityError = !hasValidQuantity
-    ? null
-    : isSell
-      ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
-      : getBuyQuantityError(quantityValue, selectedAsset);
+  // Compra por valor só para cripto (fracionável); ações e renda fixa seguem em unidades inteiras.
+  const canBuyByAmount = !isSell && selectedAsset?.type === "CRYPTO";
+  const isByAmount = canBuyByAmount && entryMode === "AMOUNT";
+  // Em LIMIT/STOP a conta usa o preço informado (é a ele que a ordem será avaliada); sem ele
+  // ainda preenchido, o preço de mercado dá a estimativa.
+  const referencePrice =
+    needsPrice && priceInput.amount > 0 ? priceInput.amount : (selectedAsset?.price ?? 0);
+
+  const quantityValue = isByAmount
+    ? quantityForAmount(amountInput.amount, referencePrice)
+    : Number(quantity);
+  const hasValidQuantity = Number.isFinite(quantityValue) && quantityValue > 0;
+  // Valor digitado, mas pequeno demais para a menor fração (8 casas) do ativo.
+  const isAmountTooSmall = isByAmount && amountInput.amount > 0 && !hasValidQuantity;
+
+  const quantityError = isAmountTooSmall
+    ? `Valor baixo demais para comprar uma fração de ${normalizedTicker}.`
+    : !hasValidQuantity
+      ? null
+      : isSell
+        ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
+        : getBuyQuantityError(quantityValue, selectedAsset);
   const settlement =
     selectedAsset && hasValidQuantity
-      ? computeOrderSettlement(side, quantityValue * selectedAsset.price)
+      ? computeOrderSettlement(side, quantityValue * referencePrice)
       : null;
 
   const changeSide = (nextSide: OrderSide) => {
@@ -98,18 +120,20 @@ export function useOrderForm({
     setSide("BUY");
     setType("MARKET");
     setQuantity("");
+    setEntryMode("AMOUNT");
     priceInput.reset();
+    amountInput.reset();
   };
 
   /** Mensagem do primeiro problema que impede o envio, ou null se está ok. */
   const findSubmitError = (): string | null => {
+    if (quantityError) return quantityError;
     if (!normalizedTicker || !hasValidQuantity) {
       return "Informe um ticker e uma quantidade válida.";
     }
     if (isSell && ownedQuantity === null) {
       return `Você não possui ${normalizedTicker}. Escolha um ativo da lista.`;
     }
-    if (quantityError) return quantityError;
     if (needsPrice && priceInput.amount <= 0) {
       return "Preencha um preço válido para este tipo de ordem.";
     }
@@ -133,6 +157,12 @@ export function useOrderForm({
     setType,
     quantity,
     changeQuantity,
+    canBuyByAmount,
+    entryMode: (isByAmount ? "AMOUNT" : "QUANTITY") as OrderEntryMode,
+    setEntryMode,
+    amountInput,
+    /** Quantidade calculada a partir do valor (modo AMOUNT), já truncada; null no modo quantidade. */
+    estimatedQuantity: isByAmount ? quantityValue : null,
     priceInput,
     needsPrice,
     isSell,
@@ -142,7 +172,10 @@ export function useOrderForm({
     ownedQuantity,
     quantityError,
     /** Campos obrigatórios ainda vazios: marcados na tela quando o envio é tentado. */
-    missingFields: { ticker: !normalizedTicker, quantity: !hasValidQuantity },
+    missingFields: {
+      ticker: !normalizedTicker,
+      quantity: !hasValidQuantity && !isAmountTooSmall,
+    },
     settlement,
     isPriceEstimated:
       selectedAsset !== undefined && isEstimatedPrice(selectedAsset),

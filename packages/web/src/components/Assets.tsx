@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Bitcoin, Landmark, TrendingUp, type LucideIcon } from "lucide-react";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { scrollEdgesMask, useScrollEdges } from "@/hooks/use-scroll-edges";
@@ -7,6 +8,8 @@ import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import { PortfolioTotalBox } from "@/components/PortfolioTotalBox";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 // Ícone da categoria no lugar de siglas ("CR", "AC") que não diziam nada; o nome vai para leitor de tela.
 const TYPE_META: Record<
@@ -28,7 +31,7 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
   const { label, icon: TypeIcon } = TYPE_META[position.type];
 
   return (
-    <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-xl transition-colors">
+    <div className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
       <div className="flex items-center gap-3">
         <div
           className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center ${TYPE_COLORS[position.type]}`}
@@ -64,13 +67,13 @@ export function Assets({ change }: AssetsProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full">
-        <h3 className="text-lg font-bold mb-4">Seus Ativos</h3>
+      <div className={cn(cardClassName, "nav:h-full")}>
+        <SectionTitle className="mb-4">Seus Ativos</SectionTitle>
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 animate-pulse"
+              className="flex items-center justify-between p-3 rounded-lg bg-secondary/40 animate-pulse"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-secondary" />
@@ -89,8 +92,8 @@ export function Assets({ change }: AssetsProps) {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full">
-        <h3 className="text-lg font-bold mb-3">Seus Ativos</h3>
+      <div className={cn(cardClassName, "nav:h-full")}>
+        <SectionTitle className="mb-3">Seus Ativos</SectionTitle>
         <ErrorState
           message={error.message}
           onRetry={refetch}
@@ -104,8 +107,8 @@ export function Assets({ change }: AssetsProps) {
   // Desktop: o card tem a altura da linha do grid; a lista ocupa o que
   // sobra (min-h-0 + overflow) e rola, e o total fica fixo no rodapé.
   return (
-    <div className="rounded-2xl border border-border bg-surface-1 p-6 nav:h-full flex flex-col nav:min-h-0">
-      <h3 className="text-lg font-bold mb-4 shrink-0">Seus Ativos</h3>
+    <div className={cn(cardClassName, "nav:h-full flex flex-col nav:min-h-0")}>
+      <SectionTitle className="mb-4 shrink-0">Seus Ativos</SectionTitle>
 
       {positions.length === 0 ? (
         <div className="flex-1">

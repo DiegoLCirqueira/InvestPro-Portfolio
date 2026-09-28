@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { segmentClassName } from "@/components/ui/segmented";
@@ -12,6 +13,9 @@ import {
   useSavingsBoxWithdraw,
 } from "@/hooks/use-savings-box";
 import { formatCurrency } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type SavingsBoxMode = "DEPOSIT" | "WITHDRAW";
 
@@ -66,8 +70,9 @@ export function SavingsBoxCard() {
   const handleSubmit = useSubmitOnce(submitSavingsBox);
 
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
-      <h3 className="text-base font-bold text-foreground">Caixinha</h3>
+    // id="caixinha": destino do "Depositar na caixinha" das Recomendações (/orders#caixinha).
+    <section id="caixinha" aria-labelledby="caixinha-title" className={cn(cardClassName, "scroll-mt-4 flex flex-col gap-5")}>
+      <SectionTitle id="caixinha-title">Caixinha</SectionTitle>
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Saldo na caixinha</span>
@@ -105,16 +110,16 @@ export function SavingsBoxCard() {
             ariaLabel="Valor a movimentar na caixinha"
           />
         </FormField>
-        <button
+        <Button
           type="submit"
+          className="w-full"
           disabled={activeMutation.isPending}
-          className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {activeMutation.isPending
             ? "Enviando..."
             : SAVINGS_BOX_MODE_OPTIONS.find((o) => o.value === mode)?.label}
-        </button>
+        </Button>
       </form>
-    </div>
+    </section>
   );
 }

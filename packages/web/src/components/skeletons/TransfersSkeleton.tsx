@@ -1,4 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function TransfersSkeleton() {
   return (
@@ -9,7 +11,7 @@ export function TransfersSkeleton() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5">
+        <div className={cn(cardClassName, "flex flex-col gap-5")}>
           <Skeleton className="h-5 w-40" />
           <div className="space-y-2">
             <Skeleton className="h-3.5 w-12" />
@@ -22,7 +24,7 @@ export function TransfersSkeleton() {
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>
 
-        <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
+        <div className={cn(cardClassName, "flex flex-col gap-4")}>
           <Skeleton className="h-5 w-52" />
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -34,7 +36,7 @@ export function TransfersSkeleton() {
                   <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-3 w-36" />
                 </div>
-                <Skeleton className="h-5 w-20 rounded-md" />
+                <Skeleton className="h-5 w-20 rounded-lg" />
               </div>
             ))}
           </div>

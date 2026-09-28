@@ -5,12 +5,15 @@ interface CurrencyDigitsFieldProps {
   input: CurrencyDigitsInput;
   ariaLabel: string;
   id?: string;
+  /** Marca o campo como inválido (aria-invalid) quando há erro de validação ligado a ele. */
+  invalid?: boolean;
 }
 
 export function CurrencyDigitsField({
   input,
   ariaLabel,
   id,
+  invalid = false,
 }: CurrencyDigitsFieldProps) {
   return (
     <input
@@ -21,6 +24,7 @@ export function CurrencyDigitsField({
       onChange={input.onChange}
       onPaste={input.onPaste}
       aria-label={ariaLabel}
+      aria-invalid={invalid || undefined}
       className={`${fieldInputClassName} tabular-nums`}
     />
   );

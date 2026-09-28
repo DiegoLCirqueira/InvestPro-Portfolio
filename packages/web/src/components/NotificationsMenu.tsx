@@ -32,7 +32,7 @@ export function NotificationsMenu() {
         aria-label="Notificações"
         aria-haspopup="true"
         aria-expanded={isOpen}
-        className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Bell size={20} />
       </button>
@@ -40,13 +40,13 @@ export function NotificationsMenu() {
       {isOpen && (
         <div className="absolute right-0 top-12 z-30 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-surface-1 shadow-2xl">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
               Notificações
             </span>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               Fechar
             </button>

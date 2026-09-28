@@ -1,6 +1,10 @@
 import type { FormEvent } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
+import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface ExchangeResultPanelProps {
   simulation: ExchangeSummary | null;
@@ -18,15 +22,15 @@ export function ExchangeResultPanel({
 }: ExchangeResultPanelProps) {
   if (simulation) {
     return (
-      <ExchangeResultCard variant="simulation" summary={simulation}>
+      <ExchangeResultCard variant="simulation" summary={simulation} revealOnMobile>
         <form onSubmit={onExecute} className="flex flex-col gap-2">
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={isExecuting}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {isExecuting ? "Realizando..." : "Realizar conversão"}
-          </button>
+          </Button>
           <p className="text-xs text-muted-foreground text-center">
             A cotação pode variar até a conversão ser realizada.
           </p>
@@ -39,9 +43,10 @@ export function ExchangeResultPanel({
     return <ExchangeResultCard variant="confirmation" summary={executed} />;
   }
 
+  // Vazio, o card só ocupava espaço abaixo da dobra no celular: aparece só no desktop.
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-      <h3 className="text-base font-bold text-foreground">Resultado</h3>
+    <div className={cn(cardClassName, "hidden nav:flex flex-col gap-4")}>
+      <SectionTitle>Resultado</SectionTitle>
       <p className="text-sm text-muted-foreground text-center py-16">
         Preencha o valor e clique em Converter para simular a conversão.
       </p>

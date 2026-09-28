@@ -45,7 +45,7 @@ function ComboboxOptionRow({
         <span className="truncate">{option.label}</span>
       </span>
       {option.description && (
-        <span className="text-[10px] text-muted-foreground truncate">
+        <span className="text-xs text-muted-foreground truncate">
           {option.description}
         </span>
       )}

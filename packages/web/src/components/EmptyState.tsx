@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { Inbox, type LucideIcon } from "lucide-react";
+import { StateIcon } from "@/components/StateIcon";
+import { Button } from "@/components/ui/button";
 
 interface EmptyStateAction {
   label: string;
@@ -15,11 +17,9 @@ interface EmptyStateProps {
   className?: string;
 }
 
-const ACTION_CLASSNAME =
-  "mt-1 min-h-11 inline-flex items-center px-4 py-2 rounded-xl bg-primary-solid text-primary-foreground text-sm font-bold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-opacity";
-
+// Anatomia única de estado vazio: ícone num círculo, título, texto e ação como <Button>.
 export function EmptyState({
-  icon: Icon = Inbox,
+  icon = Inbox,
   title,
   message,
   action,
@@ -27,20 +27,20 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={`flex flex-col items-center justify-center gap-3 text-center px-4 ${className}`}>
-      <Icon size={28} className="text-muted-foreground/50" aria-hidden="true" />
+      <StateIcon icon={icon} />
       {title && (
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
       )}
       <p className="text-sm text-muted-foreground max-w-sm">{message}</p>
       {action &&
         (action.to ? (
-          <Link to={action.to} className={ACTION_CLASSNAME}>
-            {action.label}
-          </Link>
+          <Button asChild className="mt-1">
+            <Link to={action.to}>{action.label}</Link>
+          </Button>
         ) : (
-          <button type="button" onClick={action.onClick} className={ACTION_CLASSNAME}>
+          <Button type="button" onClick={action.onClick} className="mt-1">
             {action.label}
-          </button>
+          </Button>
         ))}
     </div>
   );

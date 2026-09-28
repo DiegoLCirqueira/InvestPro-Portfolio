@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { User, CalendarDays, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
@@ -8,15 +8,9 @@ import { useAuthStore } from "@/stores/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
-  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
   const logoutButtonRef = React.useRef<HTMLButtonElement>(null);
-  const isDashboard = location.pathname === "/";
-
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
   const dateStr = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
@@ -31,26 +25,13 @@ export function Header() {
         <span className="text-lg font-bold tracking-tight">InvestPro</span>
       </div>
 
-      <div className="hidden nav:block space-y-1">
-        <div className="flex items-center gap-2 text-brand-primary">
-          <CalendarDays size={14} className="opacity-80" />
-          <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">
-            {dateStr}
-          </span>
-        </div>
-
-        {/* Sempre renderizado (mesmo fora do Painel) e só ocultado por visibilidade: assim o
-            espaço reservado pro header é sempre igual ao do conteúdo real, sem precisar de
-            min-height fixo em px pra igualar a altura entre páginas. */}
-        <h2
-          className={`text-3xl font-extrabold text-foreground tracking-tight ${isDashboard ? "" : "invisible"}`}
-          aria-hidden={!isDashboard}
-        >
-          {greeting},{" "}
-          <span className="text-brand-primary">
-            {user?.fullName?.split(" ")[0] || "Investidor"}
-          </span>
-        </h2>
+      {/* Só a data: a saudação virou o título (PageHeader) do Painel, e o topo das outras
+          páginas não reserva mais uma faixa vazia para ela. */}
+      <div className="hidden nav:flex items-center gap-2 text-brand-primary">
+        <CalendarDays size={14} aria-hidden="true" />
+        <span className="text-2xs font-semibold uppercase tracking-wider">
+          {dateStr}
+        </span>
       </div>
 
       <div className="flex items-center gap-3 nav:gap-5 ml-auto">
@@ -60,7 +41,7 @@ export function Header() {
 
         <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-border">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-foreground leading-none">
+            <p className="text-sm font-semibold text-foreground leading-none">
               {user?.fullName || "Investidor"}
             </p>
           </div>
@@ -69,7 +50,7 @@ export function Header() {
             to="/profile"
             aria-label="Perfil"
             title="Perfil"
-            className="w-11 h-11 bg-linear-to-br to-secondary border border-border rounded-2xl flex items-center justify-center text-brand-primary shadow-lg shadow-black/20 group hover:border-brand-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="w-11 h-11 bg-linear-to-br to-secondary border border-border rounded-2xl flex items-center justify-center text-brand-primary group hover:border-brand-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <User
               size={22}
@@ -82,7 +63,7 @@ export function Header() {
             ref={logoutButtonRef}
             type="button"
             onClick={() => setConfirmLogoutOpen(true)}
-            className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-all group"
+            className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground hover:text-brand-danger hover:bg-secondary rounded-xl transition-colors group"
             aria-label="Sair"
             title="Sair"
           >

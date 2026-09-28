@@ -1,17 +1,33 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { ClipboardList, LogIn } from "lucide-react";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
 import { OrderRow } from "@/components/orders/OrderRow";
 import { SavingsBoxCard } from "@/components/orders/SavingsBoxCard";
 import { useOrders } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function Orders() {
   const { data, error, isLoading, refetch } = useOrders();
 
+  const { hash } = useLocation();
+
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+
+  // /orders#caixinha (vindo das Recomendações): a Caixinha fica no fim da página, então rola
+  // até ela quando a página termina de carregar.
+  useEffect(() => {
+    if (hash === "#caixinha" && !isLoading) {
+      document.getElementById("caixinha")?.scrollIntoView({ block: "start" });
+    }
+  }, [hash, isLoading]);
 
   const orders = [...(data?.items ?? [])].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -50,12 +66,10 @@ export function Orders() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Ordens</h2>
-        <p className="text-muted-foreground text-sm">
-          Envie e acompanhe suas ordens de compra e venda.
-        </p>
-      </header>
+      <PageHeader
+        title="Ordens"
+        description="Envie e acompanhe suas ordens de compra e venda."
+      />
 
       <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
         <NewOrderForm onCreated={() => void refetch()} />
@@ -64,10 +78,8 @@ export function Orders() {
             ela vem do formulário, e o histórico usa essa altura como máximo,
             rolando por dentro quando passa dela. */}
         <div className="nav:col-span-3 nav:self-stretch nav:h-0 nav:min-h-full">
-        <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-          <h3 className="text-base font-bold text-foreground">
-            Histórico de Ordens
-          </h3>
+        <div className={cn(cardClassName, "nav:max-h-full flex flex-col gap-4")}>
+          <SectionTitle>Histórico de Ordens</SectionTitle>
 
           {orders.length === 0 ? (
             <EmptyState
@@ -76,7 +88,7 @@ export function Orders() {
               action={{ label: "Ver ativos disponíveis", to: "/market" }}
             />
           ) : (
-            <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex flex-col divide-y divide-border nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (
                 <OrderRow key={order.id} order={order} />
               ))}

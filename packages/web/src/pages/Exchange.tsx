@@ -5,6 +5,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField } from "@/components/FormField";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CurrencySelect } from "@/components/exchange/CurrencySelect";
 import { ExchangeResultPanel } from "@/components/exchange/ExchangeResultPanel";
 import { useExchange } from "@/hooks/useExchange";
@@ -14,6 +16,9 @@ import { useAvailableBalance } from "@/hooks/use-available-balance";
 import { formatCurrency } from "@/lib/format";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
+import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function Exchange() {
   const { currencies, base, isLoading, error, refetch } = useExchange();
@@ -73,19 +78,17 @@ export function Exchange() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Câmbio de Moedas</h2>
-        <p className="text-muted-foreground text-sm">
-          Simule a conversão entre moedas e, se gostar do resultado, realize-a.
-        </p>
-      </header>
+      <PageHeader
+        title="Câmbio"
+        description="Simule a conversão entre moedas e, se gostar do resultado, realize-a."
+      />
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSimulate}
-          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className={cn(cardClassName, "flex flex-col gap-5")}
         >
-          <h3 className="text-base font-bold text-foreground">Conversor</h3>
+          <SectionTitle>Conversor</SectionTitle>
 
           <FormField label="Valor">
             <CurrencyDigitsField input={amountInput} ariaLabel="Valor a converter" />
@@ -97,7 +100,9 @@ export function Exchange() {
             </p>
           </FormField>
 
-          <div className="relative flex flex-col gap-16">
+          {/* Botão no fluxo, entre os dois campos e com o mesmo espaço acima e abaixo: posicionado em
+              absoluto no meio do bloco, ele ficava deslocado pelo rótulo "Para". */}
+          <div className="flex flex-col gap-3">
             <CurrencySelect
               id="exchange-from"
               label="De"
@@ -105,6 +110,16 @@ export function Exchange() {
               currencies={currencies}
               onChange={setFrom}
             />
+
+            <button
+              type="button"
+              onClick={handleSwap}
+              aria-label="Inverter moedas"
+              className="self-center size-11 flex items-center justify-center rounded-xl bg-surface-1 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <ArrowDownUp size={18} aria-hidden="true" />
+            </button>
+
             <CurrencySelect
               id="exchange-to"
               label="Para"
@@ -112,24 +127,15 @@ export function Exchange() {
               currencies={currencies}
               onChange={setTo}
             />
-
-            <button
-              type="button"
-              onClick={handleSwap}
-              aria-label="Inverter moedas"
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center rounded-xl bg-surface-1 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer"
-            >
-              <ArrowDownUp size={18} />
-            </button>
           </div>
 
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={flow.isSimulating}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer"
           >
             {flow.isSimulating ? "Simulando..." : "Converter"}
-          </button>
+          </Button>
           <p className="text-xs text-muted-foreground text-center">
             Converter apenas simula: nada é debitado até você realizar a conversão.
           </p>

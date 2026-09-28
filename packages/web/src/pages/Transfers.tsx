@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Info, LogIn, Receipt } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -19,6 +21,8 @@ import { PixKeyField } from "@/components/transfers/PixKeyField";
 import { segmentClassName } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
+import { Button } from "@/components/ui/button";
+import { cardClassName } from "@/components/ui/card";
 
 const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
   { value: "PIX", label: "PIX" },
@@ -61,7 +65,7 @@ function TransferTypeHelp({ label, help }: { label: string; help: string }) {
           side="top"
           sideOffset={4}
           collisionPadding={16}
-          className="z-50 max-w-64 rounded-md border border-border bg-surface-3 px-3 py-1.5 text-xs text-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+          className="z-50 max-w-64 rounded-lg border border-border bg-surface-3 px-3 py-1.5 text-xs text-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
         >
           {help}
         </PopoverPrimitive.Content>
@@ -89,7 +93,7 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
   const destination = destinationOf(transfer);
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2">
+    <div className="py-3">
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="min-w-0">
           <span className="font-bold text-foreground tabular-nums">
@@ -243,23 +247,17 @@ export function Transfers() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">
-          Transferências Bancárias
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Movimente dinheiro entre suas contas.
-        </p>
-      </header>
+      <PageHeader
+        title="Transferências"
+        description="Movimente dinheiro entre suas contas."
+      />
 
       <div className="grid grid-cols-1 nav:grid-cols-2 gap-4 items-start">
         <form
           onSubmit={handleSubmit}
-          className="p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-5"
+          className={cn(cardClassName, "flex flex-col gap-5")}
         >
-          <h3 className="text-base font-bold text-foreground">
-            Nova Transferência
-          </h3>
+          <SectionTitle>Nova Transferência</SectionTitle>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Tipo</label>
@@ -367,21 +365,19 @@ export function Transfers() {
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={createTransfer.isPending}
-            className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {createTransfer.isPending ? "Transferindo..." : "Transferir"}
-          </button>
+          </Button>
         </form>
 
         {/* Mesma regra do histórico de ordens: altura máxima = a do formulário. */}
         <div className="nav:self-stretch nav:h-0 nav:min-h-full">
-          <div className="nav:max-h-full p-6 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4">
-            <h3 className="text-base font-bold text-foreground">
-              Histórico de Transferências
-            </h3>
+          <div className={cn(cardClassName, "nav:max-h-full flex flex-col gap-4")}>
+            <SectionTitle>Histórico de Transferências</SectionTitle>
 
             {history.length === 0 ? (
               <EmptyState
@@ -389,7 +385,7 @@ export function Transfers() {
                 message="Suas transferências vão aparecer aqui assim que você fizer a primeira."
               />
             ) : (
-              <div className="flex flex-col gap-3 nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
+              <div className="flex flex-col divide-y divide-border nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
                 {history.map((transfer) => (
                   <TransferItem key={transfer.id} transfer={transfer} />
                 ))}

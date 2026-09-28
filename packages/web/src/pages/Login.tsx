@@ -96,7 +96,7 @@ export function Login() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••"
+              placeholder="Sua senha"
               autoComplete="current-password"
               aria-invalid={!!errors.password}
               {...register("password")}

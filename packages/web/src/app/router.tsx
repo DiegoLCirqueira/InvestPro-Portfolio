@@ -67,7 +67,7 @@ function RouteErrorFallback() {
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div className="text-center space-y-4">
-        <p className="text-brand-danger text-sm font-bold">
+        <p className="text-brand-danger text-sm font-semibold">
           Erro ao carregar esta página
         </p>
         <a

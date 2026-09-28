@@ -20,9 +20,9 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
 
 function SideText({ side }: { side: OrderSide }) {
   return side === "BUY" ? (
-    <span className="text-brand-primary font-bold">Compra</span>
+    <span className="text-brand-primary font-semibold">Compra</span>
   ) : (
-    <span className="text-destructive font-bold">Venda</span>
+    <span className="text-destructive font-semibold">Venda</span>
   );
 }
 
@@ -42,12 +42,12 @@ export function OrderRow({ order }: { order: Order }) {
   const { price, avgPrice, fee } = order;
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2">
+    <div className="py-3">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-bold text-foreground">{order.ticker}</span>
           <SideText side={order.side} />
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
             {ORDER_TYPE_LABELS[order.type]}
           </span>
         </div>

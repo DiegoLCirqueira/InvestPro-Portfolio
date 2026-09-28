@@ -1,4 +1,5 @@
 import { Wallet } from "lucide-react";
+import { cardClassName } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 
 interface AccountBalanceCardProps {
@@ -13,7 +14,7 @@ export function AccountBalanceCard({
   availableBalance,
 }: AccountBalanceCardProps) {
   return (
-    <div className="p-6 rounded-2xl border border-border bg-surface-1">
+    <div className={cardClassName}>
       <p className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-1">
         <Wallet size={16} aria-hidden="true" />
         Saldo em conta

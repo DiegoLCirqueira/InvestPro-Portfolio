@@ -9,8 +9,12 @@ import {
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { FilterChips } from "@/components/FilterChips";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { useNewsFeed } from "@/hooks/use-news-feed";
 import { formatDateShort } from "@/lib/format";
+import { preferredScrollBehavior } from "@/lib/motion";
 import type { NewsCategory } from "@/types/news";
 
 const CATEGORY_FILTERS: { value: NewsCategory | "ALL"; label: string }[] = [
@@ -43,7 +47,7 @@ export function News() {
   });
 
   useEffect(() => {
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    topRef.current?.scrollIntoView({ behavior: preferredScrollBehavior(), block: "start" });
   }, [page]);
 
   const items = data?.items ?? [];
@@ -70,11 +74,7 @@ export function News() {
   if (error) {
     return (
       <div className="flex-1 animate-in fade-in duration-300">
-        <header className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Notícias do Mercado
-          </h2>
-        </header>
+        <PageHeader title="Notícias" />
         <ErrorState
           title="Não foi possível carregar as notícias"
           message={error.message}
@@ -86,34 +86,21 @@ export function News() {
 
   return (
     <div ref={topRef} className="flex-1">
-      <header className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Notícias do Mercado
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Fique por dentro do que move o seu dinheiro hoje.
-        </p>
-      </header>
+      <PageHeader
+        title="Notícias"
+        description="Fique por dentro do que move o seu dinheiro hoje."
+      />
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {visibleFilters.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
-            onClick={() => {
-              setFilter(option.value);
-              setPage(1);
-            }}
-            className={`min-h-11 text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-              filter === option.value
-                ? "bg-primary-solid text-primary-foreground border-brand-primary"
-                : "bg-secondary/60 text-muted-foreground border-border hover:border-brand-primary/40"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <FilterChips
+          options={visibleFilters}
+          value={filter}
+          onChange={(value) => {
+            setFilter(value);
+            setPage(1);
+          }}
+          ariaLabel="Filtrar notícias por categoria"
+        />
       </div>
 
       <div className="grid gap-4">
@@ -129,20 +116,21 @@ export function News() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-all group block"
+              className="bg-secondary/20 border border-border p-5 rounded-2xl hover:border-brand-primary/50 transition-colors group block"
             >
-              <div className="flex justify-between items-start mb-3 gap-3">
-                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-[10px] font-bold rounded-full uppercase">
+              <div className="flex flex-wrap justify-between items-start mb-3 gap-x-3 gap-y-2">
+                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-2xs font-semibold rounded-full uppercase tracking-wide">
                   {CATEGORY_LABELS[item.category] ?? item.category}
                 </span>
-                <div className="flex items-center gap-3 text-muted-foreground text-xs shrink-0">
+                <div className="flex min-w-0 items-center gap-3 text-muted-foreground text-xs">
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} />
                     <span className="min-w-[64px] text-right tabular-nums">
                       {formatDateShort(item.publishedAt)}
                     </span>
                   </span>
-                  <span className="hidden sm:inline-block min-w-[140px] truncate text-muted-foreground">
+                  {/* A fonte aparece também no celular (antes sumia), truncada se for longa. */}
+                  <span className="max-w-[9rem] sm:max-w-none sm:min-w-[140px] truncate text-muted-foreground">
                     {item.source}
                   </span>
                   <ExternalLink
@@ -152,12 +140,13 @@ export function News() {
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors mb-2">
+              <h2 className="text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors mb-2">
                 {item.title}
-              </h3>
+              </h2>
 
+              {/* ~70 caracteres por linha e 2 linhas: no desktop o resumo corria por ~1.300px. */}
               {item.summary && (
-                <p className="text-muted-foreground text-xs leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-[70ch] line-clamp-2">
                   {item.summary}
                 </p>
               )}
@@ -168,25 +157,27 @@ export function News() {
 
       {data && data.total > data.limit && (
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
-          <button
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ChevronLeft size={15} />
             Anterior
-          </button>
+          </Button>
           <span className="text-xs text-muted-foreground font-medium">
             Página {data.page} de {totalPage}
           </span>
-          <button
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPage, p + 1))}
             disabled={page >= totalPage}
-            className="min-h-11 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary/60 border border-border text-foreground/80 text-sm font-medium hover:border-brand-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Próxima
             <ChevronRight size={15} />
-          </button>
+          </Button>
         </div>
       )}
     </div>

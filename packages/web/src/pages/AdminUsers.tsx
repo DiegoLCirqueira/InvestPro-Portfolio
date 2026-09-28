@@ -1,12 +1,15 @@
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2, ShieldAlert, Users, UserX } from "lucide-react";
+import { Loader2, ShieldAlert, UserX } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
 import { useAdminUsers } from "@/hooks/use-admin-users";
 import { ApiError } from "@/services/api";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatDateTime } from "@/lib/format";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
@@ -51,28 +54,23 @@ export function AdminUsers() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <header className="mb-6 shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-2">
-          <Users size={22} className="text-brand-primary" />
-          Administração de Usuários
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Lista de todos os usuários cadastrados no sistema.
-        </p>
-      </header>
+      <PageHeader
+        title="Administração"
+        description="Lista de todos os usuários cadastrados no sistema."
+      />
 
       {users.length === 0 ? (
         <EmptyState icon={UserX} message="Nenhum usuário encontrado." />
       ) : (
-        <div className="rounded-2xl border border-border bg-surface-1 overflow-x-auto">
+        <div className={cn(cardClassName, "p-0 sm:p-0 overflow-x-auto")}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="px-4 py-3 font-bold">ID</th>
-                <th className="px-4 py-3 font-bold">Email</th>
-                <th className="px-4 py-3 font-bold">Nome</th>
-                <th className="px-4 py-3 font-bold">Role</th>
-                <th className="px-4 py-3 font-bold">Criado em</th>
+                <th className="px-4 py-3 font-semibold">ID</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Nome</th>
+                <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Criado em</th>
               </tr>
             </thead>
             <tbody>
@@ -88,7 +86,7 @@ export function AdminUsers() {
                   <td className="px-4 py-3 text-foreground">{user.fullName}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${
+                      className={`text-2xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide ${
                         user.role === "ADMIN"
                           ? "bg-brand-primary/15 text-brand-primary"
                           : "bg-secondary text-muted-foreground"

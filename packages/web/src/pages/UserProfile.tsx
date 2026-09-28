@@ -1,13 +1,6 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Compass,
-  ShieldCheck,
-  Wallet,
-  X,
-} from "lucide-react";
+import type { FormEvent, ReactNode } from "react";
+import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
@@ -29,8 +22,14 @@ import { EmptyState } from "@/components/EmptyState";
 import { CpfSection } from "@/components/profile/CpfSection";
 import { ProfileField } from "@/components/profile/ProfileField";
 import { ErrorState } from "@/components/ErrorState";
+import { fieldInputClassName } from "@/components/FormField";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionTitle } from "@/components/SectionTitle";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { cardClassName } from "@/components/ui/card";
 
 const PHONE_REGEX = /^\+?\d{10,15}$/;
 
@@ -86,19 +85,10 @@ function TopUpCard() {
   const handleSubmit = useSubmitOnce(submitTopUp);
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-surface-2 space-y-3">
-      <div className="flex items-center gap-3">
-        <Wallet size={18} className="text-primary" />
-        <div>
-          <p className="text-sm font-medium text-foreground">
-            Simular Depósito
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Funcionalidade de demonstração — não representa um pagamento real.
-          </p>
-        </div>
-      </div>
-
+    <ProfileSection
+      title="Simular depósito"
+      description="Funcionalidade de demonstração — não representa um pagamento real."
+    >
       <p className="text-xs text-muted-foreground">
         Saldo atual:{" "}
         <span className="font-semibold text-foreground">
@@ -122,6 +112,7 @@ function TopUpCard() {
         </p>
       )}
 
+      {/* Mesmo estilo de campo das outras páginas (antes era branco sobre cinza, o inverso). */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
@@ -131,45 +122,73 @@ function TopUpCard() {
           onPaste={amountInput.onPaste}
           aria-label="Valor a adicionar"
           disabled={isLimitReached}
-          className="min-w-0 flex-1 px-4 py-3 rounded-xl bg-surface-1 border border-field text-foreground text-sm tabular-nums focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors duration-200"
+          className={cn(fieldInputClassName, "min-w-0 flex-1 tabular-nums")}
         />
-        <button
+        <Button
           type="submit"
+          variant="outline"
+          className="shrink-0"
           disabled={topUp.isPending || isLimitReached}
-          className="min-h-11 shrink-0 px-4 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
-        </button>
+        </Button>
       </form>
-    </div>
+    </ProfileSection>
   );
 }
 
 // Atalho para o questionário: mostra o perfil atual ou convida a descobrir.
-function InvestorProfileLink() {
+function InvestorProfileSection() {
   const { data } = useInvestorProfile();
   const profile = data?.profile;
 
   return (
-    <Link
-      to="/profile/investor-profile"
-      className="flex min-h-11 items-center gap-3 p-4 rounded-xl border border-border bg-surface-2 text-foreground hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    <ProfileSection
+      title="Perfil de investidor"
+      description={
+        profile
+          ? `Seu perfil: ${INVESTOR_PROFILE_LABELS[profile.type]}.`
+          : "Descubra seu perfil em 7 perguntas."
+      }
     >
-      <Compass size={18} className="text-primary" aria-hidden="true" />
-      <span className="flex-1">
-        <span className="block text-sm font-medium">Perfil de investidor</span>
-        <span className="block text-xs text-muted-foreground">
-          {profile
-            ? `Seu perfil: ${INVESTOR_PROFILE_LABELS[profile.type]}`
-            : "Descubra seu perfil em 7 perguntas"}
-        </span>
-      </span>
-      <ChevronRight
-        size={18}
-        className="text-muted-foreground"
-        aria-hidden="true"
-      />
-    </Link>
+      <div className="flex justify-end">
+        <Button asChild variant="outline">
+          <Link to="/profile/investor-profile">
+            {profile ? "Ver ou refazer" : "Descobrir meu perfil"}
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
+    </ProfileSection>
+  );
+}
+
+// Uma seção por assunto, cada uma com o seu próprio botão de salvar: com 3 formulários
+// independentes na página, o botão fica visualmente preso ao que ele salva.
+function ProfileSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id?: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  const titleId = `${id ?? title.toLowerCase().replace(/\W+/g, "-")}-title`;
+  return (
+    <section
+      id={id}
+      aria-labelledby={titleId}
+      className={cn(cardClassName, "flex flex-col gap-4")}
+    >
+      <div className="space-y-1">
+        <SectionTitle id={titleId}>{title}</SectionTitle>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -246,7 +265,7 @@ export function UserProfile() {
     }
   };
 
-  const body = isLoading ? (
+  const personalData = isLoading ? (
     <ProfileFieldsSkeleton />
   ) : error ? (
     <ErrorState
@@ -258,89 +277,87 @@ export function UserProfile() {
   ) : !profile ? (
     <EmptyState message="Nenhum dado de perfil disponível." />
   ) : (
-    <>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <ProfileField
-          label="Nome Completo"
-          value={fullName}
-          onChange={setFullName}
-          editable
-          error={fieldErrors.fullName}
-        />
-        <ProfileField label="Email" value={profile.email} />
-        <ProfileField
-          label="Telefone"
-          value={phone}
-          onChange={setPhone}
-          editable
-          placeholder="+5511999999999"
-          error={fieldErrors.phone}
-        />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <ProfileField
+        label="Nome Completo"
+        value={fullName}
+        onChange={setFullName}
+        editable
+        error={fieldErrors.fullName}
+      />
+      <ProfileField label="Email" value={profile.email} />
+      <ProfileField
+        label="Telefone"
+        value={phone}
+        onChange={setPhone}
+        editable
+        placeholder="+5511999999999"
+        error={fieldErrors.phone}
+      />
 
-        <button
-          type="submit"
-          disabled={updateProfile.isPending}
-          className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
-        </button>
-      </form>
-
-      <div className="mt-6">
-        <CpfSection
-          savedCpf={profile.cpf}
-          onAlreadySet={refetch}
-          shouldFocus={shouldFocusCpf}
-        />
-      </div>
-
-      <div className="mt-6 space-y-3">
-        <InvestorProfileLink />
-        <TopUpCard />
-
-        {isAdmin && (
-          <Link
-            to="/admin/users"
-            className="flex min-h-11 items-center gap-3 p-4 rounded-xl border border-border bg-surface-2 text-foreground hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <ShieldCheck size={18} className="text-primary" />
-            <span className="text-sm font-medium">Administração</span>
-          </Link>
-        )}
-      </div>
-    </>
+      {/* A única ação principal da página (verde cheio); as outras seções usam outline. */}
+      <Button
+        type="submit"
+        className="self-end"
+        disabled={updateProfile.isPending}
+      >
+        {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
+      </Button>
+    </form>
   );
 
+  // Página comum (PageHeader + seções em cards), não mais um card centralizado com "×" que
+  // parecia um diálogo. No celular o "Voltar" continua sendo o caminho de volta.
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <div className="flex-1 flex nav:items-start nav:justify-center">
-        {/* Mobile: página cheia, sem moldura. Desktop (nav): card centralizado. */}
-        <div className="w-full flex flex-col nav:max-w-xl nav:rounded-2xl nav:border nav:border-border nav:bg-surface-1 nav:p-8 nav:shadow-2xl">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="nav:hidden flex items-center gap-1 min-h-11 -ml-2 px-2 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            <ChevronLeft size={20} />
-            Voltar
-          </button>
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="nav:hidden flex items-center gap-1 min-h-11 -ml-2 px-2 mb-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <ChevronLeft size={20} />
+        Voltar
+      </button>
 
-          <div className="flex items-center justify-between mb-6 nav:mb-8">
-            <h2 className="text-2xl font-bold text-foreground">
-              Perfil do Usuário
-            </h2>
-            <button
-              onClick={() => navigate("/")}
-              className="hidden nav:block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Fechar"
-              type="button"
-            >
-              <X size={18} />
-            </button>
-          </div>
+      <PageHeader
+        title="Perfil"
+        description="Seus dados, CPF, perfil de investidor e saldo de demonstração."
+      />
 
-          {body}
-        </div>
+      <div className="flex w-full max-w-2xl flex-col gap-6">
+        <ProfileSection title="Dados pessoais">{personalData}</ProfileSection>
+
+        {profile && (
+          <>
+            {/* id="cpf": destino do "Completar CPF" de Transferências (/profile#cpf). */}
+            <ProfileSection id="cpf" title="Documento">
+              <CpfSection
+                savedCpf={profile.cpf}
+                onAlreadySet={refetch}
+                shouldFocus={shouldFocusCpf}
+              />
+            </ProfileSection>
+
+            <InvestorProfileSection />
+            <TopUpCard />
+
+            {isAdmin && (
+              <ProfileSection
+                title="Administração"
+                description="Lista de todos os usuários cadastrados."
+              >
+                <div className="flex justify-end">
+                  <Button asChild variant="outline">
+                    <Link to="/admin/users">
+                      <ShieldCheck aria-hidden="true" />
+                      Abrir administração
+                    </Link>
+                  </Button>
+                </div>
+              </ProfileSection>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

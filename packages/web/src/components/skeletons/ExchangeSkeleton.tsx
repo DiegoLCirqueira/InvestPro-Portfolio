@@ -1,4 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cardClassName } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function ExchangeSkeleton() {
   return (
@@ -12,14 +14,14 @@ export function ExchangeSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="p-5 rounded-2xl border border-border bg-surface-1 flex flex-col gap-4"
+            className={cn(cardClassName, "flex flex-col gap-4")}
           >
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-3 w-28" />
               </div>
-              <Skeleton className="h-6 w-20 rounded-md" />
+              <Skeleton className="h-6 w-20 rounded-lg" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
