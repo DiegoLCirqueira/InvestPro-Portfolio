@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ProfileField } from "@/components/profile/ProfileField";
+import { Button } from "@/components/ui/button";
 import { useCpfSetup } from "@/hooks/use-cpf-setup";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { formatCpf } from "@/lib/cpf";
@@ -77,13 +78,16 @@ export function CpfSection({ savedCpf, onAlreadySet, shouldFocus }: CpfSectionPr
           {error.message}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={cpfSetup.isSaving}
-        className="min-h-11 w-full py-3 rounded-xl bg-primary-solid hover:opacity-90 disabled:opacity-50 transition-opacity duration-200 text-primary-foreground font-bold text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        {cpfSetup.isSaving ? "Salvando..." : "Salvar CPF"}
-      </button>
+      <div className="flex justify-end">
+        <Button
+          type="submit"
+          variant="outline"
+          className="h-auto min-h-11"
+          disabled={cpfSetup.isSaving}
+        >
+          {cpfSetup.isSaving ? "Salvando..." : "Salvar CPF"}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -63,6 +63,16 @@ describe("UserProfile (CPF)", () => {
     ).toHaveLength(1);
   });
 
+  it("só \"Salvar alterações\" é a ação principal (verde cheio); as outras seções usam outline", async () => {
+    mockApi(null);
+    await renderProfile();
+
+    expect(screen.getByRole("button", { name: "Salvar alterações" }).className).toMatch(/bg-primary-solid/);
+    for (const name of ["Salvar CPF", "Adicionar saldo"]) {
+      expect(screen.getByRole("button", { name }).className).not.toMatch(/bg-primary-solid/);
+    }
+  });
+
   it("vindo de #cpf (Completar CPF), o campo já abre focado", async () => {
     mockApi(null);
     const cpfField = await renderProfile("/profile#cpf");

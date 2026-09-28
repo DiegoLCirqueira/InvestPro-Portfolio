@@ -71,8 +71,9 @@ export function InvestorProfile() {
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
-      <div className="flex-1 flex nav:items-start nav:justify-center">
-        <div className="w-full flex flex-col nav:max-w-2xl nav:rounded-2xl nav:border nav:border-border nav:bg-surface-1 nav:p-8 nav:shadow-2xl">
+      <div className="flex-1 flex">
+        {/* Página comum alinhada às outras, não um card centralizado com sombra de diálogo. */}
+        <div className="w-full max-w-2xl flex flex-col">
           <button
             type="button"
             onClick={() => navigate("/profile")}
