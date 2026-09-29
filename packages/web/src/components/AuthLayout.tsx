@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { DemoNotice } from "@/components/DemoNotice";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -34,12 +35,17 @@ export function AuthLayout({
       <AuthBackdrop />
 
       <header className="flex h-16 items-center justify-between px-4 sm:px-8">
-        <div className="flex items-center gap-2.5">
+        {/* A marca volta para a página inicial: quem chegou ao login/cadastro por ela tem o
+            caminho de volta que todo site oferece. */}
+        <Link
+          to="/"
+          className="flex min-h-11 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <BrandMark />
           <span className="text-lg font-bold tracking-tight text-foreground">
             InvestPro
           </span>
-        </div>
+        </Link>
         <ThemeToggle />
       </header>
 

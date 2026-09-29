@@ -16,6 +16,8 @@ describe("Página 404", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Erro 404")).toBeInTheDocument();
     expect(screen.getByText("InvestPro")).toBeInTheDocument();
+    // A marca das telas de acesso volta para a página inicial.
+    expect(screen.getByRole("link", { name: "InvestPro" })).toHaveAttribute("href", "/");
     expect(
       screen.getByRole("button", { name: /Mudar para tema/ }),
     ).toBeInTheDocument();
