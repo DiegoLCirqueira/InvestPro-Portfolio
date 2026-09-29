@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { useDocumentTitle } from "@/app/use-document-title";
+import { useAuthStore } from "@/stores/auth";
 
 function TestPage({ to }: { to?: string }) {
   useDocumentTitle();
@@ -24,6 +25,15 @@ function renderAt(path: string) {
 }
 
 describe("useDocumentTitle", () => {
+  // Logado: "/" é o Painel. O caso do visitante (página inicial) tem teste próprio abaixo.
+  beforeEach(() => useAuthStore.setState({ isAuthenticated: true }));
+
+  it("visitante em /: título da página inicial, com a marca primeiro", () => {
+    useAuthStore.setState({ isAuthenticated: false });
+    renderAt("/");
+    expect(document.title).toBe("InvestPro · Simulador de investimentos");
+  });
+
   it.each([
     ["/", "Painel · InvestPro"],
     ["/market", "Análise de Mercado · InvestPro"],

@@ -34,3 +34,22 @@ describe("ícones da marca", () => {
     expect(indexHtml).not.toContain('href="/favicon.png"');
   });
 });
+
+describe("metadados da página inicial (index.html)", () => {
+  const meta = (attr: string, key: string) =>
+    new RegExp(`<meta ${attr}="${key}" content="([^"]+)"`).exec(indexHtml)?.[1];
+
+  it("tem título, descrição e Open Graph em pt-BR", () => {
+    expect(indexHtml).toContain("<title>InvestPro · Simulador de investimentos</title>");
+    expect(meta("name", "description")).toMatch(/Simulador de investimentos/);
+    expect(meta("property", "og:locale")).toBe("pt_BR");
+    expect(meta("property", "og:title")).toMatch(/InvestPro/);
+    expect(meta("property", "og:description")).toMatch(/operações simuladas/);
+  });
+
+  it("a imagem do Open Graph é a logo, com URL absoluta e arquivo existente em public/", () => {
+    const image = meta("property", "og:image")!;
+    expect(image).toMatch(/^https:\/\/investpro\.dev\.br\//);
+    expect(publicFiles.has(new URL(image).pathname)).toBe(true);
+  });
+});
