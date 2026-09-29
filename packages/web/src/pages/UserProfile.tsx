@@ -7,27 +7,18 @@ import { useAuthStore } from "@/stores/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import type { UpdateProfileInput } from "@/hooks/use-profile";
 import {
-  usePortfolioPositions,
-  useTopUpLimit,
-  useTopUpPortfolio,
-} from "@/hooks/usePortfolio";
-import {
   INVESTOR_PROFILE_LABELS,
   useInvestorProfile,
 } from "@/hooks/use-investor-profile";
-import { useCurrencyDigitsInput } from "@/hooks/use-currency-digits-input";
-import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
-import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { EmptyState } from "@/components/EmptyState";
 import { CpfSection } from "@/components/profile/CpfSection";
+import { TopUpForm } from "@/components/profile/TopUpForm";
 import { ProfileField } from "@/components/profile/ProfileField";
 import { ErrorState } from "@/components/ErrorState";
-import { fieldInputClassName } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { cardClassName } from "@/components/ui/card";
 
@@ -47,97 +38,16 @@ function ProfileFieldsSkeleton() {
 }
 
 function TopUpCard() {
-  const { balance, isLoading, refetch } = usePortfolioPositions();
-  const topUpLimit = useTopUpLimit();
-  const amountInput = useCurrencyDigitsInput();
-  const remaining = topUpLimit.data?.remaining;
-  const isLimitReached = remaining === 0;
-
-  const handleTopUpError = useFinancialErrorHandler();
-  const topUp = useTopUpPortfolio({
-    onSuccess: () => {
-      toast.success("Saldo adicionado com sucesso!");
-      amountInput.reset();
-      void refetch();
-      void topUpLimit.refetch();
-    },
-    onError: handleTopUpError,
-  });
-
-  const submitTopUp = async () => {
-    if (amountInput.amount <= 0) {
-      toast.error("Informe um valor válido.");
-      return;
-    }
-    if (remaining !== undefined && amountInput.amount > remaining) {
-      toast.error(
-        `Você ainda pode adicionar até ${formatCurrency(remaining)}.`,
-      );
-      return;
-    }
-    try {
-      await topUp.mutate(amountInput.amount);
-    } catch {
-      // erro já tratado via onError
-    }
-  };
-
-  const handleSubmit = useSubmitOnce(submitTopUp);
-
   return (
     <ProfileSection
       title="Simular depósito"
       description="Funcionalidade de demonstração — não representa um pagamento real."
     >
-      <p className="text-xs text-muted-foreground">
-        Saldo atual:{" "}
-        <span className="font-semibold text-foreground">
-          {isLoading ? "..." : formatCurrency(balance)}
-        </span>
-      </p>
-
-      {topUpLimit.data && (
-        <p className="text-xs text-muted-foreground">
-          {isLimitReached ? (
-            "Você já adicionou o limite de saldo da conta. Agora o saldo só cresce com seus investimentos."
-          ) : (
-            <>
-              Ainda pode adicionar{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {formatCurrency(topUpLimit.data.remaining)}
-              </span>{" "}
-              de {formatCurrency(topUpLimit.data.limit)} no total.
-            </>
-          )}
-        </p>
-      )}
-
-      {/* Mesmo estilo de campo das outras páginas (antes era branco sobre cinza, o inverso). */}
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={amountInput.displayValue}
-          onChange={amountInput.onChange}
-          onPaste={amountInput.onPaste}
-          aria-label="Valor a adicionar"
-          disabled={isLimitReached}
-          className={cn(fieldInputClassName, "min-w-0 flex-1 tabular-nums")}
-        />
-        <Button
-          type="submit"
-          variant="outline"
-          className="shrink-0"
-          disabled={topUp.isPending || isLimitReached}
-        >
-          {topUp.isPending ? "Adicionando..." : "Adicionar saldo"}
-        </Button>
-      </form>
+      <TopUpForm submitVariant="outline" />
     </ProfileSection>
   );
 }
 
-// Atalho para o questionário: mostra o perfil atual ou convida a descobrir.
 function InvestorProfileSection() {
   const { data } = useInvestorProfile();
   const profile = data?.profile;
@@ -185,7 +95,9 @@ function ProfileSection({
     >
       <div className="space-y-1">
         <SectionTitle id={titleId}>{title}</SectionTitle>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
       </div>
       {children}
     </section>

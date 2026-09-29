@@ -110,9 +110,17 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
-          <AccountBalanceCard availableBalance={balance} />
+          <AccountBalanceCard
+            availableBalance={balance}
+            onBalanceChange={refetch}
+          />
 
-          <div className={cn(cardClassName, "nav:flex-1 flex flex-col nav:min-h-0")}>
+          <div
+            className={cn(
+              cardClassName,
+              "nav:flex-1 flex flex-col nav:min-h-0",
+            )}
+          >
             <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
               <SectionTitle>Evolução do Patrimônio</SectionTitle>
 
