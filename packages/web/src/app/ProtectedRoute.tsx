@@ -1,8 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/ErrorState";
+import { SessionLoading } from "@/app/SessionLoading";
 import { useSessionBootstrap } from "@/app/use-session-bootstrap";
 import { useAuthStore } from "@/stores/auth";
 import type { UserRole } from "@/types/user";
@@ -30,13 +30,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     }
   }, [isForbidden]);
 
-  if (status === "checking") {
-    return (
-      <div className="flex-1 min-h-screen flex items-center justify-center bg-brand-bg">
-        <Loader2 size={32} className="text-brand-primary animate-spin" />
-      </div>
-    );
-  }
+  if (status === "checking") return <SessionLoading />;
 
   if (status === "unavailable") {
     return (

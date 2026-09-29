@@ -2,6 +2,8 @@ import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Layout } from "./Layout";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { HomeRoute } from "./HomeRoute";
+import { SessionLoading } from "./SessionLoading";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
@@ -11,6 +13,9 @@ import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { RiskSkeleton } from "@/components/skeletons/RiskSkeleton";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
 
+const Landing = lazy(() =>
+  import("@/pages/Landing").then((m) => ({ default: m.Landing })),
+);
 const Dashboard = lazy(() =>
   import("@/pages/Dashboard").then((m) => ({ default: m.Dashboard })),
 );
@@ -105,7 +110,15 @@ function withSuspense(
 export function Router() {
   return (
     <Routes>
-      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+      <Route
+        element={
+          <HomeRoute visitor={withSuspense(Landing, <SessionLoading />)}>
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          </HomeRoute>
+        }
+      >
         <Route
           path="/"
           element={withSuspense(Dashboard, <DashboardSkeleton />)}
