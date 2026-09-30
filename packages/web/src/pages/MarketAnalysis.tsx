@@ -146,11 +146,17 @@ export function MarketAnalysis() {
   const setFilter = (value: MarketAssetType | "ALL") =>
     setSearchParams(value === "ALL" ? {} : { tipo: value }, { replace: true });
 
-  const { data, error, isLoading, refetch } = useMarketAssets({
+  const { data, error, isLoading, refetch, dataUpdatedAt } = useMarketAssets({
     type: filter === "ALL" ? undefined : filter,
   });
 
   const assets = data?.items ?? [];
+  // Hora em que as cotações chegaram: a lista não se atualiza sozinha, então "Tempo real" (que
+  // ainda parecia um botão) prometia o que a tela não faz.
+  const quotesLoadedAt = (dataUpdatedAt ?? new Date()).toLocaleTimeString(
+    "pt-BR",
+    { hour: "2-digit", minute: "2-digit" },
+  );
 
   const hasEstimatedPrices = assets.some(isEstimatedPrice);
   const highlights = [...assets]
@@ -250,13 +256,10 @@ export function MarketAnalysis() {
       <div className={cn(cardClassName, "flex flex-col min-h-0")}>
         <div className="flex flex-wrap justify-between items-center gap-2 mb-4 sm:mb-6">
           <SectionTitle>Composição e Performance</SectionTitle>
-          {/* "Tempo real" só quando nenhum preço é estimado: com preço de referência (seed) o selo
-              mentia; o aviso acima da página já explica o que está estimado. */}
-          {!hasEstimatedPrices && (
-            <span className="whitespace-nowrap text-2xs font-semibold uppercase tracking-wider text-muted-foreground bg-secondary px-3 py-1 rounded-full border border-border">
-              Tempo real
-            </span>
-          )}
+          {/* Texto simples, sem borda nem fundo, para não parecer um botão. */}
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Cotações de {quotesLoadedAt}
+          </p>
         </div>
 
         {/* Sem rolagem interna: com a barra oculta, linhas (ex.: SELIC) ficavam escondidas. A página rola. */}

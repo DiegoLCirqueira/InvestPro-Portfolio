@@ -14,6 +14,8 @@ export interface UseQueryResult<T> {
   error: Error | null;
   isLoading: boolean;
   isFetching: boolean;
+  /** Quando a última resposta chegou (ex.: "Cotações de 14:32"); undefined até a primeira. */
+  dataUpdatedAt: Date | undefined;
   refetch: () => Promise<void>;
 }
 
@@ -40,6 +42,7 @@ export function useQuery<T>({
   const abortRef = useRef<AbortController | null>(null);
 
   const [data, setData] = useState<T | undefined>(initialData);
+  const [dataUpdatedAt, setDataUpdatedAt] = useState<Date | undefined>();
   const [error, setError] = useState<Error | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(
     enabled && initialData === undefined,
@@ -61,6 +64,7 @@ export function useQuery<T>({
       const result = await fetcherRef.current(controller.signal);
       if (controller.signal.aborted) return;
       setData(result);
+      setDataUpdatedAt(new Date());
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(toError(err));
@@ -90,5 +94,5 @@ export function useQuery<T>({
 
   const isLoading = isFetching && data === undefined;
 
-  return { data, error, isLoading, isFetching, refetch };
+  return { data, error, isLoading, isFetching, dataUpdatedAt, refetch };
 }
