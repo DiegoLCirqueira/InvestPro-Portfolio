@@ -27,9 +27,12 @@ describe("AccountBalanceCard", () => {
 
   it("deixa claro que adicionar saldo é grátis e abre o formulário ali mesmo", () => {
     render(<AccountBalanceCard availableBalance={2261.26} />);
-    expect(screen.getByText(/Adicionar saldo é grátis/)).toBeInTheDocument();
+    // O "grátis" é a legenda do botão (e a descrição acessível dele), não o fim da frase.
+    const button = screen.getByRole("button", { name: "Adicionar saldo" });
+    expect(button).toHaveAccessibleDescription("Grátis · dinheiro simulado");
+    expect(screen.queryByText(/Adicionar saldo é grátis/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar saldo" }));
+    fireEvent.click(button);
 
     expect(
       screen.getByRole("dialog", { name: "Adicionar saldo grátis" }),

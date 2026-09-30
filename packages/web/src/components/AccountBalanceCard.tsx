@@ -10,6 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+const FREE_NOTE_ID = "account-balance-free-note";
 
 interface AccountBalanceCardProps {
   /** Dinheiro livre em conta (caixa em BRL): o que dá pra usar em ordens, câmbio e transferências. */
@@ -22,7 +25,9 @@ interface AccountBalanceCardProps {
 // soma investimentos, caixinha e moedas) fica no rodapé de "Seus Ativos" —
 // como número principal, ele dava a ilusão de que tudo era dinheiro livre.
 // "Adicionar saldo" fica aqui, onde a pessoa olha o saldo (antes só existia no
-// Perfil) e diz com todas as letras que é grátis: é dinheiro simulado.
+// Perfil), com o "grátis" como legenda colada ao botão em vez de perdido no fim da
+// descrição. No desktop: valor e botão na mesma linha, descrição e legenda embaixo.
+// No celular: valor, descrição, botão em largura total e a legenda centralizada.
 export function AccountBalanceCard({
   availableBalance,
   onBalanceChange,
@@ -30,27 +35,37 @@ export function AccountBalanceCard({
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
   return (
-    <div className={cardClassName}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-1">
-            <Wallet size={16} aria-hidden="true" />
-            Saldo em conta
-          </p>
-          <h3 className="text-3xl font-bold text-foreground tracking-tight tabular-nums">
-            {formatCurrency(availableBalance)}
-          </h3>
-        </div>
-        <Button onClick={() => setIsTopUpOpen(true)} className="h-11">
-          <Plus aria-hidden="true" />
-          Adicionar saldo
-        </Button>
+    <div
+      className={cn(
+        cardClassName,
+        "grid grid-cols-1 gap-y-2 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-x-6",
+      )}
+    >
+      <div>
+        <p className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-1">
+          <Wallet size={16} aria-hidden="true" />
+          Saldo em conta
+        </p>
+        <h3 className="text-3xl font-bold text-foreground tracking-tight tabular-nums">
+          {formatCurrency(availableBalance)}
+        </h3>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Disponível para investir, transferir e fazer câmbio.{" "}
-        <span className="font-semibold text-foreground">
-          Adicionar saldo é grátis: o dinheiro é simulado.
-        </span>
+      <Button
+        onClick={() => setIsTopUpOpen(true)}
+        aria-describedby={FREE_NOTE_ID}
+        className="order-3 mt-2 w-full sm:order-none sm:mt-0 sm:w-auto sm:self-end"
+      >
+        <Plus aria-hidden="true" />
+        Adicionar saldo
+      </Button>
+      <p className="order-2 text-xs text-muted-foreground sm:order-none">
+        Disponível para investir, transferir e fazer câmbio.
+      </p>
+      <p
+        id={FREE_NOTE_ID}
+        className="order-4 text-center text-xs font-semibold text-primary sm:order-none"
+      >
+        Grátis · dinheiro simulado
       </p>
 
       <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
