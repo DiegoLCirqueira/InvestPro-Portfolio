@@ -1,14 +1,8 @@
 import { useState } from "react";
 import { Plus, Wallet } from "lucide-react";
-import { TopUpForm } from "@/components/profile/TopUpForm";
+import { TopUpDialog } from "@/components/TopUpDialog";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -68,24 +62,11 @@ export function AccountBalanceCard({
         Grátis · dinheiro simulado
       </p>
 
-      <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
-        <DialogContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <DialogTitle>Adicionar saldo grátis</DialogTitle>
-            <DialogDescription>
-              É dinheiro simulado para praticar: não há pagamento, cartão nem
-              cobrança.
-            </DialogDescription>
-          </div>
-          <TopUpForm
-            autoFocus
-            onSuccess={() => {
-              setIsTopUpOpen(false);
-              onBalanceChange?.();
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <TopUpDialog
+        open={isTopUpOpen}
+        onOpenChange={setIsTopUpOpen}
+        onSuccess={onBalanceChange}
+      />
     </div>
   );
 }

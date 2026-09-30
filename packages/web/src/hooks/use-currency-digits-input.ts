@@ -31,11 +31,14 @@ export function parsePastedAmountToDigits(text: string): string | null {
  * um índice de cursor. Colar é diferente: o texto colado é lido como o valor
  * por extenso ("10,50" = R$ 10,50).
  */
+// Valor em reais → dígitos em centavos inteiros do input (0 ou negativo = campo vazio).
+const toDigits = (value: number) => (value > 0 ? String(Math.round(value * 100)) : "");
+
 export function useCurrencyDigitsInput({
   currency = "BRL",
-  initialDigits = "",
-}: { currency?: string; initialDigits?: string } = {}) {
-  const [digits, setDigits] = useState(initialDigits);
+  initialAmount = 0,
+}: { currency?: string; initialAmount?: number } = {}) {
+  const [digits, setDigits] = useState(() => toDigits(initialAmount));
   const amount = Number(digits || "0") / 100;
 
   return {
@@ -53,6 +56,8 @@ export function useCurrencyDigitsInput({
       const pasted = parsePastedAmountToDigits(e.clipboardData.getData("text"));
       if (pasted !== null) setDigits(pasted);
     },
+    /** Preenche com um valor (atalhos de valor, pré-preenchimento): sempre em centavos inteiros. */
+    setAmount: (value: number) => setDigits(toDigits(value)),
     reset: () => setDigits(""),
   };
 }
