@@ -35,7 +35,8 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
         tags: ["Orders"],
         summary: "Criar ordem",
         description:
-          "Cria uma ordem de compra/venda (MARKET/LIMIT/STOP). MARKET é executada pelo preço atual do ativo; LIMIT/STOP ficam OPEN até atingirem o gatilho.",
+          "Cria uma ordem de compra/venda (MARKET/LIMIT/STOP). MARKET é executada pelo preço atual do ativo; LIMIT/STOP ficam OPEN até atingirem o gatilho.\n\n" +
+          "`useSavingsBox` (opcional, só compra): se o saldo em conta não cobre o custo (valor + taxa de 1%), resgata da Caixinha exatamente a diferença, na mesma transação da ordem, com o mesmo registro de um resgate normal. Vale só para a execução imediata (LIMIT/STOP que fica OPEN não resgata nada). Se saldo + Caixinha não bastam, responde 400 ORDER_INSUFFICIENT_BALANCE e nada muda. Em venda, `useSavingsBox: true` é recusado com 400 VALIDATION_ERROR. A resposta traz `savingsBoxUsed` (R$ resgatados; 0 se não precisou) quando `useSavingsBox` é true.",
         security: [{ BearerAuth: [] }],
         body: createOrderInputSchema,
         response: {
