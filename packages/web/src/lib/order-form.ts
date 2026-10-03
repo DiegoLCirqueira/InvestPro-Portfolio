@@ -1,5 +1,5 @@
 import type { ComboboxOption } from "@/components/ui/combobox";
-import { formatQuantity } from "@/lib/format";
+import { formatCurrency, formatQuantity } from "@/lib/format";
 import type { MarketAsset } from "@/types/market";
 import type { OrderSide, OrderType, SellableAsset } from "@/types/order";
 
@@ -25,6 +25,19 @@ export function getBuyQuantityError(
   )
     return null;
   return "Ações e renda fixa só podem ser compradas em quantidade inteira.";
+}
+
+// Espelha MIN_ORDER_TOTAL do @investpro/shared: total (quantidade × preço de avaliação, antes
+// da taxa) mínimo por ordem. Abaixo disso o arredondamento em centavos criava ou sumia dinheiro.
+export const MIN_ORDER_TOTAL = 1;
+export const MIN_ORDER_TOTAL_MESSAGE = `O valor mínimo por ordem é ${formatCurrency(MIN_ORDER_TOTAL)}`;
+
+/**
+ * Total (já em centavos, como o servidor compara) abaixo do mínimo. Vender a posição inteira é
+ * a exceção: senão uma sobra fracionada de cripto ficaria presa para sempre.
+ */
+export function isBelowMinOrderTotal(total: number, isWholePositionSale: boolean): boolean {
+  return !isWholePositionSale && total < MIN_ORDER_TOTAL;
 }
 
 // Mesma precisão do @investpro/shared (ORDER_QUANTITY_DECIMAL_PLACES): Order.quantity é Decimal(15,8).

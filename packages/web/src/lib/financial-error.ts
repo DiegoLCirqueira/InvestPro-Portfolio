@@ -1,3 +1,4 @@
+import { MIN_ORDER_TOTAL_MESSAGE } from "@/lib/order-form";
 import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
 
@@ -10,6 +11,8 @@ export const SERVICE_UNAVAILABLE_MESSAGE =
 /** Mensagem para o usuário: 401, 409, 429 e 503 ganham texto próprio; o resto vem do servidor. */
 export function userMessageFor(error: Error): string {
   if (error instanceof ApiError) {
+    // Mesmo texto do aviso da Nova Ordem, mesmo que o servidor mude o dele.
+    if (error.code === "ORDER_TOTAL_TOO_SMALL") return MIN_ORDER_TOTAL_MESSAGE;
     if (isRateLimitError(error)) return rateLimitMessage(error.retryAfterSeconds);
     if (error.status === 401) return SESSION_EXPIRED_MESSAGE;
     if (error.status === 409) return OPERATION_CONFLICT_MESSAGE;

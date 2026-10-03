@@ -7,6 +7,8 @@ import {
   findOwnedQuantity,
   getBuyQuantityError,
   getSellQuantityError,
+  isBelowMinOrderTotal,
+  MIN_ORDER_TOTAL_MESSAGE,
   normalizeTicker,
   quantityForAmount,
   sanitizeDecimalInput,
@@ -83,17 +85,25 @@ export function useOrderForm({
   // Valor digitado, mas pequeno demais para a menor fração (8 casas) do ativo.
   const isAmountTooSmall = isByAmount && amountInput.amount > 0 && !hasValidQuantity;
 
-  const quantityError = isAmountTooSmall
-    ? `Valor baixo demais para comprar uma fração de ${normalizedTicker}.`
-    : !hasValidQuantity
-      ? null
-      : isSell
-        ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
-        : getBuyQuantityError(quantityValue, selectedAsset);
   const settlement =
     selectedAsset && hasValidQuantity
       ? computeOrderSettlement(side, quantityValue * referencePrice)
       : null;
+  const isWholePositionSale = isSell && ownedQuantity !== null && quantityValue === ownedQuantity;
+  // Na compra por valor, um valor abaixo do mínimo também cai aqui (antes de virar "fração").
+  const isBelowMinTotal = isByAmount
+    ? amountInput.amount > 0 && isBelowMinOrderTotal(amountInput.amount, false)
+    : settlement !== null && isBelowMinOrderTotal(settlement.total, isWholePositionSale);
+
+  const quantityError = isBelowMinTotal
+    ? MIN_ORDER_TOTAL_MESSAGE
+    : isAmountTooSmall
+      ? `Valor baixo demais para comprar uma fração de ${normalizedTicker}.`
+      : !hasValidQuantity
+        ? null
+        : isSell
+          ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
+          : getBuyQuantityError(quantityValue, selectedAsset);
 
   const changeSide = (nextSide: OrderSide) => {
     setSide(nextSide);

@@ -425,15 +425,24 @@ describe("NewOrderForm", () => {
       mockCreateOrder.mutate.mockResolvedValue({} as Order);
       renderForm();
       typeTicker("BTC");
-      typeAmount("7"); // R$ 0,07 / R$ 100 = 0,0007 BTC
+      typeAmount("107"); // R$ 1,07 / R$ 100 = 0,0107 BTC
 
       fireEvent.click(screen.getByRole("button", { name: "Enviar Ordem" }));
 
       await waitFor(() =>
         expect(mockCreateOrder.mutate).toHaveBeenCalledWith(
-          expect.objectContaining({ ticker: "BTC", side: "BUY", quantity: 0.0007 }),
+          expect.objectContaining({ ticker: "BTC", side: "BUY", quantity: 0.0107 }),
         ),
       );
+    });
+
+    it("abaixo de R$ 1,00 avisa o mínimo e desabilita o envio", () => {
+      renderForm();
+      typeTicker("BTC");
+      typeAmount("50"); // R$ 0,50
+
+      expect(screen.getByRole("alert")).toHaveTextContent(/O valor mínimo por ordem é R\$\s1,00/);
+      expect(screen.getByRole("button", { name: "Enviar Ordem" })).toBeDisabled();
     });
 
     it("sem valor, marca o campo e não envia", async () => {
