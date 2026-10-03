@@ -26,60 +26,53 @@ function SideText({ side }: { side: OrderSide }) {
   );
 }
 
-// Célula da grade de valores: rótulo pequeno acima do número, alinhados à esquerda para a Qtd
-// começar na mesma linha do nome do ativo. Sem valor (PM na venda, taxa antes de executar) a
-// célula continua lá com "—", para nada se deslocar.
-function OrderDetail({ label, value }: { label: string; value: string | null }) {
+function OrderDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 flex-col items-start">
-      <dt className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="truncate text-xs font-semibold tabular-nums text-foreground">
-        {value ?? (
-          <>
-            <span aria-hidden="true" className="text-muted-foreground">
-              —
-            </span>
-            <span className="sr-only">sem valor</span>
-          </>
-        )}
-      </dd>
-    </div>
+    <>
+      {" · "}
+      {label}:{" "}
+      <span className="text-foreground font-semibold tabular-nums">
+        {value}
+      </span>
+    </>
   );
 }
 
-const currencyOrNull = (value: number | null | undefined) =>
-  typeof value === "number" ? formatCurrency(value) : null;
-
 export function OrderRow({ order }: { order: Order }) {
+  const { price, avgPrice, fee } = order;
+
   return (
-    <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-bold text-foreground">{order.ticker}</span>
+    <div className="py-3">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Largura mínima para 6 caracteres (BOVA11, USDBRL): "Compra"/"Venda" e o tipo começam
+              na mesma posição em todas as linhas. Ticker maior só alarga a própria linha. */}
+          <span className="min-w-18 shrink-0 font-bold text-foreground">{order.ticker}</span>
           <SideText side={order.side} />
           <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
             {ORDER_TYPE_LABELS[order.type]}
           </span>
         </div>
-        {/* Data junto do selo: a linha de baixo fica só para a grade de valores. */}
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <OrderStatusBadge status={order.status} />
-          <span title={order.createdAt} className="text-xs text-muted-foreground">
-            {formatDateTime(order.createdAt)}
-          </span>
-        </div>
+        <OrderStatusBadge status={order.status} />
       </div>
-      {/* Mesmas 4 células, de mesma largura, em toda linha: Qtd, Preço, PM e Taxa ficam na mesma
-          coluna em todo o histórico (antes o texto corrido se deslocava quando faltava o PM).
-          No celular, 2x2 para não estourar a largura. */}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-        <OrderDetail label="Qtd" value={formatQuantity(order.quantity)} />
-        <OrderDetail label="Preço" value={currencyOrNull(order.price)} />
-        <OrderDetail label="PM" value={currencyOrNull(order.avgPrice)} />
-        <OrderDetail label="Taxa" value={currencyOrNull(order.fee)} />
-      </dl>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>
+          Qtd:{" "}
+          <span className="text-foreground font-semibold tabular-nums">
+            {formatQuantity(order.quantity)}
+          </span>
+          {typeof price === "number" && (
+            <OrderDetail label="Preço" value={formatCurrency(price)} />
+          )}
+          {typeof avgPrice === "number" && (
+            <OrderDetail label="PM" value={formatCurrency(avgPrice)} />
+          )}
+          {typeof fee === "number" && (
+            <OrderDetail label="Taxa" value={formatCurrency(fee)} />
+          )}
+        </span>
+        <span title={order.createdAt}>{formatDateTime(order.createdAt)}</span>
+      </div>
     </div>
   );
 }
