@@ -64,7 +64,9 @@ async function executeDeposit(
   return { balance: box.balance.toNumber(), createdAt: box.createdAt };
 }
 
-async function executeWithdraw(
+// Exportada pra compra de ativo com a Caixinha (order.service) resgatar na mesma
+// transação da ordem, com a mesma regra e o mesmo erro de saldo insuficiente.
+export async function executeWithdraw(
   tx: Prisma.TransactionClient,
   userId: string,
   amount: number
