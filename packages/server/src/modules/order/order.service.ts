@@ -65,6 +65,61 @@ function insufficientBalance(): AppError {
   )
 }
 
+function insufficientPosition(): AppError {
+  return new AppError(
+    'ORDER_INSUFFICIENT_POSITION',
+    'Quantidade insuficiente na posição para venda',
+    400
+  )
+}
+
+// Custo debitado numa compra: valor da ordem + taxa de 1%, em centavos.
+function buyCost(total: number): number {
+  return round2(total + calculateOrderFee(total))
+}
+
+// Quantity é Decimal(15,8): somar em float pode criar resíduo (0,1 + 0,2).
+function roundQuantity(value: number): number {
+  return Math.round(value * 1e8) / 1e8
+}
+
+// Ordem que fica OPEN não move dinheiro nem posição agora, mas promete o que
+// vai usar quando executar: o saldo/posição tem que cobrir esta ordem MAIS as
+// outras OPEN do mesmo lado, senão o mesmo dinheiro é prometido duas vezes.
+// Lido dentro da transação Serializable: duas criações simultâneas conflitam
+// (P2034) e a perdedora refaz a conta já vendo a outra ordem.
+async function assertOpenOrderIsCovered(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  ticker: string,
+  input: CreateOrderInput,
+  balance: number,
+  current: PositionSnapshot | null
+): Promise<void> {
+  // OPEN só existe em LIMIT/STOP, que exigem preço (validateOrder).
+  const price = input.price as number
+  const others = await tx.order.findMany({
+    where: { userId, status: 'OPEN', side: input.side, ...(input.side === 'SELL' ? { ticker } : {}) },
+    select: { quantity: true, price: true },
+  })
+
+  if (input.side === 'BUY') {
+    const reserved = others.reduce(
+      (sum, o) => sum + buyCost(round2(o.quantity.toNumber() * (o.price?.toNumber() ?? 0))),
+      0
+    )
+    const cost = buyCost(round2(input.quantity * price))
+    // Só o saldo em conta: a Caixinha não é resgatada pra ordem que fica OPEN.
+    if (round2(cost + reserved - balance) > 0) throw insufficientBalance()
+    return
+  }
+
+  const reservedQuantity = others.reduce((sum, o) => sum + o.quantity.toNumber(), 0)
+  if (!canSell(current, roundQuantity(input.quantity + reservedQuantity))) {
+    throw insufficientPosition()
+  }
+}
+
 // Resgata da Caixinha exatamente o que falta pra compra, com a mesma regra do
 // resgate normal. Sem FOR UPDATE: a transação da ordem já é Serializable, então
 // duas compras que leem a mesma Caixinha conflitam (P2034) e a perdedora refaz
@@ -120,7 +175,19 @@ async function executeOrderTx(
   input: CreateOrderInput,
   evaluation: OrderEvaluation
 ): Promise<ExecutedOrder> {
+  const portfolio = await tx.portfolio.findUnique({ where: { userId } })
+  if (!portfolio) {
+    throw new AppError('PORTFOLIO_NOT_FOUND', 'Portfólio não encontrado', 404)
+  }
+
+  const positionWhere = { portfolioId_ticker: { portfolioId: portfolio.id, ticker: asset.ticker } }
+  const position = await tx.position.findUnique({ where: positionWhere })
+  const current: PositionSnapshot | null = position
+    ? { quantity: position.quantity.toNumber(), avgPrice: position.avgPrice.toNumber() }
+    : null
+
   if (evaluation.status !== 'FILLED') {
+    await assertOpenOrderIsCovered(tx, userId, asset.ticker, input, portfolio.balance.toNumber(), current)
     const record = await tx.order.create({
       data: {
         userId,
@@ -142,22 +209,11 @@ async function executeOrderTx(
   const total = round2(input.quantity * fillPrice)
   assertTotalIsNotNegligible(total)
 
-  const portfolio = await tx.portfolio.findUnique({ where: { userId } })
-  if (!portfolio) {
-    throw new AppError('PORTFOLIO_NOT_FOUND', 'Portfólio não encontrado', 404)
-  }
-
-  const positionWhere = { portfolioId_ticker: { portfolioId: portfolio.id, ticker: asset.ticker } }
-  const position = await tx.position.findUnique({ where: positionWhere })
-  const current: PositionSnapshot | null = position
-    ? { quantity: position.quantity.toNumber(), avgPrice: position.avgPrice.toNumber() }
-    : null
-
   let orderAvgPrice: number | null = null
   let savingsBoxUsed = 0
 
   if (input.side === 'BUY') {
-    const cost = round2(total + calculateOrderFee(total))
+    const cost = buyCost(total)
     // Em centavos (cost e balance têm 2 casas): a Caixinha cobre a diferença
     // exata e o saldo em conta termina em zero, nunca negativo.
     const shortfall = round2(cost - portfolio.balance.toNumber())
@@ -206,13 +262,7 @@ async function executeOrderTx(
 
     orderAvgPrice = round2(fill.avgPrice)
   } else {
-    if (!canSell(current, input.quantity)) {
-      throw new AppError(
-        'ORDER_INSUFFICIENT_POSITION',
-        'Quantidade insuficiente na posição para venda',
-        400
-      )
-    }
+    if (!canSell(current, input.quantity)) throw insufficientPosition()
 
     const fill = applySellFill(current, input.quantity)
 
