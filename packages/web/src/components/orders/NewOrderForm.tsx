@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField, fieldInputClassName } from "@/components/FormField";
 import { OrderSideToggle } from "@/components/orders/OrderSideToggle";
+import { OrderBalance, OrderShortfallAlert } from "@/components/orders/OrderFunding";
 import { OrderSummary } from "@/components/orders/OrderSummary";
 import { Combobox } from "@/components/ui/combobox";
 import { useMarketAssets } from "@/hooks/use-market-assets";
@@ -12,6 +13,7 @@ import { useCreateOrder, useSellableAssets } from "@/hooks/use-orders";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useOrderForm, type OrderEntryMode } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
+import { missingAmount, type BalanceShortfall } from "@/lib/balance-shortfall";
 import { formatQuantity } from "@/lib/format";
 import { normalizeTicker, ORDER_TYPE_LABELS } from "@/lib/order-form";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
@@ -32,6 +34,8 @@ const TYPE_OPTIONS = (Object.keys(ORDER_TYPE_LABELS) as OrderType[]).map(
     label: ORDER_TYPE_LABELS[value],
   }),
 );
+
+const SHORTFALL_ALERT_ID = "order-shortfall";
 
 interface NewOrderFormProps {
   onCreated: () => void;
@@ -56,26 +60,33 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     initialTicker: searchParams.get("ticker") ?? undefined,
   });
 
-  const { balance, refetch: refetchBalance } = usePortfolioPositions();
+  const {
+    data: portfolio,
+    balance,
+    refetch: refetchBalance,
+  } = usePortfolioPositions();
+  // Compra: custo (com a taxa) contra o saldo em conta. Só com o saldo carregado; antes disso
+  // (ou se ele falhar) o servidor continua como proteção, com o "Saldo insuficiente".
+  const purchase: BalanceShortfall | null =
+    !form.isSell && portfolio
+      ? {
+          kind: "order",
+          cost: form.settlement?.netAmount ?? 0,
+          available: balance,
+          ticker: normalizeTicker(form.ticker),
+          onBalanceAdded: () => void refetchBalance(),
+        }
+      : null;
+  const isShort = purchase !== null && missingAmount(purchase) > 0;
+
   const handleOrderError = useFinancialErrorHandler([
     "ORDER_INSUFFICIENT_BALANCE",
   ]);
   const createOrder = useCreateOrder({
     onSuccess: () => toast.success("Ordem criada com sucesso!"),
-    // Na compra a tela já sabe o custo (com a taxa): o "Saldo insuficiente" diz quanto falta.
+    // Na compra a tela já sabe o custo: o "Saldo insuficiente" diz quanto falta.
     onError: (error) =>
-      handleOrderError(
-        error,
-        !form.isSell && form.settlement
-          ? {
-              kind: "order",
-              cost: form.settlement.netAmount,
-              available: balance,
-              ticker: normalizeTicker(form.ticker),
-              onBalanceAdded: () => void refetchBalance(),
-            }
-          : undefined,
-      ),
+      handleOrderError(error, purchase ?? undefined),
   });
 
   // Depois de uma tentativa de envio, os campos obrigatórios vazios ficam marcados na tela.
@@ -93,6 +104,8 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
       toast.error(submitError);
       return;
     }
+    // O aviso de falta já está na tela (o botão fica desabilitado, mas o submit por Enter não).
+    if (isShort) return;
     try {
       await createOrder.mutate(form.buildInput());
     } catch {
@@ -102,6 +115,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     form.reset();
     setShowRequired(false);
     void refetchSellableAssets();
+    void refetchBalance();
     onCreated();
   };
 
@@ -110,7 +124,8 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
   const isSubmitBlocked =
     createOrder.isPending ||
     form.hasNothingToSell ||
-    form.quantityError !== null;
+    form.quantityError !== null ||
+    isShort;
 
   return (
     <form
@@ -234,10 +249,13 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         </FormField>
       )}
 
+      {purchase && <OrderBalance available={purchase.available} />}
+
       <OrderSummary
         side={form.side}
         settlement={form.settlement}
         isPriceEstimated={form.isPriceEstimated}
+        isShort={isShort}
       />
 
       {form.needsPrice && (
@@ -250,10 +268,15 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         </FormField>
       )}
 
+      {isShort && purchase && (
+        <OrderShortfallAlert id={SHORTFALL_ALERT_ID} shortfall={purchase} />
+      )}
+
       <Button
         type="submit"
         className="w-full"
         disabled={isSubmitBlocked}
+        aria-describedby={isShort ? SHORTFALL_ALERT_ID : undefined}
       >
         {createOrder.isPending ? "Enviando..." : "Enviar Ordem"}
       </Button>

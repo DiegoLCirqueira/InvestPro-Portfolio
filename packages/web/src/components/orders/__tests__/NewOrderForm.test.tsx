@@ -68,6 +68,22 @@ vi.mock("@/hooks/use-orders", () => ({
   },
 }));
 
+// Saldo em conta: alto por padrão, para os testes que não tratam de saldo não esbarrarem nele.
+const mockPortfolio = vi.hoisted(() => ({ balance: 1_000_000, refetch: vi.fn() }));
+
+vi.mock("@/hooks/usePortfolio", () => ({
+  usePortfolioPositions: () => ({
+    data: { balance: mockPortfolio.balance },
+    balance: mockPortfolio.balance,
+    refetch: mockPortfolio.refetch,
+  }),
+  useTopUpLimit: () => ({
+    data: { limit: 3_000_000, used: 0, remaining: 3_000_000 },
+    refetch: vi.fn(),
+  }),
+  useTopUpPortfolio: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 // O formulário lê ?ticker= (clique num ativo do Mercado), então precisa de um roteador.
 function renderForm(path = "/orders") {
   return render(
@@ -96,7 +112,75 @@ describe("NewOrderForm", () => {
     mockSellable.assets = [];
     mockSellable.isLoading = false;
     mockCreateOrder.mutate.mockReset();
+    mockPortfolio.balance = 1_000_000;
     useInsufficientBalanceStore.setState({ isOpen: false });
+  });
+
+  describe("saldo verificado antes de enviar (compra)", () => {
+    // PETR4 a R$ 30: 10 unidades = R$ 300 + R$ 3 de taxa = R$ 303.
+    const buyTenPetr4 = () => {
+      typeTicker("PETR4");
+      fireEvent.change(screen.getByLabelText("Quantidade"), { target: { value: "10" } });
+    };
+    const submitButton = () => screen.getByRole("button", { name: "Enviar Ordem" });
+
+    it("mostra o Saldo disponível na compra", () => {
+      mockPortfolio.balance = 550;
+      renderForm();
+
+      expect(screen.getByText("Saldo disponível")).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s?550,00/)).toBeInTheDocument();
+    });
+
+    it("não deixa enviar compra sem saldo e diz quanto falta", () => {
+      mockPortfolio.balance = 100;
+      renderForm();
+      buyTenPetr4();
+
+      const alert = screen.getByText(/Faltam/).closest("[role=status]") as HTMLElement;
+      expect(alert).toHaveTextContent(/Faltam R\$\s?203,00 para esta ordem/);
+      expect(alert).toHaveTextContent(/Você pagará R\$\s?303,00 e tem R\$\s?100,00 em conta\./);
+      expect(submitButton()).toBeDisabled();
+      expect(submitButton()).toHaveAccessibleDescription(/Faltam R\$\s?203,00/);
+
+      fireEvent.submit(submitButton().closest("form") as HTMLFormElement);
+      expect(mockCreateOrder.mutate).not.toHaveBeenCalled();
+    });
+
+    it("'Adicionar saldo grátis' abre o depósito com o valor que falta", () => {
+      mockPortfolio.balance = 100;
+      renderForm();
+      buyTenPetr4();
+
+      fireEvent.click(screen.getByRole("button", { name: "Adicionar saldo grátis" }));
+
+      const dialog = screen.getByRole("dialog", { name: "Adicionar saldo grátis" });
+      expect((screen.getByLabelText("Valor a adicionar") as HTMLInputElement).value).toMatch(
+        /203,00/,
+      );
+      expect(dialog).toHaveTextContent("Valor que falta para a sua ordem de PETR4.");
+    });
+
+    it("com saldo suficiente não há aviso e a ordem pode ser enviada", () => {
+      mockPortfolio.balance = 303;
+      renderForm();
+      buyTenPetr4();
+
+      expect(screen.queryByText(/Faltam/)).not.toBeInTheDocument();
+      expect(submitButton()).toBeEnabled();
+    });
+
+    it("na venda não mostra saldo nem aviso: a checagem é de quantidade", () => {
+      mockPortfolio.balance = 0;
+      mockSellable.assets = [{ ticker: "PETR4", quantity: 20 }];
+      renderForm();
+      fireEvent.click(screen.getByRole("button", { name: "Venda" }));
+      buyTenPetr4();
+
+      expect(screen.queryByText("Saldo disponível")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Faltam/)).not.toBeInTheDocument();
+      expect(submitButton()).toBeEnabled();
+    });
   });
 
   it("enviar vazio marca Ativo e Quantidade na tela, sem enviar a ordem", async () => {
