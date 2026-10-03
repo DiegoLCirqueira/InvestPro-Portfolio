@@ -17,10 +17,16 @@ export interface OrderSettlement {
   netAmount: number;
 }
 
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+// Arredonda como o servidor (order.service: round2 do total e do total ± taxa),
+// para o "Você pagará" e a checagem de saldo baterem com o que é debitado.
 export function computeOrderSettlement(
   side: OrderSide,
-  total: number,
+  rawTotal: number,
 ): OrderSettlement {
+  const total = round2(rawTotal);
   const fee = total * ORDER_FEE_RATE;
-  return { total, fee, netAmount: side === "BUY" ? total + fee : total - fee };
+  const netAmount = round2(side === "BUY" ? total + fee : total - fee);
+  return { total, fee, netAmount };
 }

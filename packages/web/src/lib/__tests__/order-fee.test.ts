@@ -22,4 +22,11 @@ describe("order-fee", () => {
     expect(fee).toBeCloseTo(10);
     expect(netAmount).toBeCloseTo(990);
   });
+
+  it("arredonda como o servidor: total e valor final em centavos", () => {
+    // 3 x 33,335 = 100,005 → total 100,01; +1% = 101,0101 → R$ 101,01
+    const { total, netAmount } = computeOrderSettlement("BUY", 3 * 33.335);
+    expect(total).toBe(100.01);
+    expect(netAmount).toBe(101.01);
+  });
 });
