@@ -55,23 +55,30 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     ]);
 
     expect(screen.getByRole("status")).toHaveTextContent(BANNER);
-    // Com algum preço estimado, o selo "Tempo real" não aparece.
-    expect(screen.queryByText("Tempo real")).not.toBeInTheDocument();
     // O selo de texto saiu (poluía o item); a marca é a borda no tom de aviso, com title explicando.
     expect(screen.queryByText("estimado")).not.toBeInTheDocument();
-    const estimated = screen.getAllByRole("link", { name: /Negociar PETR4.*preço estimado/ });
+    const estimated = screen.getAllByRole("link", {
+      name: /Negociar PETR4.*preço estimado/,
+    });
     expect(estimated).toHaveLength(3); // lista do celular, destaque e linha da tabela
     for (const link of estimated) {
       const item = (link.closest("tr") ?? link) as HTMLElement;
-      expect(item).toHaveAttribute("title", expect.stringMatching(/Preço estimado/));
+      expect(item).toHaveAttribute(
+        "title",
+        expect.stringMatching(/Preço estimado/),
+      );
       expect(item.outerHTML).toMatch(/border-warning/);
     }
     // Na tabela o aviso também vai em texto para leitor de tela, na célula do preço.
     expect(screen.getByText("preço estimado")).toHaveClass("sr-only");
     for (const liveTicker of ["VALE3", "ITUB4"]) {
-      for (const link of screen.getAllByRole("link", { name: new RegExp(`Negociar ${liveTicker}`) })) {
+      for (const link of screen.getAllByRole("link", {
+        name: new RegExp(`Negociar ${liveTicker}`),
+      })) {
         expect(link.getAttribute("aria-label")).not.toMatch(/estimado/);
-        expect((link.closest("tr") ?? link).outerHTML).not.toMatch(/border-warning/);
+        expect((link.closest("tr") ?? link).outerHTML).not.toMatch(
+          /border-warning/,
+        );
       }
     }
   });
@@ -82,7 +89,9 @@ describe("MarketAnalysis: preços estimados (priceSource)", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByText("preço estimado")).not.toBeInTheDocument();
     expect(document.querySelector(".border-warning")).toBeNull();
-    expect(screen.getByText("Tempo real")).toBeInTheDocument();
+    // Sem o selo "Tempo real" (parecia um botão e a lista não se atualiza sozinha): só a hora das cotações.
+    expect(screen.queryByText("Tempo real")).not.toBeInTheDocument();
+    expect(screen.getByText(/^Cotações de \d{2}:\d{2}$/)).toBeInTheDocument();
   });
 });
 
