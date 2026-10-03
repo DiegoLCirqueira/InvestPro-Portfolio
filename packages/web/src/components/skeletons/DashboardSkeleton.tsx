@@ -6,29 +6,16 @@ export function DashboardSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch flex-1 min-h-0">
       <div className="lg:col-span-2 space-y-6 flex flex-col min-h-0">
-        <div className={cn(cardClassName, "space-y-4")}>
-          <Skeleton className="h-4 w-48" />
-          <div className="flex items-end gap-3">
-            <Skeleton className="h-9 w-44" />
-            <Skeleton className="h-6 w-16 rounded-lg" />
-          </div>
-          <div className="space-y-3 pt-2">
-            <Skeleton className="h-3 w-40" />
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Skeleton className="w-2 h-2 rounded-full" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-              <Skeleton className="h-3 w-28" />
+        {/* Saldo em conta e Caixinha lado a lado (ver MoneyCard). */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className={cn(cardClassName, "space-y-3")}>
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-9 w-44" />
+              <Skeleton className="h-3 w-full max-w-60" />
+              <Skeleton className="h-11 w-full rounded-xl" />
             </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Skeleton className="w-2 h-2 rounded-full" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className={cn(cardClassName, "flex-1 flex flex-col min-h-0")}>

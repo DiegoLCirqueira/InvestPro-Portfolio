@@ -78,7 +78,7 @@ describe("Recommendations (pelo perfil de investidor)", () => {
       ],
     });
 
-    expect(await screen.findByRole("link", { name: /Depositar na caixinha/ })).toHaveAttribute("href", "/orders#caixinha");
+    expect(await screen.findByRole("link", { name: /Depositar na caixinha/ })).toHaveAttribute("href", "/#caixinha");
     expect(screen.getByRole("link", { name: /Ver ativos no Mercado/ })).toHaveAttribute("href", "/market?tipo=FIXED_INCOME");
     expect(screen.getByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
     expect(screen.getAllByRole("link", { name: /Depositar|Ver ativos|Ir para/ })).toHaveLength(3);
