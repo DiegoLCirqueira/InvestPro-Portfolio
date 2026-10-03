@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { ClipboardList, LogIn } from "lucide-react";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -8,9 +7,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
 import { OrderRow } from "@/components/orders/OrderRow";
-import { SavingsBoxCard } from "@/components/orders/SavingsBoxCard";
 import { useOrders } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
+import { SAVINGS_BOX_ANCHOR, SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -21,13 +20,10 @@ export function Orders() {
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
-  // /orders#caixinha (vindo das Recomendações): a Caixinha fica no fim da página, então rola
-  // até ela quando a página termina de carregar.
-  useEffect(() => {
-    if (hash === "#caixinha" && !isLoading) {
-      document.getElementById("caixinha")?.scrollIntoView({ block: "start" });
-    }
-  }, [hash, isLoading]);
+  // A Caixinha saiu de Ordens e foi para o Painel: quem tem o link antigo salvo cai lá.
+  if (hash === `#${SAVINGS_BOX_ANCHOR}`) {
+    return <Navigate to={SAVINGS_BOX_PATH} replace />;
+  }
 
   const orders = [...(data?.items ?? [])].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -96,10 +92,6 @@ export function Orders() {
           )}
         </div>
         </div>
-      </div>
-
-      <div className="mt-6">
-        <SavingsBoxCard />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { api } from "@/services/api";
 import { useQuery } from "@/hooks/use-query";
 import { useMutation } from "@/hooks/use-mutation";
@@ -44,3 +45,30 @@ export function useSavingsBoxWithdraw(
 }
 
 export type { SavingsBoxResponse } from "@/types/savings-box";
+
+const USE_IN_ORDERS_KEY = "investpro-orders-use-savings-box";
+
+/**
+ * "Usar saldo da Caixinha se faltar" na Nova Ordem: começa marcado e a escolha vale para as
+ * próximas ordens. Sem armazenamento (aba anônima, bloqueado), vale só enquanto a tela está aberta.
+ */
+export function useSavingsBoxInOrdersPreference() {
+  const [enabled, setEnabled] = useState(() => {
+    try {
+      return localStorage.getItem(USE_IN_ORDERS_KEY) !== "false";
+    } catch {
+      return true;
+    }
+  });
+
+  const change = (value: boolean) => {
+    setEnabled(value);
+    try {
+      localStorage.setItem(USE_IN_ORDERS_KEY, String(value));
+    } catch {
+      // sem armazenamento: a escolha vale só nesta tela
+    }
+  };
+
+  return [enabled, change] as const;
+}

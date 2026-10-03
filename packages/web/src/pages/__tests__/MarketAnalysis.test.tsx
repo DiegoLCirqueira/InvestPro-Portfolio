@@ -112,10 +112,34 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
   it("os cards de destaque do topo também levam à ordem do ativo", async () => {
     await renderMarket([asset("PETR4", "live")]);
 
+    // O destaque é o link fora da lista do celular (li) e da tabela (tr).
     const highlight = screen
       .getAllByRole("link", { name: "Negociar PETR4 (PETR4 SA)" })
-      .find((link) => link.querySelector("h2"));
+      .find((link) => !link.closest("li, tr"));
     expect(highlight).toHaveAttribute("href", "/orders?ticker=PETR4");
+  });
+
+  it("os destaques têm o título 'Maiores altas de hoje' e a seta com 'Negociar'", async () => {
+    await renderMarket([asset("PETR4", "live")]);
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Maiores altas de hoje" }),
+    ).toBeInTheDocument();
+    const highlight = screen
+      .getAllByRole("link", { name: "Negociar PETR4 (PETR4 SA)" })
+      .find((link) => !link.closest("li, tr"))!;
+    // "Negociar" é visual (aparece no hover); o nome acessível já vem do aria-label.
+    expect(within(highlight).getByText("Negociar")).toBeInTheDocument();
+    expect(highlight.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("toda linha da lista e da tabela tem a seta que leva à ordem", async () => {
+    await renderMarket([asset("PETR4", "live"), asset("VALE3", "live")]);
+
+    const rows = document.querySelectorAll("li, tbody tr");
+    expect(rows.length).toBe(4);
+    for (const row of rows)
+      expect(row.querySelector("svg.lucide-chevron-right")).not.toBeNull();
   });
 
   it("nome igual ao ticker não se repete no rótulo do link nem como subtítulo", async () => {

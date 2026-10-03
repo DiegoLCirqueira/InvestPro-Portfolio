@@ -27,6 +27,15 @@ describe("useFinancialErrorHandler", () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
+  it("repassa ao pop-up o custo e o saldo, para ele dizer quanto falta", () => {
+    const { result } = renderHook(() => useFinancialErrorHandler(["ORDER_INSUFFICIENT_BALANCE"]));
+    const shortfall = { kind: "order" as const, cost: 200, available: 50 };
+
+    result.current(new ApiError(400, "sem saldo", "ORDER_INSUFFICIENT_BALANCE"), shortfall);
+
+    expect(useInsufficientBalanceStore.getState().shortfall).toBe(shortfall);
+  });
+
   it("409 de conflito vira mensagem amigável de 'tente novamente'", () => {
     const { result } = renderHook(() => useFinancialErrorHandler());
 

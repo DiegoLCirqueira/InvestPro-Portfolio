@@ -16,6 +16,8 @@ import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { ApiError } from "@/services/api";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatStoredPixKey } from "@/lib/pix-key";
+import { transferCost } from "@/lib/transfer-fee";
+import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { usePixKeyInput } from "@/hooks/use-pix-key-input";
 import { PixKeyField } from "@/components/transfers/PixKeyField";
 import { segmentClassName } from "@/components/ui/segmented";
@@ -121,6 +123,7 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
 export function Transfers() {
   const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useTransfers();
+  const { balance, refetch: refetchBalance } = usePortfolioPositions();
   const handleFinancialError = useFinancialErrorHandler([
     "TRANSFER_INSUFFICIENT_BALANCE",
   ]);
@@ -139,7 +142,14 @@ export function Transfers() {
         );
         return;
       }
-      handleFinancialError(err);
+      const cost = transferCost(type, amountInput.amount);
+      handleFinancialError(err, {
+        kind: "transfer",
+        cost,
+        available: balance,
+        hasFee: cost > amountInput.amount,
+        onBalanceAdded: () => void refetchBalance(),
+      });
     },
   });
 

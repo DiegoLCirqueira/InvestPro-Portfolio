@@ -10,6 +10,7 @@ import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
 import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
 import { cardClassName } from "@/components/ui/card";
+import { SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_BADGES: Record<RecommendationCategory, { label: string; tone: StatusTone }> = {
@@ -85,7 +86,7 @@ export function Recommendations() {
 const MARKET_TYPES = new Set(["STOCK", "CRYPTO", "FIXED_INCOME"]);
 
 function recommendationAction(item: PersonalizedRecommendation): { label: string; to: string } | null {
-  if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: "/orders#caixinha" };
+  if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: SAVINGS_BOX_PATH };
   if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
   const [direction, type] = item.id.split("-");
   if (direction === "increase" && type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };

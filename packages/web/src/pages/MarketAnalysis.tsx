@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { SearchX } from "lucide-react";
+import { ChevronRight, SearchX } from "lucide-react";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -102,36 +102,45 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
         aria-label={tradeLinkLabel(asset)}
         {...estimatedProps(asset)}
         className={cn(
-          "block -mx-2 px-2 py-3 rounded-lg border hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex items-center gap-2 -mx-2 pl-2 py-3 rounded-lg border hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isEstimatedPrice(asset)
             ? "border-warning-border ring-1 ring-inset ring-warning-border"
             : "border-transparent",
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
-          <div className="flex items-baseline gap-2 min-w-0">
-            <span className="font-bold text-foreground">{asset.ticker}</span>
-            <span className="text-xs text-muted-foreground">
-              {ASSET_TYPE_LABELS[asset.type]}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <span className="font-bold text-foreground">{asset.ticker}</span>
+              <span className="text-xs text-muted-foreground">
+                {ASSET_TYPE_LABELS[asset.type]}
+              </span>
+            </div>
+            <SentimentBadge asset={asset} />
+          </div>
+          {name && (
+            <p className="text-xs text-muted-foreground mb-2 truncate">{name}</p>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-lg font-bold tabular-nums text-foreground">
+                {formatPrice(asset.price)}
+              </span>
+            </span>
+            <span
+              className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
+            >
+              {formatPercent(asset.changePercent)}
             </span>
           </div>
-          <SentimentBadge asset={asset} />
         </div>
-        {name && (
-          <p className="text-xs text-muted-foreground mb-2 truncate">{name}</p>
-        )}
-        <div className="flex items-center justify-between">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-lg font-bold tabular-nums text-foreground">
-              {formatPrice(asset.price)}
-            </span>
-          </span>
-          <span
-            className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
-          >
-            {formatPercent(asset.changePercent)}
-          </span>
-        </div>
+        {/* Sem hover no celular: a seta fica sempre visível para dizer que a linha abre a ordem. */}
+        <ChevronRight
+          aria-hidden="true"
+          size={18}
+          strokeWidth={2.25}
+          className="w-7 shrink-0 text-muted-foreground"
+        />
       </Link>
     </li>
   );
@@ -204,6 +213,11 @@ export function MarketAnalysis() {
 
       {hasEstimatedPrices && <EstimatedPricesBanner />}
 
+      {/* O título diz o que são os 3 cards (antes pareciam ativos soltos). */}
+      {highlights.length > 0 && (
+        <SectionTitle className="mb-3 md:mb-4">Maiores altas de hoje</SectionTitle>
+      )}
+
       {/* Celular: cada destaque é uma linha compacta (ticker à esquerda, preço à direita); antes
           os 3 cards ocupavam a primeira tela inteira. */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
@@ -217,21 +231,21 @@ export function MarketAnalysis() {
               {...estimatedProps(index)}
               className={cn(
                 cardClassName,
-                "flex items-center justify-between gap-3 md:block md:p-6 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "group relative flex min-h-16 items-center gap-2 py-3 pr-2 md:block md:p-6 hover:border-brand-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 isEstimatedPrice(index) &&
                   "border-warning-border ring-1 ring-inset ring-warning-border hover:border-warning-border",
               )}
             >
-              <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
+              <p className="flex-1 text-muted-foreground text-xs font-semibold uppercase tracking-wider md:mb-4 flex items-center gap-2">
                 {index.ticker}
                 <span className="text-2xs font-semibold px-1.5 py-0.5 rounded-lg bg-secondary border border-border">
                   {ASSET_TYPE_LABELS[index.type]}
                 </span>
-              </h2>
+              </p>
 
               <div className="min-w-0 space-y-1 text-right md:text-left">
                 <div className="flex flex-wrap items-center justify-end md:justify-start gap-x-3 gap-y-1">
-                  <span className="text-xl md:text-3xl font-bold tabular-nums text-foreground">
+                  <span className="text-lg md:text-3xl font-bold tabular-nums text-foreground">
                     {formatPrice(index.price)}
                   </span>
                 </div>
@@ -241,13 +255,26 @@ export function MarketAnalysis() {
                   )}`}
                 >
                   <span>{formatPercent(index.changePercent)}</span>
+                  {/* No celular a linha só tem preço e variação; o nome cabe no card largo. */}
                   {assetDisplayName(index) && (
-                    <span className="font-normal text-muted-foreground">
+                    <span className="hidden md:inline font-normal text-muted-foreground">
                       {assetDisplayName(index)}
                     </span>
                   )}
                 </div>
               </div>
+
+              {/* Seta discreta: diz que o card abre a ordem. No computador ganha o "Negociar" ao
+                  passar o mouse; no celular (sem hover) fica sempre visível. */}
+              <span
+                aria-hidden="true"
+                className="flex size-7 shrink-0 items-center justify-center text-muted-foreground transition-colors group-hover:text-brand-primary md:absolute md:right-2 md:top-4 md:size-auto md:h-7 md:gap-1 md:rounded-full md:px-2 md:text-xs md:font-bold md:group-hover:bg-brand-primary/10 md:group-focus-visible:bg-brand-primary/10 md:group-focus-visible:text-brand-primary"
+              >
+                <span className="hidden md:group-hover:inline md:group-focus-visible:inline">
+                  Negociar
+                </span>
+                <ChevronRight size={18} strokeWidth={2.25} />
+              </span>
             </Link>
           );
         })}
@@ -286,10 +313,11 @@ export function MarketAnalysis() {
                     Ativo mais estreito para não abrir um vão até o preço. */}
                 <colgroup>
                   <col className="w-[30%]" />
-                  <col className="w-[16%]" />
-                  <col className="w-[20%]" />
                   <col className="w-[14%]" />
                   <col className="w-[20%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-11" />
                 </colgroup>
                 <thead>
                   <tr className="text-muted-foreground text-2xs font-semibold uppercase tracking-wider">
@@ -298,6 +326,9 @@ export function MarketAnalysis() {
                     <th className="pb-2 text-right">Preço</th>
                     <th className="pb-2 text-right">Variação</th>
                     <th className="pb-2 pr-4 text-right">Sentimento</th>
+                    <th className="pb-2">
+                      <span className="sr-only">Negociar</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -311,7 +342,7 @@ export function MarketAnalysis() {
                       <tr
                         key={asset.id}
                         {...estimatedProps(asset)}
-                        className="relative bg-secondary/40 hover:bg-secondary/70 transition-colors"
+                        className="group relative bg-secondary/40 hover:bg-secondary/70 transition-colors"
                       >
                         <td
                           className={`py-3 pl-4 rounded-l-lg border-y-2 border-l-2 ${rowBorder}`}
@@ -353,9 +384,20 @@ export function MarketAnalysis() {
                           {formatPercent(asset.changePercent)}
                         </td>
                         <td
-                          className={`py-3 pr-4 rounded-r-lg text-right border-y-2 border-r-2 ${rowBorder}`}
+                          className={`py-3 pr-4 text-right border-y-2 ${rowBorder}`}
                         >
                           <SentimentBadge asset={asset} />
+                        </td>
+                        {/* Seta discreta que fica verde com a linha sob o mouse: a linha abre a ordem. */}
+                        <td
+                          className={`py-3 rounded-r-lg border-y-2 border-r-2 ${rowBorder}`}
+                        >
+                          <ChevronRight
+                            aria-hidden="true"
+                            size={18}
+                            strokeWidth={2.25}
+                            className="mx-auto text-muted-foreground transition-colors group-hover:text-brand-primary group-focus-within:text-brand-primary"
+                          />
                         </td>
                       </tr>
                     );
