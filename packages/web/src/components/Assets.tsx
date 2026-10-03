@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import { PortfolioTotalBox } from "@/components/PortfolioTotalBox";
+import { SavingsBoxRow } from "@/components/savings-box/SavingsBoxRow";
+import { SavingsBoxRowSkeleton } from "@/components/skeletons/SavingsBoxRowSkeleton";
 import type { PortfolioAssetType, PortfolioPosition } from "@/types/portfolio";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -57,9 +59,11 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
 interface AssetsProps {
   /** Rentabilidade do período (%), exibida junto do valor total. */
   change?: number;
+  /** Depois de mexer na Caixinha, para o Painel recarregar o saldo em conta e o gráfico. */
+  onBalanceChange?: () => void;
 }
 
-export function Assets({ change }: AssetsProps) {
+export function Assets({ change, onBalanceChange }: AssetsProps) {
   const { data, positions, error, isLoading, refetch } =
     usePortfolioPositions();
   const listRef = useRef<HTMLDivElement>(null);
@@ -69,6 +73,7 @@ export function Assets({ change }: AssetsProps) {
     return (
       <div className={cn(cardClassName, "nav:h-full")}>
         <SectionTitle className="mb-4">Seus Ativos</SectionTitle>
+        <SavingsBoxRowSkeleton />
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
@@ -109,6 +114,15 @@ export function Assets({ change }: AssetsProps) {
   return (
     <div className={cn(cardClassName, "nav:h-full flex flex-col nav:min-h-0")}>
       <SectionTitle className="mb-4 shrink-0">Seus Ativos</SectionTitle>
+
+      {/* Fora da área que rola: a Caixinha fica sempre no topo, antes dos ativos. */}
+      <SavingsBoxRow
+        accountBalance={data?.balance ?? 0}
+        onBalanceChange={() => {
+          void refetch();
+          onBalanceChange?.();
+        }}
+      />
 
       {positions.length === 0 ? (
         <div className="flex-1">

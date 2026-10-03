@@ -1,8 +1,4 @@
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { AccountBalanceCard } from "../components/AccountBalanceCard";
-import { SavingsBoxCard } from "@/components/savings-box/SavingsBoxCard";
-import { SAVINGS_BOX_ANCHOR } from "@/lib/savings-box";
 import { EvolutionChart } from "../components/EvolutionChart";
 import { Assets } from "../components/Assets";
 import { usePortfolio, usePortfolioHistory } from "@/hooks/usePortfolio";
@@ -81,15 +77,6 @@ export function Dashboard() {
     void refetchHistory();
   };
 
-  // /#caixinha (Recomendações ou o antigo /orders#caixinha): rola até a Caixinha quando o Painel
-  // termina de carregar (antes disso o card ainda não existe).
-  const { hash } = useLocation();
-  useEffect(() => {
-    if (hash === `#${SAVINGS_BOX_ANCHOR}` && !isLoading) {
-      document.getElementById(SAVINGS_BOX_ANCHOR)?.scrollIntoView({ block: "start" });
-    }
-  }, [hash, isLoading]);
-
   // Rentabilidade real do período (servidor), sem contar aportes/retiradas.
   const hasChangeData = returnPct !== null;
   const change = returnPct ?? 0;
@@ -123,15 +110,10 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 nav:grid-cols-3 gap-8 items-stretch flex-1 nav:min-h-0">
         <div className="nav:col-span-2 space-y-6 flex flex-col nav:min-h-0">
-          {/* Os dois "lugares do dinheiro" lado a lado. Cada card ocupa as 4 linhas da grade
-              (subgrid, ver MoneyCard): valores e botões ficam na mesma altura. */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:grid-rows-[repeat(4,auto)] sm:gap-y-0">
-            <AccountBalanceCard
-              availableBalance={balance}
-              onBalanceChange={refetch}
-            />
-            <SavingsBoxCard accountBalance={balance} onBalanceChange={refetch} />
-          </div>
+          <AccountBalanceCard
+            availableBalance={balance}
+            onBalanceChange={refetch}
+          />
 
           <div
             className={cn(
@@ -176,7 +158,10 @@ export function Dashboard() {
             ela vem do saldo + gráfico, e a lista de ativos rola dentro dela,
             com o valor total fixo no rodapé. */}
         <div className="nav:col-span-1 nav:h-0 nav:min-h-full">
-          <Assets change={hasChangeData ? change : undefined} />
+          <Assets
+            change={hasChangeData ? change : undefined}
+            onBalanceChange={refetch}
+          />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SavingsBoxCard } from "@/components/savings-box/SavingsBoxCard";
+import { MemoryRouter } from "react-router-dom";
+import { SavingsBoxRow } from "@/components/savings-box/SavingsBoxRow";
 
 const mocks = vi.hoisted(() => ({
   deposit: vi.fn(),
@@ -24,29 +25,42 @@ vi.mock("@/hooks/use-savings-box", () => ({
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
-function renderCard() {
+function renderCard(url = "/") {
   const onBalanceChange = vi.fn();
-  render(<SavingsBoxCard accountBalance={1_250} onBalanceChange={onBalanceChange} />);
+  render(
+    <MemoryRouter initialEntries={[url]}>
+      <SavingsBoxRow accountBalance={1_250} onBalanceChange={onBalanceChange} />
+    </MemoryRouter>,
+  );
   return { onBalanceChange };
 }
 
-describe("SavingsBoxCard (Caixinha no Painel)", () => {
+describe("SavingsBoxRow (Caixinha no topo de Seus Ativos)", () => {
   beforeEach(() => {
     mocks.deposit.mockReset().mockImplementation(async () => mocks.callbacks.deposit.onSuccess?.());
     mocks.withdraw.mockReset().mockImplementation(async () => mocks.callbacks.withdraw.onSuccess?.());
     mocks.refetch.mockReset();
   });
 
-  it("mostra o valor guardado, o rendimento e as duas ações (sem formulário fixo)", () => {
+  it("linha com nome, rendimento, valor e as duas ações (sem formulário fixo)", () => {
     renderCard();
 
-    const card = screen.getByRole("region", { name: "Caixinha" });
-    expect(card).toHaveAttribute("id", "caixinha");
-    expect(within(card).getByRole("heading", { name: /R\$\s?3\.000,00/ })).toBeInTheDocument();
-    expect(within(card).getByText("100% do CDI")).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "Depositar" })).toBeInTheDocument();
-    expect(within(card).getByRole("button", { name: "Resgatar" })).toBeInTheDocument();
+    const row = screen.getByRole("region", { name: "Caixinha" });
+    expect(row).toHaveAttribute("id", "caixinha");
+    expect(within(row).getByText("Rende 100% do CDI")).toBeInTheDocument();
+    expect(within(row).getByText(/R\$\s?3\.000,00/)).toBeInTheDocument();
+    // Ações compactas no texto, mas com alvo de 44px.
+    for (const name of ["Depositar", "Resgatar"])
+      expect(within(row).getByRole("button", { name })).toHaveClass("min-h-11");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("aberta pelo link /#caixinha, rola até a linha", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderCard("/#caixinha");
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
   });
 
   it("Depositar abre o diálogo com os dois saldos e envia o valor digitado", async () => {
