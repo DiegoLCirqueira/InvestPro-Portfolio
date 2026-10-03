@@ -30,8 +30,9 @@ describe("useOrderForm: compra de cripto por valor", () => {
     // 100 / 300.000 = 0,000333333…
     expect(result.current.estimatedQuantity).toBe(0.00033333);
     expect(result.current.buildInput().quantity).toBe(0.00033333);
-    // Taxa e "Você pagará" sobre o que a quantidade truncada compra de fato.
-    expect(result.current.settlement?.total).toBeCloseTo(0.00033333 * 300_000, 6);
+    // Taxa e "Você pagará" sobre o que a quantidade truncada compra de fato,
+    // em centavos como o servidor: 0,00033333 × 300.000 = 99,999 → R$ 100,00.
+    expect(result.current.settlement?.total).toBe(100);
   });
 
   it("LIMIT usa o preço informado, não o de mercado", () => {
