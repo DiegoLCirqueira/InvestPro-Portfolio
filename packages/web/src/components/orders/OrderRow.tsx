@@ -26,11 +26,12 @@ function SideText({ side }: { side: OrderSide }) {
   );
 }
 
-// Célula da grade de valores: rótulo pequeno acima, número à direita. Sem valor (PM na venda,
-// taxa antes de executar) a célula continua lá com "—", para nada se deslocar.
+// Célula da grade de valores: rótulo pequeno acima do número, alinhados à esquerda para a Qtd
+// começar na mesma linha do nome do ativo. Sem valor (PM na venda, taxa antes de executar) a
+// célula continua lá com "—", para nada se deslocar.
 function OrderDetail({ label, value }: { label: string; value: string | null }) {
   return (
-    <div className="flex min-w-0 flex-col items-end">
+    <div className="flex min-w-0 flex-col items-start">
       <dt className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
