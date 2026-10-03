@@ -30,6 +30,8 @@ export function Exchange() {
 
   const flow = useExchangeFlow({
     input: { from, to, amount: amountInput.amount },
+    availableInOrigin: originBalance.available,
+    onBalanceAdded: () => void originBalance.refetch(),
     onExecuted: () => {
       amountInput.reset();
       void originBalance.refetch();

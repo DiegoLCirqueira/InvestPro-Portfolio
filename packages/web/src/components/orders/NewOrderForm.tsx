@@ -13,7 +13,8 @@ import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useOrderForm, type OrderEntryMode } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { formatQuantity } from "@/lib/format";
-import { ORDER_TYPE_LABELS } from "@/lib/order-form";
+import { normalizeTicker, ORDER_TYPE_LABELS } from "@/lib/order-form";
+import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { segmentClassName } from "@/components/ui/segmented";
 import type { OrderType } from "@/types/order";
 import { Button } from "@/components/ui/button";
@@ -55,12 +56,26 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     initialTicker: searchParams.get("ticker") ?? undefined,
   });
 
+  const { balance, refetch: refetchBalance } = usePortfolioPositions();
   const handleOrderError = useFinancialErrorHandler([
     "ORDER_INSUFFICIENT_BALANCE",
   ]);
   const createOrder = useCreateOrder({
     onSuccess: () => toast.success("Ordem criada com sucesso!"),
-    onError: handleOrderError,
+    // Na compra a tela já sabe o custo (com a taxa): o "Saldo insuficiente" diz quanto falta.
+    onError: (error) =>
+      handleOrderError(
+        error,
+        !form.isSell && form.settlement
+          ? {
+              kind: "order",
+              cost: form.settlement.netAmount,
+              available: balance,
+              ticker: normalizeTicker(form.ticker),
+              onBalanceAdded: () => void refetchBalance(),
+            }
+          : undefined,
+      ),
   });
 
   // Depois de uma tentativa de envio, os campos obrigatórios vazios ficam marcados na tela.

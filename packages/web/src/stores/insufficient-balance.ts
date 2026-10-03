@@ -1,10 +1,13 @@
 import { create } from "zustand";
+import type { BalanceShortfall } from "@/lib/balance-shortfall";
 
 interface InsufficientBalanceState {
   isOpen: boolean;
   /** Código do erro da API: define qual saldo faltou (conta, caixinha ou moeda). */
   code: string | null;
-  open: (code?: string) => void;
+  /** Quanto custava e quanto havia em conta: o erro da API não traz o valor que falta. */
+  shortfall: BalanceShortfall | null;
+  open: (code?: string, shortfall?: BalanceShortfall) => void;
   close: () => void;
 }
 
@@ -17,7 +20,9 @@ export const useInsufficientBalanceStore = create<InsufficientBalanceState>()(
   (set) => ({
     isOpen: false,
     code: null,
-    open: (code) => set({ isOpen: true, code: code ?? null }),
+    shortfall: null,
+    open: (code, shortfall) =>
+      set({ isOpen: true, code: code ?? null, shortfall: shortfall ?? null }),
     close: () => set({ isOpen: false }),
   }),
 );

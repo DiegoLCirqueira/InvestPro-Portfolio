@@ -20,6 +20,10 @@ interface ExchangeInput {
 interface UseExchangeFlowOptions {
   input: ExchangeInput;
   onExecuted: () => void;
+  /** Saldo disponível na moeda de origem (em BRL, o saldo em conta). */
+  availableInOrigin: number;
+  /** Recarrega o saldo depois de adicionar saldo pelo "Saldo insuficiente". */
+  onBalanceAdded: () => void;
 }
 
 /**
@@ -27,8 +31,21 @@ interface UseExchangeFlowOptions {
  * A simulação só vale enquanto valor, De e Para continuam iguais aos simulados;
  * mudou qualquer um, ela deixa de existir e é preciso simular de novo.
  */
-export function useExchangeFlow({ input, onExecuted }: UseExchangeFlowOptions) {
-  const handleError = useFinancialErrorHandler(INSUFFICIENT_BALANCE_CODES);
+export function useExchangeFlow({
+  input,
+  onExecuted,
+  availableInOrigin,
+  onBalanceAdded,
+}: UseExchangeFlowOptions) {
+  const handleFinancialError = useFinancialErrorHandler(INSUFFICIENT_BALANCE_CODES);
+  // Só a origem em BRL oferece adicionar saldo: faltar dólar não se resolve com saldo em conta.
+  const handleError = (error: Error) =>
+    handleFinancialError(
+      error,
+      input.from === "BRL"
+        ? { kind: "exchange", cost: input.amount, available: availableInOrigin, onBalanceAdded }
+        : undefined,
+    );
   const convert = useConvertExchange({ onError: handleError });
   const execute = useExecuteExchange({ onError: handleError });
 
