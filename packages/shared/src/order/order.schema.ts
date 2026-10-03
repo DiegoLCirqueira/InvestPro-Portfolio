@@ -35,9 +35,18 @@ export const createOrderInputSchema = z
     quantity: orderQuantityInputSchema,
     price: moneyAmountSchema.optional(),
     type: z.enum(ORDER_TYPES).default('MARKET'),
+    // Compra que resgata da Caixinha só o que faltar no saldo em conta.
+    // Ausente = false (opcional pra não obrigar quem já monta o payload).
+    useSavingsBox: z.boolean().optional(),
   })
   .refine((data) => data.assetId || data.ticker, {
     message: 'Informe assetId ou ticker',
+  })
+  // Venda nunca precisa da Caixinha: recusar expõe o erro do cliente em vez de
+  // ignorar o pedido em silêncio.
+  .refine((data) => !(data.useSavingsBox && data.side === 'SELL'), {
+    message: 'useSavingsBox só vale para compra (side=BUY)',
+    path: ['useSavingsBox'],
   });
 
 export const orderSchema = z.object({
@@ -55,6 +64,9 @@ export const orderSchema = z.object({
   // Fee da InvestPro (1% do valor executado). null enquanto a ordem não
   // executa (LIMIT/STOP em OPEN) — só existe fee sobre o que de fato preenche.
   fee: z.number().nonnegative().nullable().optional(),
+  // R$ resgatados da Caixinha pra cobrir a compra. Só vem quando a ordem pediu
+  // useSavingsBox (0 se o saldo em conta bastou).
+  savingsBoxUsed: z.number().nonnegative().optional(),
 });
 
 export const orderListSchema = z.object({
