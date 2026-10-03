@@ -17,6 +17,7 @@ import { prisma } from '../../config/database.js'
 import { getAssetMeta, getQuote } from '../market/market.service.js'
 import { AppError } from '../auth/auth.service.js'
 import { recordSnapshot } from '../portfolio/snapshot.service.js'
+import { executeWithdraw } from '../savings-box/savings-box.service.js'
 import {
   applyBuyFill,
   applySellFill,
@@ -56,6 +57,40 @@ function assertTotalIsNotNegligible(total: number): void {
   )
 }
 
+function insufficientBalance(): AppError {
+  return new AppError(
+    'ORDER_INSUFFICIENT_BALANCE',
+    'Saldo insuficiente para executar esta ordem',
+    400
+  )
+}
+
+// Resgata da Caixinha exatamente o que falta pra compra, com a mesma regra do
+// resgate normal. Sem FOR UPDATE: a transação da ordem já é Serializable, então
+// duas compras que leem a mesma Caixinha conflitam (P2034) e a perdedora refaz
+// com o saldo novo. FOR UPDATE aqui trocaria esse conflito por um erro de SQL
+// cru (P2010) que o retry não reconhece.
+async function coverShortfallFromSavingsBox(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  shortfall: number
+): Promise<void> {
+  try {
+    await executeWithdraw(tx, userId, shortfall)
+  } catch (err) {
+    // Pra quem compra, o erro é da ordem: saldo + Caixinha não cobrem o custo.
+    if (err instanceof AppError && err.code === 'SAVINGS_BOX_INSUFFICIENT_BALANCE') {
+      throw insufficientBalance()
+    }
+    throw err
+  }
+}
+
+interface ExecutedOrder {
+  record: PrismaOrder
+  savingsBoxUsed: number
+}
+
 function toOrder(record: PrismaOrder): Order {
   const quantity = record.quantity.toNumber()
   const price = record.price ? record.price.toNumber() : null
@@ -84,9 +119,9 @@ async function executeOrderTx(
   asset: ResolvedAsset,
   input: CreateOrderInput,
   evaluation: OrderEvaluation
-): Promise<PrismaOrder> {
+): Promise<ExecutedOrder> {
   if (evaluation.status !== 'FILLED') {
-    return tx.order.create({
+    const record = await tx.order.create({
       data: {
         userId,
         assetId: asset.assetId ?? asset.ticker,
@@ -100,6 +135,7 @@ async function executeOrderTx(
         executedAt: null,
       },
     })
+    return { record, savingsBoxUsed: 0 }
   }
 
   const fillPrice = evaluation.fillPrice as number
@@ -118,16 +154,18 @@ async function executeOrderTx(
     : null
 
   let orderAvgPrice: number | null = null
+  let savingsBoxUsed = 0
 
   if (input.side === 'BUY') {
     const cost = round2(total + calculateOrderFee(total))
+    // Em centavos (cost e balance têm 2 casas): a Caixinha cobre a diferença
+    // exata e o saldo em conta termina em zero, nunca negativo.
+    const shortfall = round2(cost - portfolio.balance.toNumber())
 
-    if (portfolio.balance.toNumber() < cost) {
-      throw new AppError(
-        'ORDER_INSUFFICIENT_BALANCE',
-        'Saldo insuficiente para executar esta ordem',
-        400
-      )
+    if (shortfall > 0) {
+      if (!input.useSavingsBox) throw insufficientBalance()
+      await coverShortfallFromSavingsBox(tx, userId, shortfall)
+      savingsBoxUsed = shortfall
     }
 
     const fill = applyBuyFill(current, input.quantity, fillPrice)
@@ -203,7 +241,7 @@ async function executeOrderTx(
     orderAvgPrice = null
   }
 
-  return tx.order.create({
+  const record = await tx.order.create({
     data: {
       userId,
       assetId: asset.assetId ?? asset.ticker,
@@ -217,6 +255,7 @@ async function executeOrderTx(
       executedAt: new Date(),
     },
   })
+  return { record, savingsBoxUsed }
 }
 
 export async function createOrder(userId: string, input: CreateOrderInput): Promise<Order> {
@@ -248,12 +287,15 @@ export async function createOrder(userId: string, input: CreateOrderInput): Prom
 
   for (let attempt = 1; attempt <= MAX_TX_ATTEMPTS; attempt++) {
     try {
-      const created = await prisma.$transaction(
+      const { record, savingsBoxUsed } = await prisma.$transaction(
         (tx) => executeOrderTx(tx, userId, asset, input, evaluation),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       )
-      if (created.status === 'FILLED') await recordSnapshot(userId, 'ORDER')
-      return toOrder(created)
+      // Mesmo rastro de um resgate normal (fotografia SAVINGS) antes da ORDER.
+      if (savingsBoxUsed > 0) await recordSnapshot(userId, 'SAVINGS')
+      if (record.status === 'FILLED') await recordSnapshot(userId, 'ORDER')
+      const order = toOrder(record)
+      return input.useSavingsBox ? { ...order, savingsBoxUsed } : order
     } catch (err) {
       const isSerializationConflict =
         err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034'
