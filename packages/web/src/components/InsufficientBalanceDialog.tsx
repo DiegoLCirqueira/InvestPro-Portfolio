@@ -13,6 +13,7 @@ import {
   missingAmount,
   shortfallAdjustLabel,
   shortfallCostSentence,
+  shortfallHoldings,
   shortfallNote,
   type BalanceShortfall,
 } from "@/lib/balance-shortfall";
@@ -58,8 +59,8 @@ export function InsufficientBalanceDialog() {
           {shortfall && missing > 0 ? (
             <>
               <DialogDescription>
-                {shortfallCostSentence(shortfall)} e você tem{" "}
-                {formatCurrency(shortfall.available)} em conta. Faltam{" "}
+                {shortfallCostSentence(shortfall)} e você tem {shortfallHoldings(shortfall)}.
+                Faltam{" "}
                 <strong className="font-semibold text-foreground">{formatCurrency(missing)}</strong>.
               </DialogDescription>
               {/* Empilhadas e em largura total (rótulos longos): principal em cima. */}

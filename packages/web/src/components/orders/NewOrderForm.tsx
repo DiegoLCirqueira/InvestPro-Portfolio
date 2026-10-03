@@ -5,7 +5,12 @@ import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField, fieldInputClassName } from "@/components/FormField";
 import { OrderSideToggle } from "@/components/orders/OrderSideToggle";
-import { OrderBalance, OrderShortfallAlert } from "@/components/orders/OrderFunding";
+import {
+  OrderAccountOnlyNote,
+  OrderBalance,
+  OrderPaymentSplit,
+  OrderShortfallAlert,
+} from "@/components/orders/OrderFunding";
 import { OrderSummary } from "@/components/orders/OrderSummary";
 import { Combobox } from "@/components/ui/combobox";
 import { useMarketAssets } from "@/hooks/use-market-assets";
@@ -13,8 +18,16 @@ import { useCreateOrder, useSellableAssets } from "@/hooks/use-orders";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useOrderForm, type OrderEntryMode } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
-import { missingAmount, type BalanceShortfall } from "@/lib/balance-shortfall";
-import { formatQuantity } from "@/lib/format";
+import {
+  useSavingsBox,
+  useSavingsBoxInOrdersPreference,
+} from "@/hooks/use-savings-box";
+import {
+  missingAmount,
+  savingsBoxDraw,
+  type BalanceShortfall,
+} from "@/lib/balance-shortfall";
+import { formatCurrency, formatQuantity } from "@/lib/format";
 import { normalizeTicker, ORDER_TYPE_LABELS } from "@/lib/order-form";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
 import { segmentClassName } from "@/components/ui/segmented";
@@ -65,25 +78,39 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     balance,
     refetch: refetchBalance,
   } = usePortfolioPositions();
-  // Compra: custo (com a taxa) contra o saldo em conta. Só com o saldo carregado; antes disso
-  // (ou se ele falhar) o servidor continua como proteção, com o "Saldo insuficiente".
+  const savingsBox = useSavingsBox();
+  const [prefersSavingsBox, setPrefersSavingsBox] = useSavingsBoxInOrdersPreference();
+  // A Caixinha só entra na compra e só se houver dinheiro nela.
+  const canUseSavingsBox = !form.isSell && savingsBox.data !== undefined && savingsBox.balance > 0;
+  const usesSavingsBox = canUseSavingsBox && prefersSavingsBox;
+
+  // Compra: custo (com a taxa) contra o saldo em conta (+ Caixinha, se marcada). Só com o saldo
+  // carregado; antes disso (ou se ele falhar) o servidor continua como proteção.
   const purchase: BalanceShortfall | null =
     !form.isSell && portfolio
       ? {
           kind: "order",
           cost: form.settlement?.netAmount ?? 0,
           available: balance,
+          savingsBox: usesSavingsBox ? savingsBox.balance : undefined,
           ticker: normalizeTicker(form.ticker),
           onBalanceAdded: () => void refetchBalance(),
         }
       : null;
   const isShort = purchase !== null && missingAmount(purchase) > 0;
+  const savingsBoxPart = purchase ? savingsBoxDraw(purchase) : 0;
 
   const handleOrderError = useFinancialErrorHandler([
     "ORDER_INSUFFICIENT_BALANCE",
   ]);
   const createOrder = useCreateOrder({
-    onSuccess: () => toast.success("Ordem criada com sucesso!"),
+    onSuccess: (order) =>
+      toast.success(
+        "Ordem criada com sucesso!",
+        order.savingsBoxUsed
+          ? { description: `${formatCurrency(order.savingsBoxUsed)} resgatados da Caixinha.` }
+          : undefined,
+      ),
     // Na compra a tela já sabe o custo: o "Saldo insuficiente" diz quanto falta.
     onError: (error) =>
       handleOrderError(error, purchase ?? undefined),
@@ -107,7 +134,12 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     // O aviso de falta já está na tela (o botão fica desabilitado, mas o submit por Enter não).
     if (isShort) return;
     try {
-      await createOrder.mutate(form.buildInput());
+      // Com a Caixinha marcada vai sempre o pedido: se o saldo em conta mudou desde que a tela o
+      // leu, o servidor ainda cobre a diferença em vez de recusar (ele só resgata o que faltar).
+      await createOrder.mutate({
+        ...form.buildInput(),
+        ...(usesSavingsBox && { useSavingsBox: true }),
+      });
     } catch {
       // erro já tratado via onError
       return;
@@ -116,6 +148,7 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     setShowRequired(false);
     void refetchSellableAssets();
     void refetchBalance();
+    void savingsBox.refetch();
     onCreated();
   };
 
@@ -249,7 +282,21 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         </FormField>
       )}
 
-      {purchase && <OrderBalance available={purchase.available} />}
+      {/* Na venda o bloco só mostra o saldo (a checagem ali é de quantidade). */}
+      {portfolio && (
+        <OrderBalance
+          available={balance}
+          savingsBox={
+            canUseSavingsBox
+              ? {
+                  balance: savingsBox.balance,
+                  enabled: prefersSavingsBox,
+                  onEnabledChange: setPrefersSavingsBox,
+                }
+              : null
+          }
+        />
+      )}
 
       <OrderSummary
         side={form.side}
@@ -268,8 +315,14 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
         </FormField>
       )}
 
-      {isShort && purchase && (
-        <OrderShortfallAlert id={SHORTFALL_ALERT_ID} shortfall={purchase} />
+      {purchase && form.settlement && (
+        isShort ? (
+          <OrderShortfallAlert id={SHORTFALL_ALERT_ID} shortfall={purchase} />
+        ) : savingsBoxPart > 0 ? (
+          <OrderPaymentSplit shortfall={purchase} />
+        ) : (
+          usesSavingsBox && <OrderAccountOnlyNote />
+        )
       )}
 
       <Button

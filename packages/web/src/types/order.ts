@@ -22,6 +22,8 @@ export interface Order {
   avgPrice: number | null;
   // Taxa InvestPro; null enquanto a ordem não foi executada.
   fee?: number | null;
+  // R$ resgatados da Caixinha para pagar a compra (só na resposta do POST; 0/ausente se não usou).
+  savingsBoxUsed?: number;
 }
 
 export interface OrderList {
@@ -38,6 +40,9 @@ export interface CreateOrderInput {
   quantity: number;
   price?: number;
   type: OrderType;
+  // Só compra: se o saldo em conta não bastar, o servidor resgata a diferença da Caixinha na
+  // mesma transação. O site nunca envia em venda.
+  useSavingsBox?: boolean;
 }
 
 export interface SellableAsset {

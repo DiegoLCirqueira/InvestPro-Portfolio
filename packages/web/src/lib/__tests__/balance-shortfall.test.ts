@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   missingAmount,
+  savingsBoxDraw,
   shortfallAdjustLabel,
   shortfallCostSentence,
+  shortfallHoldings,
   shortfallNote,
 } from "@/lib/balance-shortfall";
 import { transferCost } from "@/lib/transfer-fee";
@@ -31,5 +33,27 @@ describe("balance-shortfall", () => {
     expect(transferCost("PIX", 100)).toBe(100);
     expect(transferCost("TED", 100)).toBe(110);
     expect(transferCost("DOC", 100)).toBe(105);
+  });
+
+  it("com a Caixinha, ela cobre só a diferença e o que falta já a desconta", () => {
+    const covered = { kind: "order" as const, cost: 969.4, available: 550, savingsBox: 3_000 };
+    expect(savingsBoxDraw(covered)).toBe(419.4);
+    expect(missingAmount(covered)).toBe(0);
+
+    const short = { kind: "order" as const, cost: 4_846.99, available: 550, savingsBox: 3_000 };
+    expect(savingsBoxDraw(short)).toBe(3_000);
+    expect(missingAmount(short)).toBe(1_296.99);
+
+    const enough = { kind: "order" as const, cost: 300, available: 550, savingsBox: 3_000 };
+    expect(savingsBoxDraw(enough)).toBe(0);
+  });
+
+  it("o que a pessoa tem inclui a Caixinha só quando ela conta", () => {
+    expect(shortfallHoldings({ kind: "order", cost: 0, available: 550 })).toMatch(
+      /^R\$\s?550,00 em conta$/,
+    );
+    expect(
+      shortfallHoldings({ kind: "order", cost: 0, available: 550, savingsBox: 3_000 }),
+    ).toMatch(/^R\$\s?550,00 em conta e R\$\s?3\.000,00 na Caixinha$/);
   });
 });

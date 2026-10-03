@@ -11,13 +11,33 @@ export interface BalanceShortfall {
   ticker?: string;
   /** Tem tarifa embutida no custo (TED/DOC): a frase diz "custa", não "é de". */
   hasFee?: boolean;
+  /** Compra que pode usar a Caixinha: quanto há nela para cobrir o que faltar em conta. */
+  savingsBox?: number;
   /** Recarrega o saldo da tela depois de adicionar. */
   onBalanceAdded?: () => void;
 }
 
-/** Quanto falta em R$ (centavos exatos), ou 0 se pela conta da tela o saldo bastava. */
-export function missingAmount({ cost, available }: BalanceShortfall): number {
-  return Math.max(0, Math.round((cost - available) * 100) / 100);
+const toCents = (value: number) => Math.round(value * 100) / 100;
+
+/** Quanto falta em conta (centavos exatos), antes de contar a Caixinha. */
+function accountGap({ cost, available }: BalanceShortfall): number {
+  return Math.max(0, toCents(cost - available));
+}
+
+/** Quanto falta em R$ (centavos exatos), já contando a Caixinha; 0 se pela conta da tela bastava. */
+export function missingAmount(shortfall: BalanceShortfall): number {
+  return Math.max(0, toCents(accountGap(shortfall) - (shortfall.savingsBox ?? 0)));
+}
+
+/** Quanto sai da Caixinha: só a diferença que falta em conta, nunca mais do que há nela. */
+export function savingsBoxDraw(shortfall: BalanceShortfall): number {
+  return Math.min(accountGap(shortfall), shortfall.savingsBox ?? 0);
+}
+
+/** O que a pessoa tem: "R$ 550,00 em conta" e, se a Caixinha conta, "e R$ 3.000,00 na Caixinha". */
+export function shortfallHoldings({ available, savingsBox }: BalanceShortfall): string {
+  const account = `${formatCurrency(available)} em conta`;
+  return savingsBox ? `${account} e ${formatCurrency(savingsBox)} na Caixinha` : account;
 }
 
 // Frase do custo por operação, como no design aprovado (sugestão d).
