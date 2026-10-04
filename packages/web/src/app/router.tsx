@@ -12,6 +12,7 @@ import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
 import { MarketSkeleton } from "@/components/skeletons/MarketSkeleton";
 import { RiskSkeleton } from "@/components/skeletons/RiskSkeleton";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
+import { SavingsBoxSkeleton } from "@/components/skeletons/SavingsBoxSkeleton";
 
 const Landing = lazy(() =>
   import("@/pages/Landing").then((m) => ({ default: m.Landing })),
@@ -36,6 +37,9 @@ const Exchange = lazy(() =>
 );
 const Transfers = lazy(() =>
   import("@/pages/Transfers").then((m) => ({ default: m.Transfers })),
+);
+const SavingsBox = lazy(() =>
+  import("@/pages/SavingsBox").then((m) => ({ default: m.SavingsBox })),
 );
 const Orders = lazy(() =>
   import("@/pages/Orders").then((m) => ({ default: m.Orders })),
@@ -150,6 +154,10 @@ export function Router() {
         <Route
           path="/transfers"
           element={withSuspense(Transfers, <TransfersSkeleton />)}
+        />
+        <Route
+          path="/caixinha"
+          element={withSuspense(SavingsBox, <SavingsBoxSkeleton />)}
         />
         <Route
           path="/orders"

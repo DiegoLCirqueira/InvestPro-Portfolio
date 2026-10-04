@@ -6,6 +6,7 @@ import {
   PieChart,
   Shield,
   ArrowLeftRight,
+  PiggyBank,
   Lightbulb,
   ShieldCheck,
   LogOut,
@@ -29,6 +30,7 @@ const MORE_ITEMS: MoreMenuItem[] = [
   { to: "/diversification", label: "Diversificação", icon: PieChart },
   { to: "/risk", label: "Risco", icon: Shield },
   { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
+  { to: "/caixinha", label: "Caixinha", icon: PiggyBank },
   { to: "/recommendations", label: "Recomendações", icon: Lightbulb },
 ];
 
@@ -44,6 +46,7 @@ export const MORE_MENU_ROUTES = [
   "/diversification",
   "/risk",
   "/transfers",
+  "/caixinha",
   "/recommendations",
   "/admin/users",
   "/profile",

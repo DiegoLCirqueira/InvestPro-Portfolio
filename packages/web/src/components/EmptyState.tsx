@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { Inbox, type LucideIcon } from "lucide-react";
 import { StateIcon } from "@/components/StateIcon";
@@ -6,7 +7,8 @@ import { Button } from "@/components/ui/button";
 interface EmptyStateAction {
   label: string;
   to?: string;
-  onClick?: () => void;
+  /** Recebe o clique (ex.: para guardar o botão e devolver o foco a ele depois). */
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 interface EmptyStateProps {

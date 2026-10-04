@@ -16,6 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/orders": "Ordens",
   "/exchange": "Câmbio",
   "/transfers": "Transferências",
+  "/caixinha": "Caixinha",
   "/recommendations": "Recomendações",
   "/profile": "Perfil",
   "/profile/investor-profile": "Perfil de investidor",

@@ -7,6 +7,7 @@ import {
   PieChart,
   DollarSign,
   ArrowLeftRight,
+  PiggyBank,
   Shield,
   BookOpen,
   ShieldCheck,
@@ -49,6 +50,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { to: "/exchange", label: "Câmbio", icon: DollarSign },
       { to: "/transfers", label: "Transferências", icon: ArrowLeftRight },
+      { to: "/caixinha", label: "Caixinha", icon: PiggyBank },
       { to: "/recommendations", label: "Recomendações", icon: Lightbulb },
     ],
   },

@@ -38,6 +38,7 @@ describe("useDocumentTitle", () => {
     ["/", "Painel · InvestPro"],
     ["/market", "Análise de Mercado · InvestPro"],
     ["/diversification", "Diversificação · InvestPro"],
+    ["/caixinha", "Caixinha · InvestPro"],
   ])('rota do menu %s vira "%s"', (path, expected) => {
     renderAt(path);
     expect(document.title).toBe(expected);
