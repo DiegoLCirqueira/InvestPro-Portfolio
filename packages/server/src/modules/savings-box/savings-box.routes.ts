@@ -27,9 +27,9 @@ export async function savingsBoxRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [authenticate],
       schema: {
         tags: ["SavingsBox"],
-        summary: "Obter caixinha",
+        summary: "Obter Caixinha",
         description:
-          "Retorna o saldo da caixinha do usuário autenticado, a taxa de rendimento simulada e o rendimento estimado (juros simples, sem compostos reais).",
+          "Retorna o saldo da Caixinha do usuário autenticado, a taxa de rendimento simulada e o rendimento estimado (juros simples, sem compostos reais).",
         security: [{ BearerAuth: [] }],
         response: {
           200: savingsBoxResponseSchema,
@@ -49,9 +49,9 @@ export async function savingsBoxRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [authenticate],
       schema: {
         tags: ["SavingsBox"],
-        summary: "Depositar na caixinha",
+        summary: "Depositar na Caixinha",
         description:
-          "Move o valor do Portfolio.balance para a caixinha. Rejeita se o portfólio não tiver saldo suficiente.",
+          "Move o valor do Portfolio.balance para a Caixinha. Rejeita se o portfólio não tiver saldo suficiente.",
         security: [{ BearerAuth: [] }],
         body: savingsBoxAmountInputSchema,
         response: {
@@ -72,9 +72,9 @@ export async function savingsBoxRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [authenticate],
       schema: {
         tags: ["SavingsBox"],
-        summary: "Resgatar da caixinha",
+        summary: "Resgatar da Caixinha",
         description:
-          "Move o valor da caixinha de volta pro Portfolio.balance. Rejeita se a caixinha não tiver saldo suficiente.",
+          "Move o valor da Caixinha de volta pro Portfolio.balance. Rejeita se a Caixinha não tiver saldo suficiente.",
         security: [{ BearerAuth: [] }],
         body: savingsBoxAmountInputSchema,
         response: {
@@ -95,9 +95,9 @@ export async function savingsBoxRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [authenticate],
       schema: {
         tags: ["SavingsBox"],
-        summary: "Extrato da caixinha",
+        summary: "Extrato da Caixinha",
         description:
-          "Movimentos da caixinha do usuário autenticado, mais recentes primeiro: DEPOSIT, WITHDRAW e ORDER_FUNDING (resgate automático que cobriu uma compra com useSavingsBox, com orderId). balanceAfter é o saldo da caixinha logo depois do movimento. Paginação por cursor: passe o nextCursor da página anterior; null quando não há mais. Só registra movimentos a partir desta versão.",
+          "Movimentos da Caixinha do usuário autenticado, mais recentes primeiro: DEPOSIT, WITHDRAW e ORDER_FUNDING (resgate automático que cobriu uma compra com useSavingsBox, com orderId). balanceAfter é o saldo da Caixinha logo depois do movimento. Paginação por cursor: passe o nextCursor da página anterior; null quando não há mais. Só registra movimentos a partir desta versão.",
         security: [{ BearerAuth: [] }],
         querystring: savingsBoxTransactionsQuerySchema,
         response: {

@@ -6,7 +6,7 @@ export type DiversificationCategory = AssetType | 'FOREIGN_CURRENCY'
 export const TYPE_LABELS: Record<DiversificationCategory, string> = {
   CRYPTO: 'Criptomoedas',
   STOCK: 'Ações',
-  FIXED_INCOME: 'Renda Fixa',
+  FIXED_INCOME: 'Renda fixa',
   FOREIGN_CURRENCY: 'Moedas estrangeiras',
 }
 

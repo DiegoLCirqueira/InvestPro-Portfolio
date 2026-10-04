@@ -79,7 +79,7 @@ function idleCashRecommendation(input: RecommendationInput): PersonalizedRecomme
     id: 'idle-cash',
     category: 'OPPORTUNITY',
     title: 'Dinheiro parado em conta',
-    description: `Você tem ${formatBrl(input.cash)} em conta (${formatPct(roundPct(share * 100))} do patrimônio) sem render. Considere levar parte para a caixinha ou para investimentos alinhados ao seu perfil.`,
+    description: `Você tem ${formatBrl(input.cash)} em conta (${formatPct(roundPct(share * 100))} do patrimônio) sem render. Considere levar parte para a Caixinha ou para investimentos alinhados ao seu perfil.`,
   }
 }
 

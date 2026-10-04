@@ -63,7 +63,7 @@ describe('Caixinha como Renda fixa', () => {
     expect(res.json().totalBalance).toBe(2000)
     expect(res.json().breakdown).toEqual([
       expect.objectContaining({ type: 'STOCK', value: 1100, percentage: 55 }),
-      expect.objectContaining({ type: 'FIXED_INCOME', value: 900, percentage: 45, savingsBox: 900 }),
+      expect.objectContaining({ type: 'FIXED_INCOME', label: 'Renda fixa', value: 900, percentage: 45, savingsBox: 900 }),
     ])
     expect(res.json().breakdown[0]).not.toHaveProperty('savingsBox')
   })
@@ -89,5 +89,22 @@ describe('Caixinha como Renda fixa', () => {
     const ids = res.json().items.map((item: { id: string }) => item.id)
     expect(ids).not.toContain('increase-FIXED_INCOME')
     expect(ids).toContain('reduce-STOCK')
+  })
+
+  it('textos padronizados: "Caixinha" com C maiúsculo no erro de resgate', async () => {
+    const token = await moderateWithSavingsBox(10, 0)
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/savings-box/withdraw',
+      headers: { authorization: `Bearer ${token}` },
+      remoteAddress: uniqueIp(),
+      payload: { amount: 50 },
+    })
+
+    expect(res.json()).toEqual({
+      error: 'SAVINGS_BOX_INSUFFICIENT_BALANCE',
+      message: 'Saldo insuficiente na Caixinha para este resgate',
+    })
   })
 })
