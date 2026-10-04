@@ -49,10 +49,10 @@ describe("Diálogo de saldo insuficiente", () => {
     expect(screen.getByText(/saldo em conta negativo/)).toBeInTheDocument();
   });
 
-  it("no resgate da caixinha, fala do valor guardado nela", () => {
+  it("no resgate da Caixinha, fala do valor guardado nela", () => {
     openWith("SAVINGS_BOX_INSUFFICIENT_BALANCE");
 
-    expect(screen.getByText(/guardado nesta caixinha/)).toBeInTheDocument();
+    expect(screen.getByText(/guardado na Caixinha/)).toBeInTheDocument();
     expect(
       screen.queryByText(/saldo em conta negativo/),
     ).not.toBeInTheDocument();

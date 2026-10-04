@@ -1,6 +1,8 @@
 import type { PixKeyType } from "@/lib/pix-key";
 
 export type TransferType = "PIX" | "TED" | "DOC";
+// O DOC foi extinto em 2024: só aparece no histórico. Novas transferências são PIX ou TED.
+export type NewTransferType = Exclude<TransferType, "DOC">;
 export type TransferStatus = "PENDING" | "COMPLETED" | "FAILED";
 
 export interface BankAccount {
@@ -33,7 +35,7 @@ export interface TransferList {
 }
 
 export interface CreateTransferInput {
-  type: TransferType;
+  type: NewTransferType;
   amount: number;
   description?: string;
   toAccount?: Partial<BankAccount>;

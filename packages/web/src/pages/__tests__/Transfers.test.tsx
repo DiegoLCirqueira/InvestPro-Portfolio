@@ -266,7 +266,7 @@ describe("Transferências: chave PIX só com números (reconhece e formata)", ()
   });
 });
 
-describe("Transferências: ajuda do TED/DOC", () => {
+describe("Transferências: ajuda da TED", () => {
   beforeEach(() => {
     apiMock.get
       .mockReset()
@@ -314,5 +314,87 @@ describe("Transferências: campo de chave PIX", () => {
     expect(field).toHaveAccessibleDescription(
       /Aceita CPF, CNPJ, celular, e-mail ou chave aleatória/,
     );
+  });
+});
+
+describe("Transferências: tarifa, total e o fim do DOC", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockResolvedValue({
+      items: [
+        {
+          id: "old-doc",
+          status: "COMPLETED",
+          type: "DOC",
+          amount: 50,
+          toAccount: { id: "a", bank: "001", agency: "1234", account: "5678-9" },
+          createdAt: "2024-01-10T12:00:00.000Z",
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+    apiMock.post.mockReset();
+    vi.mocked(toast.error).mockClear();
+  });
+
+  const summary = () => screen.getByText("Tarifa").closest("dl") as HTMLElement;
+
+  it("DOC sai das opções (e da ajuda), mas os DOCs antigos seguem no histórico", async () => {
+    await renderTransfers();
+
+    expect(screen.getByRole("button", { name: "PIX" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "TED" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "DOC" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Saiba mais sobre DOC" })).not.toBeInTheDocument();
+    expect(screen.getByText("DOC")).toBeInTheDocument();
+  });
+
+  it("PIX mostra tarifa zero; TED mostra R$ 10,00 e o total antes de enviar", async () => {
+    await renderTransfers();
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), {
+      target: { value: "10000" },
+    });
+
+    expect(summary()).toHaveTextContent(/Tarifa\s*R\$\s?0,00/);
+    expect(summary()).toHaveTextContent(/Total\s*R\$\s?100,00/);
+
+    fireEvent.click(screen.getByRole("button", { name: "TED" }));
+    expect(summary()).toHaveTextContent(/Tarifa\s*R\$\s?10,00/);
+    expect(summary()).toHaveTextContent(/Total\s*R\$\s?110,00/);
+  });
+
+  it("na TED a conta de destino é obrigatória: rótulo sem 'opcional' e nada vai à API sem ela", async () => {
+    await renderTransfers();
+    fireEvent.click(screen.getByRole("button", { name: "TED" }));
+    fireEvent.change(screen.getByLabelText("Valor da transferência"), {
+      target: { value: "10000" },
+    });
+
+    expect(screen.getByText("Conta de Destino")).toBeInTheDocument();
+    expect(screen.queryByText(/Conta de Destino \(opcional\)/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Banco")).toHaveAttribute("aria-required", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+
+    await vi.waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Preencha banco, agência e número da conta de destino.",
+      ),
+    );
+    expect(apiMock.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("Transferências: alvo de toque da ajuda", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+  });
+
+  it("o ⓘ da TED tem 44px (size-11), e o rótulo do tipo segue centralizado", async () => {
+    await renderTransfers();
+
+    expect(screen.getByRole("button", { name: "Saiba mais sobre TED" })).toHaveClass("size-11");
+    expect(screen.getByRole("button", { name: "TED" })).toHaveClass("px-11");
   });
 });

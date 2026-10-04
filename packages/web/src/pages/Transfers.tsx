@@ -21,21 +21,21 @@ import { transferCost } from "@/lib/transfer-fee";
 import { useFreeBalance } from "@/hooks/use-free-balance";
 import { usePixKeyInput } from "@/hooks/use-pix-key-input";
 import { PixKeyField } from "@/components/transfers/PixKeyField";
+import { TransferSummary } from "@/components/transfers/TransferSummary";
 import { segmentClassName } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
-import type { Transfer, TransferStatus, TransferType } from "@/types/transfer";
+import type { NewTransferType, Transfer, TransferStatus } from "@/types/transfer";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 
-const TYPE_OPTIONS: { value: TransferType; label: string }[] = [
+// Sem DOC: foi extinto em 2024 (o servidor recusa). DOCs antigos seguem no histórico.
+const TYPE_OPTIONS: { value: NewTransferType; label: string }[] = [
   { value: "PIX", label: "PIX" },
   { value: "TED", label: "TED" },
-  { value: "DOC", label: "DOC" },
 ];
 
-const TYPE_HELP: Partial<Record<TransferType, string>> = {
+const TYPE_HELP: Partial<Record<NewTransferType, string>> = {
   TED: "Transferência entre contas de bancos diferentes, compensada no mesmo dia útil.",
-  DOC: "Transferência entre bancos diferentes, compensada em até 1 dia útil, para valores menores.",
 };
 
 const STATUS_CONFIG: Record<
@@ -47,7 +47,7 @@ const STATUS_CONFIG: Record<
   FAILED: { label: "Falhou", tone: "danger" },
 };
 
-// Ajuda do TED/DOC em Popover (abre e fecha no clique/toque). O Tooltip do Radix fecha no
+// Ajuda da TED em Popover (abre e fecha no clique/toque). O Tooltip do Radix fecha no
 // pointerdown do próprio gatilho e só abre com hover/foco: no celular a explicação não aparecia.
 function TransferTypeHelp({ label, help }: { label: string; help: string }) {
   return (
@@ -55,12 +55,13 @@ function TransferTypeHelp({ label, help }: { label: string; help: string }) {
       <PopoverPrimitive.Trigger asChild>
         <button
           type="button"
-          // O ícone fica dentro do botão do tipo (TED/DOC): o clique não pode selecioná-lo.
+          // O ícone fica dentro do botão do tipo (TED): o clique não pode selecioná-lo.
           onClick={(e) => e.stopPropagation()}
           aria-label={`Saiba mais sobre ${label}`}
-          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          // Alvo de 44px (a altura do botão do tipo) com o mesmo ícone pequeno no canto direito.
+          className="absolute right-0 top-0 flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Info size={13} />
+          <Info size={13} aria-hidden="true" />
         </button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
@@ -156,7 +157,7 @@ export function Transfers() {
     },
   });
 
-  const [type, setType] = useState<TransferType>("PIX");
+  const [type, setType] = useState<NewTransferType>("PIX");
   const amountInput = useCurrencyDigitsInput();
   const [description, setDescription] = useState("");
   const [bank, setBank] = useState("");
@@ -186,8 +187,9 @@ export function Transfers() {
       if (!pixKeyInput.pixKey) {
         return "Chave PIX inválida. Use CPF, CNPJ, e-mail, celular com DDD ou chave aleatória.";
       }
-    } else if (accountFieldsFilled > 0 && accountFieldsFilled < 3) {
-      return "Preencha banco, agência e número da conta, ou deixe os três em branco.";
+    } else if (accountFieldsFilled < 3) {
+      // A TED precisa de destino: sem ele o valor e a tarifa sairiam sem destinatário.
+      return "Preencha banco, agência e número da conta de destino.";
     }
     return null;
   };
@@ -213,8 +215,7 @@ export function Transfers() {
         type,
         amount: amountInput.amount,
         description: description.trim() || undefined,
-        toAccount:
-          !pixKey && accountFieldsFilled === 3 ? destinationAccount : undefined,
+        toAccount: type === "TED" ? destinationAccount : undefined,
         pixKey: pixKey?.value,
         pixKeyType: pixKey?.type,
       });
@@ -274,7 +275,7 @@ export function Transfers() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Tipo</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {TYPE_OPTIONS.map((option) => {
                 const help = TYPE_HELP[option.value];
                 return (
@@ -295,7 +296,7 @@ export function Transfers() {
                       className={segmentClassName(
                         type === option.value,
                         "primary",
-                        cn("w-full", help && "pr-7"),
+                        cn("w-full", help && "px-11"),
                       )}
                     >
                       {option.label}
@@ -354,7 +355,7 @@ export function Transfers() {
           ) : (
             <div className="flex flex-col gap-2">
               <label className="text-sm text-muted-foreground">
-                Conta de Destino (opcional)
+                Conta de Destino
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -363,6 +364,7 @@ export function Transfers() {
                   onChange={(e) => setBank(e.target.value)}
                   placeholder="Banco"
                   aria-label="Banco"
+                  aria-required="true"
                   className="col-span-2 w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
                 <input
@@ -372,6 +374,7 @@ export function Transfers() {
                   onChange={(e) => setAgency(e.target.value)}
                   placeholder="Agência"
                   aria-label="Agência"
+                  aria-required="true"
                   className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
                 <input
@@ -380,11 +383,14 @@ export function Transfers() {
                   onChange={(e) => setAccount(e.target.value)}
                   placeholder="Nº da conta"
                   aria-label="Número da conta"
+                  aria-required="true"
                   className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground placeholder-muted-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
                 />
               </div>
             </div>
           )}
+
+          <TransferSummary type={type} amount={amountInput.amount} />
 
           <Button
             type="submit"

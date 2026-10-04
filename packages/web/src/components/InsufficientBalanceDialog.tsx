@@ -26,7 +26,7 @@ const DEFAULT_MESSAGE =
 // Quando o saldo que faltou não é o da conta, a mensagem diz qual foi.
 const MESSAGE_BY_CODE: Record<string, string> = {
   SAVINGS_BOX_INSUFFICIENT_BALANCE:
-    "O valor é maior do que o que está guardado nesta caixinha. Ajuste o valor do resgate.",
+    "O valor é maior do que o que está guardado na Caixinha. Ajuste o valor do resgate.",
   CURRENCY_HOLDING_INSUFFICIENT_BALANCE:
     "Você não tem esse valor na moeda de origem. Ajuste o valor ou converta mais saldo antes.",
 };

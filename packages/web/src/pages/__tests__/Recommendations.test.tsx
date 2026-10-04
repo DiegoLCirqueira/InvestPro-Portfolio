@@ -63,7 +63,8 @@ describe("Recommendations (pelo perfil de investidor)", () => {
     expect(screen.getByText("Reduzir a exposição a ações")).toBeInTheDocument();
     expect(screen.getByText("Risco")).toBeInTheDocument();
     expect(screen.getByText("Sua carteira x referência")).toBeInTheDocument();
-    expect(screen.getByText("Renda Fixa")).toBeInTheDocument();
+    // O rótulo vem do site ("Renda fixa"), não do label da API ("Renda Fixa").
+    expect(screen.getByText("Renda fixa")).toBeInTheDocument();
   });
 
   it("cada sugestão leva à próxima ação, já no destino certo", async () => {
@@ -78,10 +79,24 @@ describe("Recommendations (pelo perfil de investidor)", () => {
       ],
     });
 
-    expect(await screen.findByRole("link", { name: /Depositar na caixinha/ })).toHaveAttribute("href", "/caixinha");
+    expect(await screen.findByRole("link", { name: /Depositar na Caixinha/ })).toHaveAttribute("href", "/caixinha");
     expect(screen.getByRole("link", { name: /Ver ativos no Mercado/ })).toHaveAttribute("href", "/market?tipo=FIXED_INCOME");
     expect(screen.getByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
     expect(screen.getAllByRole("link", { name: /Depositar|Ver ativos|Ir para/ })).toHaveLength(3);
+  });
+
+  it("reduzir moedas estrangeiras leva ao Câmbio (é lá que se vende moeda), reduzir ações a Ordens", async () => {
+    renderWith({
+      profile: "MODERATE",
+      allocation: [],
+      items: [
+        { id: "reduce-FOREIGN_CURRENCY", category: "RISK", title: "Reduzir a exposição a moedas estrangeiras", description: "..." },
+        { id: "reduce-STOCK", category: "RISK", title: "Reduzir a exposição a ações", description: "..." },
+      ],
+    });
+
+    expect(await screen.findByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
+    expect(screen.getByRole("link", { name: /Ir para Ordens/ })).toHaveAttribute("href", "/orders");
   });
 
   it("deixa claro que é conteúdo educativo, sem alegar inteligência artificial", async () => {

@@ -10,6 +10,7 @@ import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
 import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
 import { cardClassName } from "@/components/ui/card";
+import { CATEGORY_LABELS } from "@/lib/allocation";
 import { SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +65,12 @@ export function Recommendations() {
               </div>
               <div className="space-y-3">
                 <SectionTitle>Sua carteira x referência</SectionTitle>
-                <AllocationBars rows={data.allocation} />
+                <AllocationBars
+                  rows={data.allocation.map((row) => ({
+                    ...row,
+                    label: CATEGORY_LABELS[row.type] ?? row.label,
+                  }))}
+                />
                 <p className="text-xs text-muted-foreground">
                   A barra mostra quanto você tem hoje em cada classe (sobre o total investido); o traço
                   marca a referência do seu perfil.
@@ -86,10 +92,11 @@ export function Recommendations() {
 const MARKET_TYPES = new Set(["STOCK", "CRYPTO", "FIXED_INCOME"]);
 
 function recommendationAction(item: PersonalizedRecommendation): { label: string; to: string } | null {
-  if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: SAVINGS_BOX_PATH };
+  if (item.id === "idle-cash") return { label: "Depositar na Caixinha", to: SAVINGS_BOX_PATH };
   if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
   const [direction, type] = item.id.split("-");
-  if (direction === "increase" && type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
+  // Moeda estrangeira se compra e se vende no Câmbio (não em Ordens), para aumentar ou reduzir.
+  if (type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
   if (direction === "increase" && MARKET_TYPES.has(type)) {
     return { label: "Ver ativos no Mercado", to: `/market?tipo=${type}` };
   }

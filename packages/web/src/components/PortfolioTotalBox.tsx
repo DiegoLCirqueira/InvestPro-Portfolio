@@ -1,11 +1,14 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import type { PortfolioBreakdownItem } from "@/lib/portfolio-breakdown";
 
 interface PortfolioTotalBoxProps {
-  /** Patrimônio total (caixa + posições + caixinha + moedas), o mesmo do gráfico. */
+  /** Patrimônio total (caixa + posições + Caixinha + moedas), o mesmo do gráfico. */
   totalEquity: number;
   /** Rentabilidade do período em %; sem base de comparação, o selo não aparece. */
   change?: number;
+  /** Partes que somam o total; sem elas (ainda carregando), fica a frase do que o total inclui. */
+  breakdown?: PortfolioBreakdownItem[] | null;
 }
 
 // Rodapé fixo de "Seus Ativos": fica visível por cima da lista, que rola
@@ -13,6 +16,7 @@ interface PortfolioTotalBoxProps {
 export function PortfolioTotalBox({
   totalEquity,
   change,
+  breakdown,
 }: PortfolioTotalBoxProps) {
   // Variação zero é neutra: nem verde de alta nem vermelho de queda.
   const direction = !change ? "flat" : change > 0 ? "up" : "down";
@@ -44,9 +48,26 @@ export function PortfolioTotalBox({
           </span>
         )}
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Saldo em conta + investimentos + caixinha + moedas estrangeiras.
-      </p>
+      {breakdown ? (
+        // Compacto, numa linha que quebra: "Saldo em conta R$ X · Investimentos R$ Y · …".
+        <dl className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+          {breakdown.map((item, index) => (
+            <div key={item.label} className="flex gap-1">
+              <dt>
+                {index > 0 && <span aria-hidden="true">· </span>}
+                {item.label}
+              </dt>
+              <dd className="font-semibold tabular-nums text-foreground">
+                {formatCurrency(item.value)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Saldo em conta + investimentos + Caixinha + moedas estrangeiras.
+        </p>
+      )}
     </div>
   );
 }

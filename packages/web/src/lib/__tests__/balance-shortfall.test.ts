@@ -32,7 +32,6 @@ describe("balance-shortfall", () => {
   it("a transferência soma a tarifa do tipo (PIX grátis, TED R$ 10, DOC R$ 5)", () => {
     expect(transferCost("PIX", 100)).toBe(100);
     expect(transferCost("TED", 100)).toBe(110);
-    expect(transferCost("DOC", 100)).toBe(105);
   });
 
   it("com a Caixinha, ela cobre só a diferença e o que falta já a desconta", () => {

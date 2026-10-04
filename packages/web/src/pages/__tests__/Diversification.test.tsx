@@ -82,4 +82,25 @@ describe("Diversificação", () => {
       screen.queryByText("Sua carteira ainda está vazia"),
     ).not.toBeInTheDocument();
   });
+
+  it("usa o rótulo do site ('Renda fixa'), não o label da API ('Renda Fixa')", () => {
+    portfolioMock.breakdown = [
+      { type: "FIXED_INCOME", label: "Renda Fixa", value: 500, percentage: 100 },
+    ];
+    renderPage();
+
+    expect(screen.getAllByText("Renda fixa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Renda Fixa")).not.toBeInTheDocument();
+  });
+
+  it("renda fixa diz quanto dela é a Caixinha, quando a API informa", () => {
+    portfolioMock.breakdown = [
+      { type: "FIXED_INCOME", label: "Renda fixa", value: 1_052.17, percentage: 59, savingsBox: 1_000 },
+      { type: "STOCK", label: "Ações", value: 731.12, percentage: 41 },
+    ];
+    renderPage();
+
+    expect(screen.getByText(/\(inclui R\$\s?1\.000,00 na Caixinha\)/)).toBeInTheDocument();
+    expect(screen.getAllByText(/na Caixinha/)).toHaveLength(1);
+  });
 });

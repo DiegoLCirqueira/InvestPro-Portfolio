@@ -8,10 +8,18 @@ export const CATEGORY_COLORS: Record<DiversificationCategory, string> = {
   FOREIGN_CURRENCY: "var(--color-cat-intl)",
 };
 
-/** Ordem e rótulos das classes na carteira de referência (mesmos rótulos da Diversificação). */
-export const ALLOCATION_LABELS: ReadonlyArray<{ type: DiversificationCategory; label: string }> = [
-  { type: "FIXED_INCOME", label: "Renda Fixa" },
-  { type: "STOCK", label: "Ações" },
-  { type: "CRYPTO", label: "Criptomoedas" },
-  { type: "FOREIGN_CURRENCY", label: "Moedas estrangeiras" },
-];
+/**
+ * Nome de cada classe na tela. O site usa estes, e não o label que vem da API: assim a grafia é
+ * uma só (ex.: "Renda fixa", como no filtro do Mercado) mesmo que o servidor escreva diferente.
+ */
+export const CATEGORY_LABELS: Record<DiversificationCategory, string> = {
+  FIXED_INCOME: "Renda fixa",
+  STOCK: "Ações",
+  CRYPTO: "Criptomoedas",
+  FOREIGN_CURRENCY: "Moedas estrangeiras",
+};
+
+/** Ordem das classes na carteira de referência (rótulos de CATEGORY_LABELS). */
+export const ALLOCATION_LABELS: ReadonlyArray<{ type: DiversificationCategory; label: string }> = (
+  ["FIXED_INCOME", "STOCK", "CRYPTO", "FOREIGN_CURRENCY"] as const
+).map((type) => ({ type, label: CATEGORY_LABELS[type] }));

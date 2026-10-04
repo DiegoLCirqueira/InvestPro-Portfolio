@@ -74,7 +74,7 @@ const STEPS = [
   {
     title: "Invista e acompanhe",
     description:
-      "Compre ações e cripto, guarde na caixinha e acompanhe rendimento e risco no Painel.",
+      "Compre ações e cripto, guarde na Caixinha e acompanhe rendimento e risco no Painel.",
   },
 ];
 

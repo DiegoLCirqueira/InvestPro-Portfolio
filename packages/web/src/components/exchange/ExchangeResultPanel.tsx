@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useId, type FormEvent } from "react";
 import { SectionTitle } from "@/components/SectionTitle";
 import { ExchangeResultCard } from "@/components/exchange/ExchangeResultCard";
 import type { ExchangeSummary } from "@/types/exchange";
@@ -10,6 +10,8 @@ interface ExchangeResultPanelProps {
   simulation: ExchangeSummary | null;
   executed: ExchangeSummary | null;
   isExecuting: boolean;
+  /** Motivo para não deixar realizar a simulação (ex.: abaixo do mínimo em BRL). */
+  blockReason?: string | null;
   onExecute: (event: FormEvent) => void;
 }
 
@@ -18,8 +20,11 @@ export function ExchangeResultPanel({
   simulation,
   executed,
   isExecuting,
+  blockReason,
   onExecute,
 }: ExchangeResultPanelProps) {
+  const blockReasonId = useId();
+
   if (simulation) {
     return (
       <ExchangeResultCard variant="simulation" summary={simulation} revealOnMobile>
@@ -27,10 +32,16 @@ export function ExchangeResultPanel({
           <Button
             type="submit"
             className="w-full"
-            disabled={isExecuting}
+            disabled={isExecuting || Boolean(blockReason)}
+            aria-describedby={blockReason ? blockReasonId : undefined}
           >
             {isExecuting ? "Realizando..." : "Realizar conversão"}
           </Button>
+          {blockReason && (
+            <p id={blockReasonId} className="text-xs font-medium text-destructive text-center">
+              {blockReason}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground text-center">
             A cotação pode variar até a conversão ser realizada.
           </p>

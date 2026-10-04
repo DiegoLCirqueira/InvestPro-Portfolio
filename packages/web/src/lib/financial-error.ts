@@ -1,3 +1,4 @@
+import { MIN_EXCHANGE_MESSAGE } from "@/lib/exchange";
 import { MIN_ORDER_TOTAL_MESSAGE } from "@/lib/order-form";
 import { isRateLimitError, rateLimitMessage } from "@/lib/rate-limit";
 import { ApiError } from "@/services/api";
@@ -17,6 +18,7 @@ export function userMessageFor(error: Error): string {
   if (error instanceof ApiError) {
     // Mesmo texto do aviso da Nova Ordem, mesmo que o servidor mude o dele.
     if (error.code === "ORDER_TOTAL_TOO_SMALL") return MIN_ORDER_TOTAL_MESSAGE;
+    if (error.code === "EXCHANGE_AMOUNT_TOO_SMALL") return MIN_EXCHANGE_MESSAGE;
     if (error.code === "ORDER_INSUFFICIENT_POSITION") return INSUFFICIENT_POSITION_MESSAGE;
     if (isRateLimitError(error)) return rateLimitMessage(error.retryAfterSeconds);
     if (error.status === 401) return SESSION_EXPIRED_MESSAGE;

@@ -11,7 +11,7 @@ export interface BalanceShortfall {
   reserved?: number;
   /** Ativo da ordem, para a nota do valor pré-preenchido (ex.: "PETR4"). */
   ticker?: string;
-  /** Tem tarifa embutida no custo (TED/DOC): a frase diz "custa", não "é de". */
+  /** Tem tarifa embutida no custo (TED): a frase diz "custa", não "é de". */
   hasFee?: boolean;
   /** Compra que pode usar a Caixinha: quanto há nela para cobrir o que faltar em conta. */
   savingsBox?: number;

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { PiggyBank, Plus, User, Wallet } from "lucide-react";
+import { Plus, User, Wallet } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const PERIODS = ["7D", "30D", "90D", "1A"];
@@ -9,10 +9,13 @@ const SELECTED_PERIOD = "30D";
 // Pontos da linha do gráfico ilustrativo (viewBox 512 x 112), subindo como no design.
 const CHART_POINTS = "0,86 48,82 96,84 144,72 192,75 240,60 288,64 336,46 384,50 432,34 480,36 512,24";
 
+// Como no Painel real: "Seus Ativos" lista só ativos (a Caixinha tem página própria), e o
+// total é a soma dos itens mostrados (antes incluía o saldo em conta e não batia).
 const PREVIEW_ASSETS = [
-  { mark: "IT", ticker: "ITUB4", detail: "Ação · 50 cotas", value: "R$ 2.106,50", tone: "bg-info/15 text-info" },
-  { mark: "BT", ticker: "BTC", detail: "Cripto · comprado por valor em R$", value: "R$ 1.500,00", tone: "bg-warning/15 text-warning" },
+  { mark: "IT", ticker: "ITUB4", detail: "Ação · 50 cotas", value: 2_106.5, tone: "bg-info/15 text-info" },
+  { mark: "BT", ticker: "BTC", detail: "Cripto · comprado por valor em R$", value: 1_500, tone: "bg-warning/15 text-warning" },
 ];
+const PREVIEW_ASSETS_TOTAL = PREVIEW_ASSETS.reduce((sum, asset) => sum + asset.value, 0);
 
 const PREVIEW_CARD = "rounded-xl border border-border bg-surface-1 px-4 py-4 sm:px-5";
 
@@ -101,20 +104,12 @@ export function HeroPreview() {
             <div className="hidden items-center justify-between py-2.5 sm:flex">
               <span className="text-sm font-bold">Seus Ativos</span>
               <span className="text-xs text-muted-foreground">
-                Total <strong className="font-mono text-foreground">R$ 7.856,50</strong>
+                Total <strong className="font-mono text-foreground">{formatCurrency(PREVIEW_ASSETS_TOTAL)}</strong>
               </span>
             </div>
             {PREVIEW_ASSETS.map((asset) => (
-              <AssetLine key={asset.ticker} {...asset} />
+              <AssetLine key={asset.ticker} {...asset} value={formatCurrency(asset.value)} />
             ))}
-            <AssetLine
-              className="hidden sm:flex"
-              mark={<PiggyBank size={16} />}
-              ticker="Caixinha"
-              detail="Renda fixa · 100% do CDI"
-              value="R$ 3.000,00"
-              tone="bg-primary/10 text-primary"
-            />
           </div>
         </div>
       </div>
@@ -126,17 +121,16 @@ export function HeroPreview() {
 }
 
 interface AssetLineProps {
-  mark: ReactNode;
+  mark: string;
   ticker: string;
   detail: string;
   value: string;
   tone: string;
-  className?: string;
 }
 
-function AssetLine({ mark, ticker, detail, value, tone, className }: AssetLineProps) {
+function AssetLine({ mark, ticker, detail, value, tone }: AssetLineProps) {
   return (
-    <div className={cn("flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 sm:first:border-t", className)}>
+    <div className="flex items-center gap-3 border-t border-border py-2.5 first:border-t-0 sm:first:border-t">
       <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold", tone)}>
         {mark}
       </span>

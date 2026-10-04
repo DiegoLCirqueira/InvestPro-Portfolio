@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Bitcoin, Landmark, TrendingUp, type LucideIcon } from "lucide-react";
 import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import { useSavingsBox } from "@/hooks/use-savings-box";
+import { portfolioBreakdown } from "@/lib/portfolio-breakdown";
 import { scrollEdgesMask, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -62,6 +64,8 @@ interface AssetsProps {
 export function Assets({ change }: AssetsProps) {
   const { data, positions, error, isLoading, refetch } =
     usePortfolioPositions();
+  // Só o saldo, para o detalhamento do total (a Caixinha não volta para a lista: tem página própria).
+  const savingsBox = useSavingsBox();
   const listRef = useRef<HTMLDivElement>(null);
   const listMask = scrollEdgesMask(useScrollEdges(listRef, [positions.length]));
 
@@ -130,7 +134,20 @@ export function Assets({ change }: AssetsProps) {
         </div>
       )}
 
-      <PortfolioTotalBox totalEquity={data?.totalEquity ?? 0} change={change} />
+      <PortfolioTotalBox
+        totalEquity={data?.totalEquity ?? 0}
+        change={change}
+        breakdown={
+          data && savingsBox.data
+            ? portfolioBreakdown({
+                totalEquity: data.totalEquity,
+                cash: data.balance,
+                positionValues: positions.map((position) => position.currentValue),
+                savingsBox: savingsBox.balance,
+              })
+            : null
+        }
+      />
     </div>
   );
 }

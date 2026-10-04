@@ -18,7 +18,7 @@ export interface PortfolioResponse {
   id: string;
   /** Saldo em caixa (disponível para ordens/transferências). */
   balance: number;
-  /** Patrimônio total: caixa + posições + caixinha + moedas em BRL. */
+  /** Patrimônio total: caixa + posições + Caixinha + moedas em BRL. */
   totalEquity: number;
   positions: PortfolioPosition[];
 }
@@ -51,6 +51,8 @@ export interface PortfolioDiversificationItem {
   label: string;
   value: number;
   percentage: number;
+  /** Só em FIXED_INCOME: quanto do valor é a Caixinha (ela conta como renda fixa). */
+  savingsBox?: number;
 }
 
 export interface PortfolioDiversificationResponse {

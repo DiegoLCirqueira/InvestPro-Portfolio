@@ -2,7 +2,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useConvertExchange, useExecuteExchange } from "@/hooks/useExchange";
-import { quoteKey, summaryFromExecution, summaryFromQuote } from "@/lib/exchange";
+import {
+  isBelowExchangeMinimum,
+  MIN_EXCHANGE_MESSAGE,
+  quoteKey,
+  summaryFromExecution,
+  summaryFromQuote,
+} from "@/lib/exchange";
 import type { ConvertResponse, ExchangeSummary } from "@/types/exchange";
 
 // BRL debita do saldo do portfólio; as demais moedas, do saldo em carteira.
@@ -75,8 +81,20 @@ export function useExchangeFlow({
   // A chave também protege a simulação em andamento: uma resposta que chega depois da mudança não vale.
   const activeQuote = quote?.key === currentKey ? quote.response : null;
 
+  // Origem em BRL abaixo do mínimo: avisado no campo e "Converter" desabilitado (com valor zero,
+  // segue o "Informe um valor válido." de sempre ao clicar).
+  const inputMinimumError =
+    input.from === "BRL" && input.amount > 0 && isBelowExchangeMinimum({ ...input, rate: 1 })
+      ? MIN_EXCHANGE_MESSAGE
+      : null;
+  const simulation = activeQuote ? summaryFromQuote(activeQuote) : null;
+  // Moeda estrangeira → BRL: só a cotação simulada diz quanto vale em reais.
+  const simulationMinimumError =
+    simulation && isBelowExchangeMinimum(simulation) ? MIN_EXCHANGE_MESSAGE : null;
+
   const findInputError = (): string | null => {
     if (input.amount <= 0) return "Informe um valor válido.";
+    if (inputMinimumError) return inputMinimumError;
     if (input.from === input.to) return "Selecione moedas diferentes para converter.";
     return null;
   };
@@ -97,7 +115,7 @@ export function useExchangeFlow({
   };
 
   const executeQuote = async () => {
-    if (!activeQuote) return;
+    if (!activeQuote || simulationMinimumError) return;
     try {
       const response = await execute.mutate({
         from: activeQuote.from,
@@ -114,7 +132,9 @@ export function useExchangeFlow({
   };
 
   return {
-    simulation: activeQuote ? summaryFromQuote(activeQuote) : null,
+    simulation,
+    inputMinimumError,
+    simulationMinimumError,
     executed,
     simulate,
     executeQuote,
