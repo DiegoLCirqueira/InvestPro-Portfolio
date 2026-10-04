@@ -31,6 +31,13 @@ export function formatDateTime(iso: string): string {
   return date.toLocaleString("pt-BR");
 }
 
+/** "dd/mm/aaaa, hh:mm": data e hora sem os segundos (extratos). */
+export function formatDateTimeMinutes(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
 export function formatDateShort(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
