@@ -46,7 +46,7 @@ describe("CpfSection", () => {
   it("sem CPF: campo editável com máscara e aviso de que não poderá ser alterado depois", () => {
     renderSection();
 
-    expect(cpfInput()).not.toBeDisabled();
+    expect(cpfInput()).not.toHaveAttribute("readonly");
     expect(cpfInput()).toHaveAttribute("placeholder", "000.000.000-00");
     expect(screen.getByText(/não poderá ser alterado/)).toBeInTheDocument();
 
@@ -95,7 +95,7 @@ describe("CpfSection", () => {
 
     await screen.findByText("CPF cadastrado; não pode ser alterado.");
     expect(apiMock.patch).toHaveBeenCalledWith("/users/me", { cpf: VALID_DIGITS, currentPassword: PASSWORD });
-    expect(cpfInput()).toBeDisabled();
+    expect(cpfInput()).toHaveAttribute("readonly");
     expect(cpfInput().value).toBe(VALID_CPF);
     expect(saveButton()).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
@@ -126,7 +126,7 @@ describe("CpfSection", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Senha atual incorreta.");
     expect(passwordInput()).toHaveAttribute("aria-invalid", "true");
     expect(passwordInput().value).toBe("");
-    expect(cpfInput()).not.toBeDisabled();
+    expect(cpfInput()).not.toHaveAttribute("readonly");
     expect(cpfInput().value).toBe(VALID_CPF);
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
@@ -148,7 +148,7 @@ describe("CpfSection", () => {
     fillAndSave();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível usar este CPF.");
-    expect(cpfInput()).not.toBeDisabled();
+    expect(cpfInput()).not.toHaveAttribute("readonly");
   });
 
   it("409 CPF_ALREADY_SET avisa e pede ao Perfil para reler os dados", async () => {
@@ -173,7 +173,7 @@ describe("CpfSection", () => {
   it("com CPF já cadastrado: somente leitura, formatado, com o aviso e sem senha nem botão", () => {
     renderSection({ savedCpf: VALID_DIGITS });
 
-    expect(cpfInput()).toBeDisabled();
+    expect(cpfInput()).toHaveAttribute("readonly");
     expect(cpfInput().value).toBe(VALID_CPF);
     expect(screen.getByText("CPF cadastrado; não pode ser alterado.")).toBeInTheDocument();
     expect(saveButton()).not.toBeInTheDocument();

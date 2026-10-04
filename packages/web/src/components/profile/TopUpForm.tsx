@@ -190,7 +190,13 @@ export function TopUpForm({
             Cancelar
           </Button>
         )}
-        <Button type="submit" variant={submitVariant} disabled={topUp.isPending || isLimitReached}>
+        <Button
+          type="submit"
+          variant={submitVariant}
+          // No Perfil (sem Cancelar), mesma regra dos botões Salvar: largura total no celular.
+          className={onCancel ? undefined : "w-full sm:w-auto"}
+          disabled={topUp.isPending || isLimitReached}
+        >
           {topUp.isPending
             ? "Adicionando..."
             : amount > 0

@@ -78,7 +78,7 @@ function InvestorProfileSection() {
       }
     >
       <div className="flex justify-end">
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="w-full sm:w-auto">
           <Link to="/profile/investor-profile">
             {profile ? "Ver ou refazer" : "Descobrir meu perfil"}
             <ChevronRight aria-hidden="true" />

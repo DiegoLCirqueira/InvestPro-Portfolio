@@ -91,7 +91,7 @@ describe("UserProfile (CPF)", () => {
     mockApi("52998224725");
     const cpfField = (await renderProfile("/profile#cpf")) as HTMLInputElement;
 
-    expect(cpfField).toBeDisabled();
+    expect(cpfField).toHaveAttribute("readonly");
     expect(cpfField.value).toBe("529.982.247-25");
     expect(
       screen.getByText("CPF cadastrado; não pode ser alterado."),
@@ -113,7 +113,8 @@ describe("UserProfile (rótulos dos campos)", () => {
 
     expect(screen.getByLabelText("Nome Completo")).toHaveValue("Ana Souza");
     expect(screen.getByLabelText("Telefone")).toBeEnabled();
-    expect(screen.getByLabelText("Email")).toBeDisabled();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Email")).toHaveAttribute("title");
   });
 });
 
