@@ -9,8 +9,27 @@ describe("PortfolioTotalBox", () => {
     expect(screen.getByText(/R\$\s?4\.957,06/)).toBeInTheDocument();
     expect(screen.getByText(/\+1,50%/)).toBeInTheDocument();
     expect(
-      screen.getByText(/investimentos \+ caixinha \+ moedas/),
+      screen.getByText(/investimentos \+ Caixinha \+ moedas/),
     ).toBeInTheDocument();
+  });
+
+  it("com o detalhamento, mostra as partes no lugar da frase", () => {
+    render(
+      <PortfolioTotalBox
+        totalEquity={9_990.15}
+        breakdown={[
+          { label: "Saldo em conta", value: 8_214.36 },
+          { label: "Investimentos", value: 429.3 },
+          { label: "Caixinha", value: 1_000 },
+          { label: "Moedas", value: 346.49 },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText(/investimentos \+ Caixinha/)).not.toBeInTheDocument();
+    const terms = screen.getAllByRole("term").map((term) => term.textContent?.replace("· ", ""));
+    expect(terms).toEqual(["Saldo em conta", "Investimentos", "Caixinha", "Moedas"]);
+    expect(screen.getByText(/R\$\s?346,49/)).toBeInTheDocument();
   });
 
   it("sem base de comparação não mostra um '+0.00%' falso", () => {
