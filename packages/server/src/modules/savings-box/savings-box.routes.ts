@@ -7,6 +7,8 @@ import {
 import {
   savingsBoxAmountInputSchema,
   savingsBoxResponseSchema,
+  savingsBoxTransactionListSchema,
+  savingsBoxTransactionsQuerySchema,
 } from "@investpro/shared";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { readRateLimit, writeRateLimit } from "../../shared/middleware/rateLimit.js";
@@ -83,6 +85,29 @@ export async function savingsBoxRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const user = request.user as { id: string };
       return savingsBoxService.withdraw(user.id, request.body.amount);
+    }
+  );
+
+  r.get(
+    "/api/v1/savings-box/transactions",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["SavingsBox"],
+        summary: "Extrato da caixinha",
+        description:
+          "Movimentos da caixinha do usuário autenticado, mais recentes primeiro: DEPOSIT, WITHDRAW e ORDER_FUNDING (resgate automático que cobriu uma compra com useSavingsBox, com orderId). balanceAfter é o saldo da caixinha logo depois do movimento. Paginação por cursor: passe o nextCursor da página anterior; null quando não há mais. Só registra movimentos a partir desta versão.",
+        security: [{ BearerAuth: [] }],
+        querystring: savingsBoxTransactionsQuerySchema,
+        response: {
+          200: savingsBoxTransactionListSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return savingsBoxService.listTransactions(user.id, request.query.limit, request.query.cursor);
     }
   );
 }
