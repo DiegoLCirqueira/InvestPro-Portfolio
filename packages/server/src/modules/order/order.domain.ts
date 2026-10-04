@@ -142,10 +142,15 @@ export function canSell(current: PositionSnapshot | null, sellQuantity: number):
 
 const POSITION_DUST_THRESHOLD = 1e-8
 
+// A venda zera a posição (residual dentro da tolerância de ponto flutuante).
+export function sellsWholePosition(current: PositionSnapshot | null, sellQuantity: number): boolean {
+  return current !== null && current.quantity - sellQuantity <= POSITION_DUST_THRESHOLD
+}
+
 // SELL: reduz a quantidade sem recalcular avgPrice. Retorna null quando a
-// posição fica zerada (residual dentro da tolerância de ponto flutuante).
+// venda zera a posição.
 export function applySellFill(current: PositionSnapshot, filledQuantity: number): PositionFillResult | null {
+  if (sellsWholePosition(current, filledQuantity)) return null
   const quantity = current.quantity - filledQuantity
-  if (quantity <= POSITION_DUST_THRESHOLD) return null
   return { quantity, avgPrice: current.avgPrice, currentValue: quantity * current.avgPrice }
 }

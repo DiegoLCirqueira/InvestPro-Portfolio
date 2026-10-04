@@ -12,6 +12,7 @@ import {
   ORDER_FEE_RATE,
   requiresPrice,
   resolveAsset,
+  sellsWholePosition,
   validateOrder,
 } from '../order.domain.js'
 
@@ -204,5 +205,16 @@ describe('applySellFill', () => {
     const result = applySellFill({ quantity: 10.00000002, avgPrice: 20 }, 10)
     expect(result).not.toBeNull()
     expect(result?.quantity).toBeCloseTo(2e-8, 10)
+  })
+})
+describe('sellsWholePosition', () => {
+  it('vender toda a quantidade (ou deixar só resíduo de float) zera a posição', () => {
+    expect(sellsWholePosition({ quantity: 10, avgPrice: 20 }, 10)).toBe(true)
+    expect(sellsWholePosition({ quantity: 0.3, avgPrice: 20 }, 0.1 + 0.2)).toBe(true)
+  })
+
+  it('venda parcial ou sem posição não é a posição inteira', () => {
+    expect(sellsWholePosition({ quantity: 10, avgPrice: 20 }, 4)).toBe(false)
+    expect(sellsWholePosition(null, 1)).toBe(false)
   })
 })

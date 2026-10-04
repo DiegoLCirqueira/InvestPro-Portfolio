@@ -6,7 +6,12 @@
 
 import { Prisma } from '@prisma/client'
 import type { Order as PrismaOrder } from '@prisma/client'
-import { requiresWholeQuantity, WHOLE_QUANTITY_MESSAGE } from '@investpro/shared'
+import {
+  MIN_ORDER_TOTAL,
+  MIN_ORDER_TOTAL_MESSAGE,
+  requiresWholeQuantity,
+  WHOLE_QUANTITY_MESSAGE,
+} from '@investpro/shared'
 import type {
   CreateOrderInput,
   Order,
@@ -24,7 +29,9 @@ import {
   calculateOrderFee,
   canSell,
   evaluateOrder,
+  requiresPrice,
   resolveAsset,
+  sellsWholePosition,
   validateOrder,
   type OrderEvaluation,
   type PositionSnapshot,
@@ -46,15 +53,12 @@ function orderFee(status: string, quantity: number, price: number | null): numbe
   return round2(calculateOrderFee(quantity * price))
 }
 
-// Ordem cujo total arredonda pra R$ 0,00 não move saldo mas ainda criaria
-// posição/registro — é sempre um valor inválido, não uma ordem pequena.
-function assertTotalIsNotNegligible(total: number): void {
-  if (total > 0) return
-  throw new AppError(
-    'ORDER_TOTAL_TOO_SMALL',
-    'Valor total da ordem é pequeno demais (arredonda para R$ 0,00)',
-    400
-  )
+// Abaixo do mínimo, o arredondamento em centavos cria dinheiro (compra de
+// R$ 0,0088 cobrada R$ 0,01) e a taxa zera. Vender a posição inteira passa
+// mesmo abaixo, senão a sobra fracionada fica presa.
+function assertMinimumTotal(total: number, sellsWhole: boolean): void {
+  if (total >= MIN_ORDER_TOTAL || sellsWhole) return
+  throw new AppError('ORDER_TOTAL_TOO_SMALL', MIN_ORDER_TOTAL_MESSAGE, 400)
 }
 
 function insufficientBalance(): AppError {
@@ -186,6 +190,13 @@ async function executeOrderTx(
     ? { quantity: position.quantity.toNumber(), avgPrice: position.avgPrice.toNumber() }
     : null
 
+  // Mínimo no preço que avalia a ordem: o informado em LIMIT/STOP, o de
+  // mercado em MARKET. LIMIT/STOP que executa na hora é checada de novo no
+  // total de execução (abaixo), que é o dinheiro que de fato se move.
+  const sellsWhole = input.side === 'SELL' && sellsWholePosition(current, input.quantity)
+  const quotedPrice = requiresPrice(input.type) ? (input.price as number) : (evaluation.fillPrice as number)
+  assertMinimumTotal(round2(input.quantity * quotedPrice), sellsWhole)
+
   if (evaluation.status !== 'FILLED') {
     await assertOpenOrderIsCovered(tx, userId, asset.ticker, input, portfolio.balance.toNumber(), current)
     const record = await tx.order.create({
@@ -207,7 +218,7 @@ async function executeOrderTx(
 
   const fillPrice = evaluation.fillPrice as number
   const total = round2(input.quantity * fillPrice)
-  assertTotalIsNotNegligible(total)
+  assertMinimumTotal(total, sellsWhole)
 
   let orderAvgPrice: number | null = null
   let savingsBoxUsed = 0

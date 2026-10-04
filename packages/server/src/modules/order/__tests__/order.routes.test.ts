@@ -438,20 +438,20 @@ describe('POST /api/v1/orders — execução FILLED atualiza Position/Portfolio'
       await deleteUser(priceEmail)
     })
 
-    it('STOP BUY com gatilho de R$ 0,01 executa a R$ 20 e cobra 10*20 + 1% = 202', async () => {
+    it('STOP BUY com gatilho de R$ 0,10 executa a R$ 20 e cobra 10*20 + 1% = 202', async () => {
       mockQuote(20)
       const res = await createOrder(priceToken, {
         ticker: 'VALE3',
         side: 'BUY',
         quantity: 10,
         type: 'STOP',
-        price: 0.01,
+        price: 0.1, // 10 * 0,10 = R$ 1,00: no mínimo por ordem
       })
       expect(res.statusCode).toBe(200)
       expect(res.json()).toMatchObject({ status: 'FILLED', price: 20, avgPrice: 20, fee: 2 })
 
       const portfolio = await getPortfolioOf(priceToken)
-      expect(portfolio.balance).toBe(798) // 1000 - 202 (e não 1000 - 0,10 - fee)
+      expect(portfolio.balance).toBe(798) // 1000 - 202 (e não 1000 - 1,00 - fee)
       expect(portfolio.positions.find((p) => p.ticker === 'VALE3')).toMatchObject({
         quantity: 10,
         avgPrice: 20,
