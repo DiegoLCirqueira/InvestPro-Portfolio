@@ -6,6 +6,10 @@ import { Orders } from "@/pages/Orders";
 
 vi.mock("@/hooks/use-orders", () => ({
   useOrders: () => ({ data: { items: [] }, error: null, isLoading: false, refetch: vi.fn() }),
+  useCancelOrder: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock("@/hooks/use-free-balance", () => ({
+  useFreeBalance: () => ({ free: 0, reserved: 0, reservedPositions: {}, refetch: vi.fn() }),
 }));
 vi.mock("@/components/orders/NewOrderForm", () => ({ NewOrderForm: () => null }));
 // O Painel só precisa decidir o redirecionamento; os dados ficam carregando.

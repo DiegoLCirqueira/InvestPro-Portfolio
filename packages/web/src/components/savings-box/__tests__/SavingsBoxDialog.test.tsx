@@ -150,4 +150,44 @@ describe("SavingsBoxDialog (Depositar / Resgatar)", () => {
     expect(submit).toBeDisabled();
     expect(submit).toHaveAccessibleDescription("Você não tem saldo em conta para depositar.");
   });
+
+  it("sem valor digitado, Depositar e Resgatar vêm desabilitados com o motivo visível", () => {
+    renderDialog();
+
+    for (const [action, label] of [
+      ["Depositar", "Informe o valor a depositar."],
+      ["Resgatar", "Informe o valor a resgatar."],
+    ] as const) {
+      fireEvent.click(screen.getByRole("button", { name: action }));
+      const dialog = screen.getByRole("dialog");
+      const submit = within(dialog).getByRole("button", { name: action });
+      expect(submit).toBeDisabled();
+      expect(submit).toHaveAccessibleDescription(label);
+      // Ainda não é erro: o campo não fica inválido.
+      expect(within(dialog).getByLabelText(`Valor a ${action.toLowerCase()}`)).not.toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    }
+  });
+
+  it("abre com o valor já preenchido quando recebe initialAmount", () => {
+    render(
+      <SavingsBoxDialog
+        mode="DEPOSIT"
+        onClose={vi.fn()}
+        returnFocusTo={{ current: null }}
+        accountBalance={1_250}
+        savingsBalance={0}
+        initialAmount={300}
+        onSuccess={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByLabelText("Valor a depositar") as HTMLInputElement).value).toMatch(
+      /R\$\s?300,00/,
+    );
+    expect(screen.getByRole("button", { name: /Depositar R\$\s?300,00/ })).toBeEnabled();
+  });
 });

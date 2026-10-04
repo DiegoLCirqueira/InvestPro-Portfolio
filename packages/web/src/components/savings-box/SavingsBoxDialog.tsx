@@ -16,6 +16,7 @@ import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSavingsBoxDeposit, useSavingsBoxWithdraw } from "@/hooks/use-savings-box";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export type SavingsBoxMode = "DEPOSIT" | "WITHDRAW";
 
@@ -41,8 +42,13 @@ interface SavingsBoxDialogProps {
   /** Qual movimento está aberto; null fecha o diálogo. */
   mode: SavingsBoxMode | null;
   onClose: () => void;
+  /** Saldo em conta LIVRE (sem o reservado em ordens abertas): é o que dá para depositar. */
   accountBalance: number;
+  /** Reservado em ordens abertas: mostrado para explicar o saldo livre menor. */
+  reservedBalance?: number;
   savingsBalance: number;
+  /** Valor já preenchido ao abrir (ex.: o "Depositar R$ X" do simulador da página). */
+  initialAmount?: number;
   /** Depois do movimento, para o Painel recarregar os dois saldos. */
   onSuccess: () => void;
   /** Botão que abriu o diálogo: recebe o foco de volta ao fechar. */
@@ -63,18 +69,22 @@ function SavingsBoxDialogContent({
   mode,
   onClose,
   accountBalance,
+  reservedBalance = 0,
   savingsBalance,
+  initialAmount,
   onSuccess,
   returnFocusTo,
 }: Omit<SavingsBoxDialogProps, "mode"> & { mode: SavingsBoxMode }) {
   const limitNoteId = useId();
-  const amountInput = useCurrencyDigitsInput();
+  const amountInput = useCurrencyDigitsInput({ initialAmount });
   const amount = amountInput.amount;
   const copy = COPY[mode];
 
   // Depositar sai do saldo em conta; resgatar sai do saldo da Caixinha.
   const available = mode === "DEPOSIT" ? accountBalance : savingsBalance;
-  const where = mode === "DEPOSIT" ? "em conta" : "na Caixinha";
+  // Com reserva, o que conta é o livre: "livres em conta" evita contradizer o saldo do Painel.
+  const accountWhere = reservedBalance > 0 ? "livres em conta" : "em conta";
+  const where = mode === "DEPOSIT" ? accountWhere : "na Caixinha";
   const isEmpty = available <= 0;
   const exceedsAvailable = amount > available;
   // Botão desabilitado sempre com o motivo ao lado (antes só dizia "Você tem R$ X em conta").
@@ -85,6 +95,10 @@ function SavingsBoxDialogContent({
     : exceedsAvailable
       ? `O valor passa do que você tem ${where}: faltam ${formatCurrency(amount - available)}. Você tem ${formatCurrency(available)} ${where}.`
       : null;
+  // Sem valor ainda não é erro (texto neutro), mas o botão também fica desabilitado com o motivo
+  // na tela: antes ficava habilitado e o aviso só aparecia num toast ao clicar.
+  const disabledReason =
+    blockReason ?? (amount <= 0 ? `Informe o valor a ${copy.action.toLowerCase()}.` : null);
 
   const handleError = useFinancialErrorHandler([
     mode === "DEPOSIT" ? "PORTFOLIO_INSUFFICIENT_BALANCE" : "SAVINGS_BOX_INSUFFICIENT_BALANCE",
@@ -103,11 +117,7 @@ function SavingsBoxDialogContent({
 
   const handleSubmit = useSubmitOnce(async () => {
     // O motivo já está na tela; o Enter não passa por cima do botão desabilitado.
-    if (blockReason) return;
-    if (amount <= 0) {
-      toast.error("Informe um valor válido.");
-      return;
-    }
+    if (disabledReason) return;
     try {
       await mutation.mutate(amount);
     } catch {
@@ -138,10 +148,18 @@ function SavingsBoxDialogContent({
       </div>
 
       <dl className="grid grid-cols-[1fr_auto] gap-y-1.5 rounded-xl bg-secondary px-3.5 py-3 text-sm text-muted-foreground">
-        <dt>Saldo em conta</dt>
+        <dt>{reservedBalance > 0 ? "Saldo livre em conta" : "Saldo em conta"}</dt>
         <dd className="font-semibold tabular-nums text-foreground">
           {formatCurrency(accountBalance)}
         </dd>
+        {reservedBalance > 0 && (
+          <>
+            <dt>Reservado em ordens abertas</dt>
+            <dd className="font-semibold tabular-nums text-foreground">
+              {formatCurrency(reservedBalance)}
+            </dd>
+          </>
+        )}
         <dt>Na Caixinha</dt>
         <dd className="font-semibold tabular-nums text-foreground">
           {formatCurrency(savingsBalance)}
@@ -154,13 +172,19 @@ function SavingsBoxDialogContent({
             input={amountInput}
             ariaLabel={`Valor a ${copy.action.toLowerCase()}`}
             invalid={exceedsAvailable}
-            describedBy={blockReason ? limitNoteId : undefined}
+            describedBy={disabledReason ? limitNoteId : undefined}
             autoFocus
           />
           {/* Avisa antes de enviar, em vez de abrir o "Saldo insuficiente" por cima deste diálogo. */}
-          {blockReason && (
-            <p id={limitNoteId} className="text-xs font-medium text-destructive">
-              {blockReason}
+          {disabledReason && (
+            <p
+              id={limitNoteId}
+              className={cn(
+                "text-xs",
+                blockReason ? "font-medium text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {disabledReason}
             </p>
           )}
         </FormField>
@@ -172,8 +196,8 @@ function SavingsBoxDialogContent({
           </Button>
           <Button
             type="submit"
-            disabled={mutation.isPending || blockReason !== null}
-            aria-describedby={blockReason ? limitNoteId : undefined}
+            disabled={mutation.isPending || disabledReason !== null}
+            aria-describedby={disabledReason ? limitNoteId : undefined}
           >
             {mutation.isPending
               ? "Enviando..."

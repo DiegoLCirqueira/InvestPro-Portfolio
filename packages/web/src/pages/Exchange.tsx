@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
 import { FormField } from "@/components/FormField";
 import { PageHeader } from "@/components/PageHeader";
+import { ReservedBalanceNote } from "@/components/ReservedBalanceNote";
 import { SectionTitle } from "@/components/SectionTitle";
 import { CurrencySelect } from "@/components/exchange/CurrencySelect";
 import { ExchangeResultPanel } from "@/components/exchange/ExchangeResultPanel";
@@ -31,6 +32,7 @@ export function Exchange() {
   const flow = useExchangeFlow({
     input: { from, to, amount: amountInput.amount },
     availableInOrigin: originBalance.available,
+    reservedInOrigin: originBalance.reserved,
     onBalanceAdded: () => void originBalance.refetch(),
     onExecuted: () => {
       amountInput.reset();
@@ -100,6 +102,7 @@ export function Exchange() {
                 {originBalance.isLoading ? "…" : formatCurrency(originBalance.available, from)}
               </span>
             </p>
+            <ReservedBalanceNote reserved={originBalance.reserved} />
           </FormField>
 
           {/* Botão no fluxo, entre os dois campos e com o mesmo espaço acima e abaixo: posicionado em

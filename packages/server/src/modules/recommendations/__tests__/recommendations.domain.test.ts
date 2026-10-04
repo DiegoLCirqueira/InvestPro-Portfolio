@@ -57,6 +57,10 @@ describe('buildRecommendations', () => {
     ])
     expect(result.items[0].category).toBe('RISK')
     expect(result.items[1].category).toBe('DIVERSIFICATION')
+    // Concordância: "renda fixa" no singular, "ações"/"moedas estrangeiras" no plural.
+    expect(result.items[0].description).toContain('Hoje ações representam 100%')
+    expect(result.items[1].description).toContain('Hoje renda fixa representa 0%')
+    expect(result.items[2].description).toContain('Hoje moedas estrangeiras representam 0%')
   })
 
   it('cripto numa carteira conservadora: explica que não faz parte da referência', () => {

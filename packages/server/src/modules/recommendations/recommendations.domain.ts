@@ -22,6 +22,11 @@ const TEXT_LABELS: Record<AllocationType, string> = {
   FOREIGN_CURRENCY: 'moedas estrangeiras',
 }
 
+// Concordância do verbo: "renda fixa representa", mas "ações representam".
+const SINGULAR_TYPES: ReadonlySet<AllocationType> = new Set(['FIXED_INCOME'])
+const agree = (type: AllocationType, singular: string, plural: string) =>
+  SINGULAR_TYPES.has(type) ? singular : plural
+
 export interface RecommendationInput {
   profile: InvestorProfileType | null
   /** Valor investido por tipo (mesma base da Diversificação: posições + moedas, sem o caixa). */
@@ -89,7 +94,7 @@ function deviationRecommendations(
     .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
     .map((item): PersonalizedRecommendation => {
       const label = TEXT_LABELS[item.type]
-      const current = `Hoje ${label} representam ${formatPct(item.currentPct)} do que você tem investido`
+      const current = `Hoje ${label} ${agree(item.type, 'representa', 'representam')} ${formatPct(item.currentPct)} do que você tem investido`
       if (item.diff < 0) {
         return {
           id: `increase-${item.type}`,
@@ -104,7 +109,7 @@ function deviationRecommendations(
         title: `Reduzir a exposição a ${label}`,
         description:
           item.targetPct === 0
-            ? `${current}, e ${label} não fazem parte da carteira de referência do perfil ${profileLabel}.`
+            ? `${current}, e ${label} não ${agree(item.type, 'faz', 'fazem')} parte da carteira de referência do perfil ${profileLabel}.`
             : `${current}, acima dos ${formatPct(item.targetPct)} de referência para o perfil ${profileLabel}.`,
       }
     })

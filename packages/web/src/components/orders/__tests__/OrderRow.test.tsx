@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { OrderRow } from "@/components/orders/OrderRow";
 import type { Order } from "@/types/order";
 
@@ -35,6 +35,34 @@ describe("OrderRow", () => {
       const { getByText, unmount } = render(<OrderRow order={{ ...filledOrder, ticker }} />);
       // Sem encolher: é a largura que alinha "Compra"/"Venda" entre as linhas.
       expect(getByText(ticker)).toHaveClass("min-w-18", "shrink-0");
+      unmount();
+    }
+  });
+
+  it("Compra e Venda têm a mesma largura mínima: a etiqueta do tipo alinha entre as linhas", () => {
+    for (const [side, label] of [["BUY", "Compra"], ["SELL", "Venda"]] as const) {
+      const { unmount } = render(<OrderRow order={{ ...filledOrder, side }} />);
+      expect(screen.getByText(label)).toHaveClass("min-w-17", "shrink-0");
+      unmount();
+    }
+  });
+
+  it("Cancelar só aparece em ordens abertas ou pendentes", () => {
+    for (const status of ["OPEN", "PENDING"] as const) {
+      const onCancel = vi.fn();
+      const { unmount } = render(
+        <OrderRow order={{ ...filledOrder, type: "LIMIT", status }} onCancel={onCancel} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Cancelar ordem de compra de 1.000 ITUB4" }));
+      expect(onCancel).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "1" }),
+        expect.any(HTMLButtonElement),
+      );
+      unmount();
+    }
+    for (const status of ["FILLED", "CANCELLED", "REJECTED", "PARTIALLY_FILLED"] as const) {
+      const { unmount } = render(<OrderRow order={{ ...filledOrder, status }} onCancel={vi.fn()} />);
+      expect(screen.queryByRole("button", { name: /Cancelar/ })).not.toBeInTheDocument();
       unmount();
     }
   });

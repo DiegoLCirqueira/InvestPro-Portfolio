@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Info, LogIn, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { ReservedBalanceNote } from "@/components/ReservedBalanceNote";
 import { SectionTitle } from "@/components/SectionTitle";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { TransfersSkeleton } from "@/components/skeletons/TransfersSkeleton";
@@ -17,7 +18,7 @@ import { ApiError } from "@/services/api";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatStoredPixKey } from "@/lib/pix-key";
 import { transferCost } from "@/lib/transfer-fee";
-import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import { useFreeBalance } from "@/hooks/use-free-balance";
 import { usePixKeyInput } from "@/hooks/use-pix-key-input";
 import { PixKeyField } from "@/components/transfers/PixKeyField";
 import { segmentClassName } from "@/components/ui/segmented";
@@ -123,7 +124,8 @@ function TransferItem({ transfer }: { transfer: Transfer }) {
 export function Transfers() {
   const navigate = useNavigate();
   const { data, error, isLoading, refetch } = useTransfers();
-  const { balance, refetch: refetchBalance } = usePortfolioPositions();
+  // Transferir só usa o saldo livre: o reservado em ordens abertas fica de fora.
+  const freeBalance = useFreeBalance();
   const handleFinancialError = useFinancialErrorHandler([
     "TRANSFER_INSUFFICIENT_BALANCE",
   ]);
@@ -146,9 +148,10 @@ export function Transfers() {
       handleFinancialError(err, {
         kind: "transfer",
         cost,
-        available: balance,
+        available: freeBalance.free,
+        reserved: freeBalance.reserved || undefined,
         hasFee: cost > amountInput.amount,
-        onBalanceAdded: () => void refetchBalance(),
+        onBalanceAdded: () => void freeBalance.refetch(),
       });
     },
   });
@@ -318,6 +321,14 @@ export function Transfers() {
               aria-label="Valor da transferência"
               className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-field text-foreground text-base focus:outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200 tabular-nums"
             />
+            {/* Como no Câmbio: o saldo que dá para usar, antes do "saldo insuficiente" surpresa. */}
+            <p className="text-xs text-muted-foreground" aria-live="polite">
+              Disponível para transferir:{" "}
+              <span className="font-bold text-foreground tabular-nums">
+                {freeBalance.isLoading ? "…" : formatCurrency(freeBalance.free)}
+              </span>
+            </p>
+            <ReservedBalanceNote reserved={freeBalance.reserved} />
           </div>
 
           <div className="flex flex-col gap-2">

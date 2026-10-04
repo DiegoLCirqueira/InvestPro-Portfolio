@@ -11,13 +11,11 @@ import {
   MIN_ORDER_TOTAL_MESSAGE,
   normalizeTicker,
   quantityForAmount,
-  reservedByOpenOrders,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
 import type {
   CreateOrderInput,
-  Order,
   OrderSide,
   OrderType,
   SellableAsset,
@@ -33,8 +31,8 @@ interface UseOrderFormOptions {
   isSellableLoading: boolean;
   /** Ativo já escolhido ao abrir (ex.: vindo do clique no Mercado). */
   initialTicker?: string;
-  /** Ordens do usuário: as abertas reservam saldo e posição para uma nova LIMIT/STOP. */
-  orders?: readonly Order[];
+  /** Quantidade por ticker já em vendas abertas (GET /orders/reservations). */
+  reservedPositions?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -48,7 +46,7 @@ export function useOrderForm({
   sellableAssets,
   isSellableLoading,
   initialTicker = "",
-  orders = [],
+  reservedPositions = {},
 }: UseOrderFormOptions) {
   const [ticker, setTicker] = useState(initialTicker);
   const [side, setSide] = useState<OrderSide>("BUY");
@@ -62,8 +60,8 @@ export function useOrderForm({
   const normalizedTicker = normalizeTicker(ticker);
   const needsPrice = type === "LIMIT" || type === "STOP";
   const isSell = side === "SELL";
-  // Só LIMIT/STOP descontam as ordens abertas (a MARKET executa na hora contra o saldo/posição).
-  const reserved = needsPrice ? reservedByOpenOrders(orders, side, normalizedTicker) : 0;
+  // Toda venda (mercado ou aberta) só usa a posição livre: as vendas abertas já reservam parte.
+  const reservedQuantity = isSell ? (reservedPositions[normalizedTicker] ?? 0) : 0;
 
   const tickerOptions = buildTickerOptions(side, marketAssets, sellableAssets);
   const isTickerListLoading = isSell ? isSellableLoading : isMarketLoading;
@@ -109,7 +107,7 @@ export function useOrderForm({
       : !hasValidQuantity
         ? null
         : isSell
-          ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker, reserved)
+          ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker, reservedQuantity)
           : getBuyQuantityError(quantityValue, selectedAsset);
 
   const changeSide = (nextSide: OrderSide) => {
@@ -194,8 +192,6 @@ export function useOrderForm({
       quantity: !hasValidQuantity && !isAmountTooSmall,
     },
     settlement,
-    /** Compra LIMIT/STOP: R$ já comprometidos com as outras compras abertas (sai do saldo livre). */
-    reservedBalance: isSell ? 0 : reserved,
     isPriceEstimated:
       selectedAsset !== undefined && isEstimatedPrice(selectedAsset),
     findSubmitError,

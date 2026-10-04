@@ -26,9 +26,9 @@ import {
 } from "@/lib/balance-shortfall";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import { normalizeTicker, ORDER_TYPE_LABELS } from "@/lib/order-form";
-import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import type { FreeBalance } from "@/hooks/use-free-balance";
 import { segmentClassName } from "@/components/ui/segmented";
-import type { Order, OrderType } from "@/types/order";
+import type { OrderType } from "@/types/order";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -49,11 +49,14 @@ const SHORTFALL_ALERT_ID = "order-shortfall";
 
 interface NewOrderFormProps {
   onCreated: () => void;
-  /** Histórico já carregado na página: as ordens abertas reservam saldo e posição (LIMIT/STOP). */
-  orders?: readonly Order[];
+  /**
+   * Saldo e posição livres (o que as ordens abertas já reservaram não entra; vale para todo tipo).
+   * Vem da página: o histórico também mexe neles ao cancelar uma ordem.
+   */
+  account: FreeBalance;
 }
 
-export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
+export function NewOrderForm({ onCreated, account }: NewOrderFormProps) {
   const { data: marketData, isLoading: isMarketLoading } = useMarketAssets();
   const {
     sellableAssets,
@@ -70,14 +73,10 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
     sellableAssets,
     isSellableLoading,
     initialTicker: searchParams.get("ticker") ?? undefined,
-    orders,
+    reservedPositions: account.reservedPositions,
   });
 
-  const {
-    data: portfolio,
-    balance,
-    refetch: refetchBalance,
-  } = usePortfolioPositions();
+  const refetchBalance = () => void account.refetch();
   const savingsBox = useSavingsBox();
   // Desmarcado a cada ordem: tirar dinheiro de um investimento é escolha explícita (opt-in),
   // não um padrão que segue valendo para as próximas compras.
@@ -88,21 +87,18 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
     !form.isSell && !form.needsPrice && savingsBox.data !== undefined && savingsBox.balance > 0;
   const usesSavingsBox = canUseSavingsBox && prefersSavingsBox;
 
-  // Saldo livre: em LIMIT/STOP, as outras compras abertas já reservam parte do saldo em conta.
-  const freeBalance = Math.max(0, balance - form.reservedBalance);
-
-  // Compra: custo (com a taxa) contra o saldo em conta (+ Caixinha, se marcada). Só com o saldo
-  // carregado; antes disso (ou se ele falhar) o servidor continua como proteção.
+  // Compra: custo (com a taxa) contra o saldo livre (+ Caixinha, se marcada: ela cobre só o que
+  // falta no saldo livre). Só com o saldo carregado; antes disso o servidor continua protegendo.
   const purchase: BalanceShortfall | null =
-    !form.isSell && portfolio
+    !form.isSell && account.isLoaded
       ? {
           kind: "order",
           cost: form.settlement?.netAmount ?? 0,
-          available: freeBalance,
-          reserved: form.reservedBalance || undefined,
+          available: account.free,
+          reserved: account.reserved || undefined,
           savingsBox: usesSavingsBox ? savingsBox.balance : undefined,
           ticker: normalizeTicker(form.ticker),
-          onBalanceAdded: () => void refetchBalance(),
+          onBalanceAdded: refetchBalance,
         }
       : null;
   const isShort = purchase !== null && missingAmount(purchase) > 0;
@@ -156,7 +152,7 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
     setPrefersSavingsBox(false);
     setShowRequired(false);
     void refetchSellableAssets();
-    void refetchBalance();
+    refetchBalance();
     void savingsBox.refetch();
     onCreated();
   };
@@ -292,10 +288,10 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
       )}
 
       {/* Na venda o bloco só mostra o saldo (a checagem ali é de quantidade). */}
-      {portfolio && (
+      {account.isLoaded && (
         <OrderBalance
-          available={freeBalance}
-          reserved={form.reservedBalance}
+          available={account.free}
+          reserved={account.reserved}
           savingsBox={
             canUseSavingsBox
               ? {
