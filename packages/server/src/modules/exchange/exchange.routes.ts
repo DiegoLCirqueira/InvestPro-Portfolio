@@ -81,7 +81,7 @@ export async function exchangeRoutes(app: FastifyInstance): Promise<void> {
         tags: ["Exchange"],
         summary: "Executar câmbio",
         description:
-          "Converte de verdade: debita `from` (BRL do Portfolio.balance, ou a moeda do CurrencyHolding) e credita `to`, com a fee de 1% já aplicada. Diferente de /convert (que só calcula).",
+          "Converte de verdade: debita `from` (BRL do Portfolio.balance, ou a moeda do CurrencyHolding) e credita `to`, com a fee de 1% já aplicada. Diferente de /convert (que só calcula). Mínimo de R$ 1,00 por conversão (a origem é avaliada em BRL pela cotação usada); abaixo disso, 400 EXCHANGE_AMOUNT_TOO_SMALL.",
         security: [{ BearerAuth: [] }],
         body: executeExchangeInputSchema,
         response: {
