@@ -67,6 +67,13 @@ export function reservedNote(reserved: number): string {
   return reserved > 0 ? ` (${formatBrl(reserved)} reservados em ordens abertas)` : ''
 }
 
+// Mesma nota pra posição: quantidade em pt-BR com as 8 casas que Order.quantity aceita.
+export function reservedQuantityNote(reserved: number): string {
+  if (!(reserved > 0)) return ''
+  const quantity = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 }).format(reserved)
+  return ` (${quantity} reservados em ordens abertas)`
+}
+
 // Quanto falta no saldo livre (saldo − reservado) pra cobrir `amount`, em
 // centavos; <= 0 quer dizer que cobre.
 export async function freeBalanceShortfall(

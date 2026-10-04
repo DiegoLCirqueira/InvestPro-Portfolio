@@ -30,6 +30,7 @@ import {
   freeBalanceShortfall,
   getReservations,
   reservedNote,
+  reservedQuantityNote,
   reservedQuantity,
 } from './order.reservation.js'
 import {
@@ -78,10 +79,10 @@ function insufficientBalance(reserved = 0): AppError {
   )
 }
 
-function insufficientPosition(): AppError {
+function insufficientPosition(reserved: number): AppError {
   return new AppError(
     'ORDER_INSUFFICIENT_POSITION',
-    'Quantidade insuficiente na posição para venda',
+    'Quantidade insuficiente na posição para venda' + reservedQuantityNote(reserved),
     400
   )
 }
@@ -100,7 +101,7 @@ async function assertFreePosition(
   quantity: number
 ): Promise<PositionSnapshot> {
   const reserved = await reservedQuantity(tx, userId, ticker)
-  if (!canSell(current, roundQuantity(quantity + reserved))) throw insufficientPosition()
+  if (!canSell(current, roundQuantity(quantity + reserved))) throw insufficientPosition(reserved)
   return current
 }
 
