@@ -299,3 +299,14 @@ describe("Exchange: símbolo do campo de valor segue a moeda de origem", () => {
     expect((screen.getByLabelText("Valor a converter") as HTMLInputElement).value).toMatch(/US\$\s?50,00/);
   });
 });
+
+describe("Exchange: botão de inverter no meio entre as duas caixas", () => {
+  it("40px acima (gap 12 + rótulo e gap do Para) e 12px abaixo, sem gap no grupo", async () => {
+    mockApi();
+    await renderExchange();
+
+    const swap = screen.getByRole("button", { name: "Inverter moedas" });
+    expect(swap).toHaveClass("mt-10", "mb-3");
+    expect(swap.parentElement).not.toHaveClass("gap-3");
+  });
+});

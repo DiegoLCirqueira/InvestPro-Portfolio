@@ -105,9 +105,10 @@ export function Exchange() {
             <ReservedBalanceNote reserved={originBalance.reserved} />
           </FormField>
 
-          {/* Botão no fluxo, entre os dois campos e com o mesmo espaço acima e abaixo: posicionado em
-              absoluto no meio do bloco, ele ficava deslocado pelo rótulo "Para". */}
-          <div className="flex flex-col gap-3">
+          {/* Botão no fluxo, no meio vertical entre as duas caixas: abaixo dele vêm o rótulo "Para"
+              (20px) e o gap do FormField (8px), então acima ganha 40px (12 + 28) e abaixo 12px; com
+              o mesmo gap dos dois lados ele ficava 12px da caixa "De" e 40px da caixa "Para". */}
+          <div className="flex flex-col">
             <CurrencySelect
               id="exchange-from"
               label="De"
@@ -120,7 +121,7 @@ export function Exchange() {
               type="button"
               onClick={handleSwap}
               aria-label="Inverter moedas"
-              className="self-center size-11 flex items-center justify-center rounded-xl bg-surface-1 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="self-center mt-10 mb-3 size-11 flex items-center justify-center rounded-xl bg-surface-1 border border-input text-muted-foreground hover:text-foreground hover:border-brand-primary transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <ArrowDownUp size={18} aria-hidden="true" />
             </button>
