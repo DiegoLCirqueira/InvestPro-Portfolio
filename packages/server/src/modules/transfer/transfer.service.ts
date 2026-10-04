@@ -16,6 +16,7 @@ import { recordSnapshot } from '../portfolio/snapshot.service.js'
 import {
   calculateTotal,
   determineStatus,
+  executeExternally,
   formatToAccount,
   normalizedPixKey,
   validateTransfer,
@@ -56,6 +57,7 @@ function toTransfer(record: PrismaTransfer): Transfer {
 // atômico de Portfolio.balance. Deve rodar dentro de uma transação Serializable.
 // Saldo insuficiente lança ANTES de qualquer escrita — nada é persistido nesse
 // caso (mesmo padrão de ORDER_INSUFFICIENT_POSITION em order.service.ts).
+// Só COMPLETED debita: a FAILED fica registrada, mas o dinheiro não saiu.
 async function executeTransferTx(
   tx: Prisma.TransactionClient,
   userId: string,
@@ -77,10 +79,12 @@ async function executeTransferTx(
     )
   }
 
-  await tx.portfolio.update({
-    where: { id: portfolio.id },
-    data: { balance: { decrement: total } },
-  })
+  if (status === 'COMPLETED') {
+    await tx.portfolio.update({
+      where: { id: portfolio.id },
+      data: { balance: { decrement: total } },
+    })
+  }
 
   return tx.transfer.create({
     data: {
@@ -123,9 +127,7 @@ export async function createTransfer(
     )
   }
 
-  // Simula a execução online da transferência (determinística: sucesso).
-  const success = true
-  const status = determineStatus(success)
+  const status = determineStatus(executeExternally())
 
   // formatToAccount roda uma única vez aqui: reaproveita o id da BankAccount
   // quando toAccount vem de uma conta existente, ou sintetiza um id novo
@@ -141,7 +143,10 @@ export async function createTransfer(
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
       )
       // Dinheiro que saiu da plataforma (valor + tarifa): não é perda de rendimento.
-      await recordSnapshot(userId, 'TRANSFER', -round2(calculateTotal(input.amount, input.type)))
+      // FAILED não moveu dinheiro, então não gera fotografia.
+      if (created.status === 'COMPLETED') {
+        await recordSnapshot(userId, 'TRANSFER', -round2(calculateTotal(input.amount, input.type)))
+      }
       return toTransfer(created)
     } catch (err) {
       const isSerializationConflict =

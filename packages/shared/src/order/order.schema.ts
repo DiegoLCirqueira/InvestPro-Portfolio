@@ -23,6 +23,12 @@ export const orderQuantityInputSchema = z
 const WHOLE_QUANTITY_ASSET_TYPES: readonly (typeof ASSET_TYPES)[number][] = ['STOCK', 'FIXED_INCOME'];
 export const WHOLE_QUANTITY_MESSAGE = 'Ações e renda fixa só podem ser compradas em quantidade inteira';
 
+// Valor mínimo por ordem (quantidade × preço, antes da taxa). Abaixo disso o
+// arredondamento em centavos cria ou some dinheiro e a taxa de 1% zera.
+// Exceção: vender a posição inteira, pra sobra fracionada não ficar presa.
+export const MIN_ORDER_TOTAL = 1;
+export const MIN_ORDER_TOTAL_MESSAGE = 'O valor mínimo por ordem é R$ 1,00';
+
 export function requiresWholeQuantity(assetType: string): boolean {
   return (WHOLE_QUANTITY_ASSET_TYPES as readonly string[]).includes(assetType);
 }
