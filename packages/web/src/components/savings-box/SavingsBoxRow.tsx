@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { PiggyBank } from "lucide-react";
 import { SavingsBoxDialog, type SavingsBoxMode } from "@/components/savings-box/SavingsBoxDialog";
@@ -20,6 +20,12 @@ interface SavingsBoxRowProps {
 export function SavingsBoxRow({ accountBalance, onBalanceChange }: SavingsBoxRowProps) {
   const { balance, refetch } = useSavingsBox();
   const [mode, setMode] = useState<SavingsBoxMode | null>(null);
+  // Botão que abriu o diálogo, para o foco voltar a ele ao fechar.
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const open = (event: MouseEvent<HTMLButtonElement>, nextMode: SavingsBoxMode) => {
+    openerRef.current = event.currentTarget;
+    setMode(nextMode);
+  };
   const { hash } = useLocation();
 
   // /#caixinha (Recomendações e o antigo /orders#caixinha): rola até aqui quando a linha aparece.
@@ -54,10 +60,20 @@ export function SavingsBoxRow({ accountBalance, onBalanceChange }: SavingsBoxRow
 
       {/* Compactas no texto, mas com 44px de altura para o toque. */}
       <div className="grid grid-cols-2 gap-2 px-3">
-        <Button variant="outline" size="sm" className="min-h-11" onClick={() => setMode("DEPOSIT")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11"
+          onClick={(event) => open(event, "DEPOSIT")}
+        >
           Depositar
         </Button>
-        <Button variant="outline" size="sm" className="min-h-11" onClick={() => setMode("WITHDRAW")}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11"
+          onClick={(event) => open(event, "WITHDRAW")}
+        >
           Resgatar
         </Button>
       </div>
@@ -65,6 +81,7 @@ export function SavingsBoxRow({ accountBalance, onBalanceChange }: SavingsBoxRow
       <SavingsBoxDialog
         mode={mode}
         onClose={() => setMode(null)}
+        returnFocusTo={openerRef}
         accountBalance={accountBalance}
         savingsBalance={balance}
         onSuccess={() => {

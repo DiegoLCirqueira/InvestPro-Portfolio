@@ -115,6 +115,26 @@ describe("SavingsBoxRow (Caixinha no topo de Seus Ativos)", () => {
     expect(submit).toHaveAccessibleDescription(/faltam R\$\s?750,00/);
   });
 
+  it("ao fechar o diálogo, o foco volta ao botão que o abriu", async () => {
+    renderCard();
+    const row = screen.getByRole("region", { name: "Caixinha" });
+
+    // Depósito concluído (o diálogo fecha sozinho).
+    fireEvent.click(within(row).getByRole("button", { name: "Depositar" }));
+    fireEvent.change(screen.getByLabelText("Valor a depositar"), { target: { value: "10000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Depositar R\$\s?100,00/ }));
+    await waitFor(() =>
+      expect(within(row).getByRole("button", { name: "Depositar" })).toHaveFocus(),
+    );
+
+    // Cancelar no Resgatar.
+    fireEvent.click(within(row).getByRole("button", { name: "Resgatar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    await waitFor(() =>
+      expect(within(row).getByRole("button", { name: "Resgatar" })).toHaveFocus(),
+    );
+  });
+
   it("sem saldo em conta, o depósito vem desabilitado já explicando o porquê", () => {
     renderCard("/", 0);
 

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type RefObject } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
@@ -45,6 +45,8 @@ interface SavingsBoxDialogProps {
   savingsBalance: number;
   /** Depois do movimento, para o Painel recarregar os dois saldos. */
   onSuccess: () => void;
+  /** Botão que abriu o diálogo: recebe o foco de volta ao fechar. */
+  returnFocusTo: RefObject<HTMLElement | null>;
 }
 
 // Depositar e Resgatar abrem o mesmo diálogo, invertido: no Painel não há formulário fixo.
@@ -63,6 +65,7 @@ function SavingsBoxDialogContent({
   accountBalance,
   savingsBalance,
   onSuccess,
+  returnFocusTo,
 }: Omit<SavingsBoxDialogProps, "mode"> & { mode: SavingsBoxMode }) {
   const limitNoteId = useId();
   const amountInput = useCurrencyDigitsInput();
@@ -113,7 +116,16 @@ function SavingsBoxDialogContent({
   });
 
   return (
-    <DialogContent hideCloseButton className="flex flex-col gap-5">
+    <DialogContent
+      hideCloseButton
+      className="flex flex-col gap-5"
+      // Aberto por estado (sem Dialog.Trigger), o Radix não sabe para onde devolver o foco e ele
+      // se perdia ao fechar: volta para o Depositar/Resgatar que abriu.
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        returnFocusTo.current?.focus();
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1.5 pt-2.5">
           <DialogTitle>{copy.title}</DialogTitle>
