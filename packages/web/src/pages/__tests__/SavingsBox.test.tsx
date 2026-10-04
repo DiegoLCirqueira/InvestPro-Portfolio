@@ -115,11 +115,21 @@ describe("Página Caixinha", () => {
       ...overrides,
     });
 
-    it("vazio: explica onde os movimentos vão aparecer", () => {
+    it("vazio com a Caixinha vazia: explica onde os movimentos vão aparecer", () => {
+      mocks.savings = { balance: 0, rate: 0.06, estimatedYield: 0 };
       renderPage();
 
       expect(movements()).toHaveTextContent("Seus depósitos e resgates aparecem aqui.");
       expect(within(movements()).queryByRole("button", { name: "Ver mais" })).not.toBeInTheDocument();
+    });
+
+    it("vazio com dinheiro guardado (Caixinha antiga): diz desde quando o extrato registra", () => {
+      renderPage();
+
+      expect(movements()).toHaveTextContent(
+        "As movimentações são registradas a partir de 04/10/2026.",
+      );
+      expect(movements()).not.toHaveTextContent("Seus depósitos e resgates aparecem aqui.");
     });
 
     it("lista depósito, resgate e uso numa compra com sinal, data e saldo depois", () => {

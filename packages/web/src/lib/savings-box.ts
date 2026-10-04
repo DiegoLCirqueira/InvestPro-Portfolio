@@ -8,6 +8,10 @@ export const SAVINGS_BOX_PATH = "/caixinha";
 // quem salvou esses links é redirecionado para a página.
 export const LEGACY_SAVINGS_BOX_HASH = "#caixinha";
 
+// Data em que o extrato passou a ser gravado (publicação de 04/10/2026, sem histórico anterior):
+// quem já tinha dinheiro guardado antes vê o extrato vazio e precisa saber o porquê.
+export const SAVINGS_BOX_TRANSACTIONS_SINCE = "04/10/2026";
+
 /** Períodos do simulador "Quanto rende", em meses. */
 export const SIMULATION_MONTHS = [1, 6, 12] as const;
 export type SimulationMonths = (typeof SIMULATION_MONTHS)[number];

@@ -13,6 +13,7 @@ import { cardClassName } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SavingsBoxTransactionsState } from "@/hooks/use-savings-box";
 import { formatCurrency, formatDateTimeMinutes } from "@/lib/format";
+import { SAVINGS_BOX_TRANSACTIONS_SINCE } from "@/lib/savings-box";
 import { cn } from "@/lib/utils";
 import type { SavingsBoxTransaction, SavingsBoxTransactionType } from "@/types/savings-box";
 
@@ -61,10 +62,15 @@ function TransactionRow({ transaction }: { transaction: SavingsBoxTransaction })
 
 interface SavingsBoxTransactionsProps {
   transactions: SavingsBoxTransactionsState;
+  /** Saldo na Caixinha: com dinheiro guardado e extrato vazio, o dinheiro é de antes do extrato. */
+  savingsBalance: number;
 }
 
 /** [D] Movimentações: extrato da Caixinha, 10 por vez com "Ver mais". */
-export function SavingsBoxTransactions({ transactions }: SavingsBoxTransactionsProps) {
+export function SavingsBoxTransactions({
+  transactions,
+  savingsBalance,
+}: SavingsBoxTransactionsProps) {
   const { items, isLoading, error, hasMore, isLoadingMore, loadMoreError } = transactions;
 
   return (
@@ -93,7 +99,11 @@ export function SavingsBoxTransactions({ transactions }: SavingsBoxTransactionsP
       ) : items.length === 0 ? (
         <EmptyState
           icon={ListOrdered}
-          message="Seus depósitos e resgates aparecem aqui."
+          message={
+            savingsBalance > 0
+              ? `As movimentações são registradas a partir de ${SAVINGS_BOX_TRANSACTIONS_SINCE}.`
+              : "Seus depósitos e resgates aparecem aqui."
+          }
           className="py-6"
         />
       ) : (

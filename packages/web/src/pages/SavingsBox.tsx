@@ -109,7 +109,7 @@ export function SavingsBox() {
           onDeposit={(event, amount) => open(event, "DEPOSIT", { amount })}
         />
         <SavingsBoxHowItWorks />
-        <SavingsBoxTransactions transactions={transactions} />
+        <SavingsBoxTransactions transactions={transactions} savingsBalance={balance} />
       </div>
 
       <SavingsBoxDialog
