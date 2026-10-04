@@ -3,7 +3,7 @@ import { formatCurrency, formatPercent } from "@/lib/format";
 import type { PortfolioBreakdownItem } from "@/lib/portfolio-breakdown";
 
 interface PortfolioTotalBoxProps {
-  /** Patrimônio total (caixa + posições + caixinha + moedas), o mesmo do gráfico. */
+  /** Patrimônio total (caixa + posições + Caixinha + moedas), o mesmo do gráfico. */
   totalEquity: number;
   /** Rentabilidade do período em %; sem base de comparação, o selo não aparece. */
   change?: number;

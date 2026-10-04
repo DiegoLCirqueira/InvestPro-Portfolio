@@ -18,7 +18,7 @@ import type {
   DiversificationCategory,
   PortfolioDiversificationItem,
 } from "@/types/portfolio";
-import { CATEGORY_COLORS } from "@/lib/allocation";
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/allocation";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +35,7 @@ function buildChartData(
   breakdown: PortfolioDiversificationItem[],
 ): ChartDatum[] {
   return breakdown.map((item) => ({
-    name: item.label,
+    name: CATEGORY_LABELS[item.type] ?? item.label,
     value: item.value,
     percentage: item.percentage,
     color: CATEGORY_COLORS[item.type] ?? FALLBACK_CATEGORY_COLOR,
@@ -59,7 +59,9 @@ function CategoryCard({
           className="w-2.5 h-2.5 rounded-full"
           style={{ backgroundColor: color }}
         />
-        <span className="font-bold text-foreground text-sm">{item.label}</span>
+        <span className="font-bold text-foreground text-sm">
+          {CATEGORY_LABELS[item.type] ?? item.label}
+        </span>
       </div>
 
       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">

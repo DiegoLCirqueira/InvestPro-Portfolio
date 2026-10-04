@@ -82,4 +82,14 @@ describe("Diversificação", () => {
       screen.queryByText("Sua carteira ainda está vazia"),
     ).not.toBeInTheDocument();
   });
+
+  it("usa o rótulo do site ('Renda fixa'), não o label da API ('Renda Fixa')", () => {
+    portfolioMock.breakdown = [
+      { type: "FIXED_INCOME", label: "Renda Fixa", value: 500, percentage: 100 },
+    ];
+    renderPage();
+
+    expect(screen.getAllByText("Renda fixa").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Renda Fixa")).not.toBeInTheDocument();
+  });
 });

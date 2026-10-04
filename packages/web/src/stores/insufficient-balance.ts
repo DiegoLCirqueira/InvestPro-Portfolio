@@ -3,7 +3,7 @@ import type { BalanceShortfall } from "@/lib/balance-shortfall";
 
 interface InsufficientBalanceState {
   isOpen: boolean;
-  /** Código do erro da API: define qual saldo faltou (conta, caixinha ou moeda). */
+  /** Código do erro da API: define qual saldo faltou (conta, Caixinha ou moeda). */
   code: string | null;
   /** Quanto custava e quanto havia em conta: o erro da API não traz o valor que falta. */
   shortfall: BalanceShortfall | null;

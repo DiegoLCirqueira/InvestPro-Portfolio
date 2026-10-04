@@ -16,7 +16,7 @@ interface AccountBalanceCardProps {
 }
 
 // Destaque principal do Painel: o saldo em conta. O patrimônio total (que
-// soma investimentos, caixinha e moedas) fica no rodapé de "Seus Ativos" —
+// soma investimentos, Caixinha e moedas) fica no rodapé de "Seus Ativos" —
 // como número principal, ele dava a ilusão de que tudo era dinheiro livre.
 // "Adicionar saldo" fica aqui, onde a pessoa olha o saldo (antes só existia no
 // Perfil), com o "grátis" como legenda colada ao botão em vez de perdido no fim da
