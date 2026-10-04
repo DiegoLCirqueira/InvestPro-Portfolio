@@ -16,7 +16,7 @@ const SELECTED: Record<SegmentTone, string> = {
 const UNSELECTED =
   "border-input bg-surface-2 text-muted-foreground hover:border-border-strong hover:text-foreground";
 
-/** Classes de uma opção de seletor (Compra/Venda, PIX/TED/DOC, Depositar/Resgatar). */
+/** Classes de uma opção de seletor (Compra/Venda, PIX/TED, Depositar/Resgatar). */
 export function segmentClassName(
   selected: boolean,
   tone: SegmentTone = "primary",
