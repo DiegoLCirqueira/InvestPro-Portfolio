@@ -385,3 +385,16 @@ describe("Transferências: tarifa, total e o fim do DOC", () => {
     expect(apiMock.post).not.toHaveBeenCalled();
   });
 });
+
+describe("Transferências: alvo de toque da ajuda", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20 });
+  });
+
+  it("o ⓘ da TED tem 44px (size-11), e o rótulo do tipo segue centralizado", async () => {
+    await renderTransfers();
+
+    expect(screen.getByRole("button", { name: "Saiba mais sobre TED" })).toHaveClass("size-11");
+    expect(screen.getByRole("button", { name: "TED" })).toHaveClass("px-11");
+  });
+});

@@ -172,3 +172,17 @@ describe("MarketAnalysis: do ativo para a ordem", () => {
     }
   });
 });
+
+describe("MarketAnalysis: alvo de toque na tabela (desktop)", () => {
+  beforeEach(() => apiMock.get.mockReset());
+
+  it("o link do ativo cobre a linha inteira (after:inset-0 sobre a tr relativa)", async () => {
+    await renderMarket([asset("PETR4", "live")]);
+
+    const rowLink = screen
+      .getAllByRole("link", { name: "Negociar PETR4 (PETR4 SA)" })
+      .find((link) => link.closest("tr")) as HTMLElement;
+    expect(rowLink).toHaveClass("after:absolute", "after:inset-0");
+    expect(rowLink.closest("tr")).toHaveClass("relative");
+  });
+});

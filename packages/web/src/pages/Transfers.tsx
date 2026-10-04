@@ -58,9 +58,10 @@ function TransferTypeHelp({ label, help }: { label: string; help: string }) {
           // O ícone fica dentro do botão do tipo (TED): o clique não pode selecioná-lo.
           onClick={(e) => e.stopPropagation()}
           aria-label={`Saiba mais sobre ${label}`}
-          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          // Alvo de 44px (a altura do botão do tipo) com o mesmo ícone pequeno no canto direito.
+          className="absolute right-0 top-0 flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Info size={13} />
+          <Info size={13} aria-hidden="true" />
         </button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
@@ -295,7 +296,7 @@ export function Transfers() {
                       className={segmentClassName(
                         type === option.value,
                         "primary",
-                        cn("w-full", help && "pr-7"),
+                        cn("w-full", help && "px-11"),
                       )}
                     >
                       {option.label}
