@@ -11,6 +11,7 @@ import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import { runSerializableTx } from "../../shared/db/serializableTransaction.js";
 import { recordSnapshot } from "../portfolio/snapshot.service.js";
+import { assertFreeBalance } from "../order/order.reservation.js";
 import { estimateSimpleYield, SAVINGS_BOX_ANNUAL_RATE } from "./savings-box.domain.js";
 
 function round2(value: number): number {
@@ -42,13 +43,10 @@ async function executeDeposit(
   if (!portfolio) {
     throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
   }
-  if (portfolio.balance.toNumber() < amount) {
-    throw new AppError(
-      "PORTFOLIO_INSUFFICIENT_BALANCE",
-      "Saldo insuficiente no portfólio para este depósito",
-      400
-    );
-  }
+  await assertFreeBalance(tx, userId, portfolio.balance.toNumber(), amount, {
+    code: "PORTFOLIO_INSUFFICIENT_BALANCE",
+    message: "Saldo insuficiente no portfólio para este depósito",
+  });
 
   await tx.portfolio.update({
     where: { id: portfolio.id },
