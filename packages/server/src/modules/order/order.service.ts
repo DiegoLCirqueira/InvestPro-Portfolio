@@ -4,6 +4,7 @@
 // Portfolio.balance atomicamente via Prisma (isolamento Serializable, com
 // retry em conflito de serialização).
 
+import { randomUUID } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import type { Order as PrismaOrder } from '@prisma/client'
 import {
@@ -16,6 +17,7 @@ import type {
   CreateOrderInput,
   Order,
   OrderList,
+  OrderReservations,
   SellableAssetList,
 } from '@investpro/shared'
 import { prisma } from '../../config/database.js'
@@ -23,6 +25,13 @@ import { getAssetMeta, getQuote } from '../market/market.service.js'
 import { AppError } from '../auth/auth.service.js'
 import { recordSnapshot } from '../portfolio/snapshot.service.js'
 import { executeWithdraw } from '../savings-box/savings-box.service.js'
+import {
+  buyCost,
+  freeBalanceShortfall,
+  getReservations,
+  reservedNote,
+  reservedQuantity,
+} from './order.reservation.js'
 import {
   applyBuyFill,
   applySellFill,
@@ -61,10 +70,10 @@ function assertMinimumTotal(total: number, sellsWhole: boolean): void {
   throw new AppError('ORDER_TOTAL_TOO_SMALL', MIN_ORDER_TOTAL_MESSAGE, 400)
 }
 
-function insufficientBalance(): AppError {
+function insufficientBalance(reserved = 0): AppError {
   return new AppError(
     'ORDER_INSUFFICIENT_BALANCE',
-    'Saldo insuficiente para executar esta ordem',
+    'Saldo insuficiente para executar esta ordem' + reservedNote(reserved),
     400
   )
 }
@@ -77,51 +86,22 @@ function insufficientPosition(): AppError {
   )
 }
 
-// Custo debitado numa compra: valor da ordem + taxa de 1%, em centavos.
-function buyCost(total: number): number {
-  return round2(total + calculateOrderFee(total))
-}
-
 // Quantity é Decimal(15,8): somar em float pode criar resíduo (0,1 + 0,2).
 function roundQuantity(value: number): number {
   return Math.round(value * 1e8) / 1e8
 }
 
-// Ordem que fica OPEN não move dinheiro nem posição agora, mas promete o que
-// vai usar quando executar: o saldo/posição tem que cobrir esta ordem MAIS as
-// outras OPEN do mesmo lado, senão o mesmo dinheiro é prometido duas vezes.
-// Lido dentro da transação Serializable: duas criações simultâneas conflitam
-// (P2034) e a perdedora refaz a conta já vendo a outra ordem.
-async function assertOpenOrderIsCovered(
+// Venda (a mercado ou OPEN) só usa a posição livre das outras SELL OPEN do ativo.
+async function assertFreePosition(
   tx: Prisma.TransactionClient,
   userId: string,
   ticker: string,
-  input: CreateOrderInput,
-  balance: number,
-  current: PositionSnapshot | null
-): Promise<void> {
-  // OPEN só existe em LIMIT/STOP, que exigem preço (validateOrder).
-  const price = input.price as number
-  const others = await tx.order.findMany({
-    where: { userId, status: 'OPEN', side: input.side, ...(input.side === 'SELL' ? { ticker } : {}) },
-    select: { quantity: true, price: true },
-  })
-
-  if (input.side === 'BUY') {
-    const reserved = others.reduce(
-      (sum, o) => sum + buyCost(round2(o.quantity.toNumber() * (o.price?.toNumber() ?? 0))),
-      0
-    )
-    const cost = buyCost(round2(input.quantity * price))
-    // Só o saldo em conta: a Caixinha não é resgatada pra ordem que fica OPEN.
-    if (round2(cost + reserved - balance) > 0) throw insufficientBalance()
-    return
-  }
-
-  const reservedQuantity = others.reduce((sum, o) => sum + o.quantity.toNumber(), 0)
-  if (!canSell(current, roundQuantity(input.quantity + reservedQuantity))) {
-    throw insufficientPosition()
-  }
+  current: PositionSnapshot | null,
+  quantity: number
+): Promise<PositionSnapshot> {
+  const reserved = await reservedQuantity(tx, userId, ticker)
+  if (!canSell(current, roundQuantity(quantity + reserved))) throw insufficientPosition()
+  return current
 }
 
 // Resgata da Caixinha exatamente o que falta pra compra, com a mesma regra do
@@ -132,14 +112,16 @@ async function assertOpenOrderIsCovered(
 async function coverShortfallFromSavingsBox(
   tx: Prisma.TransactionClient,
   userId: string,
-  shortfall: number
+  shortfall: number,
+  orderId: string,
+  reserved: number
 ): Promise<void> {
   try {
-    await executeWithdraw(tx, userId, shortfall)
+    await executeWithdraw(tx, userId, shortfall, orderId)
   } catch (err) {
     // Pra quem compra, o erro é da ordem: saldo + Caixinha não cobrem o custo.
     if (err instanceof AppError && err.code === 'SAVINGS_BOX_INSUFFICIENT_BALANCE') {
-      throw insufficientBalance()
+      throw insufficientBalance(reserved)
     }
     throw err
   }
@@ -198,7 +180,15 @@ async function executeOrderTx(
   assertMinimumTotal(round2(input.quantity * quotedPrice), sellsWhole)
 
   if (evaluation.status !== 'FILLED') {
-    await assertOpenOrderIsCovered(tx, userId, asset.ticker, input, portfolio.balance.toNumber(), current)
+    // OPEN não move nada agora, mas reserva: tem que caber no que está livre.
+    // Só saldo em conta: a Caixinha não é resgatada pra ordem que fica OPEN.
+    if (input.side === 'BUY') {
+      const cost = buyCost(round2(input.quantity * quotedPrice))
+      const { shortfall, reserved } = await freeBalanceShortfall(tx, userId, portfolio.balance.toNumber(), cost)
+      if (shortfall > 0) throw insufficientBalance(reserved)
+    } else {
+      await assertFreePosition(tx, userId, asset.ticker, current, input.quantity)
+    }
     const record = await tx.order.create({
       data: {
         userId,
@@ -222,16 +212,19 @@ async function executeOrderTx(
 
   let orderAvgPrice: number | null = null
   let savingsBoxUsed = 0
+  // Id definido antes: o resgate da Caixinha (ORDER_FUNDING) acontece antes da
+  // Order ser criada e já precisa apontar pra ela no extrato.
+  const orderId = randomUUID()
 
   if (input.side === 'BUY') {
     const cost = buyCost(total)
-    // Em centavos (cost e balance têm 2 casas): a Caixinha cobre a diferença
-    // exata e o saldo em conta termina em zero, nunca negativo.
-    const shortfall = round2(cost - portfolio.balance.toNumber())
+    // Em centavos, sobre o saldo livre: a Caixinha cobre a diferença exata e o
+    // saldo em conta termina no valor reservado, nunca abaixo dele.
+    const { shortfall, reserved } = await freeBalanceShortfall(tx, userId, portfolio.balance.toNumber(), cost)
 
     if (shortfall > 0) {
-      if (!input.useSavingsBox) throw insufficientBalance()
-      await coverShortfallFromSavingsBox(tx, userId, shortfall)
+      if (!input.useSavingsBox) throw insufficientBalance(reserved)
+      await coverShortfallFromSavingsBox(tx, userId, shortfall, orderId, reserved)
       savingsBoxUsed = shortfall
     }
 
@@ -273,9 +266,8 @@ async function executeOrderTx(
 
     orderAvgPrice = round2(fill.avgPrice)
   } else {
-    if (!canSell(current, input.quantity)) throw insufficientPosition()
-
-    const fill = applySellFill(current, input.quantity)
+    const held = await assertFreePosition(tx, userId, asset.ticker, current, input.quantity)
+    const fill = applySellFill(held, input.quantity)
 
     if (fill) {
       await tx.position.update({
@@ -304,6 +296,7 @@ async function executeOrderTx(
 
   const record = await tx.order.create({
     data: {
+      id: orderId,
       userId,
       assetId: asset.assetId ?? asset.ticker,
       ticker: asset.ticker,
@@ -400,6 +393,29 @@ export async function listOrders(
     page,
     limit,
   }
+}
+
+// Cancela a ordem que ainda não executou; a reserva some junto, porque ela é
+// lida das ordens OPEN. O UPDATE condicional é atômico: de duas chamadas
+// simultâneas só uma acha a linha OPEN/PENDING, a outra recebe 409.
+export async function cancelOrder(userId: string, orderId: string): Promise<Order> {
+  const { count } = await prisma.order.updateMany({
+    where: { id: orderId, userId, status: { in: ['OPEN', 'PENDING'] } },
+    data: { status: 'CANCELLED' },
+  })
+  // Ordem de outra conta responde igual a inexistente: não revela que o id existe.
+  const record = await prisma.order.findFirst({ where: { id: orderId, userId } })
+  if (!record) {
+    throw new AppError('ORDER_NOT_FOUND', 'Ordem não encontrada', 404)
+  }
+  if (count === 0) {
+    throw new AppError('ORDER_NOT_CANCELLABLE', 'Só ordens abertas podem ser canceladas', 409)
+  }
+  return toOrder(record)
+}
+
+export async function getOrderReservations(userId: string): Promise<OrderReservations> {
+  return getReservations(prisma, userId)
 }
 
 // Ativos que o usuário pode vender agora: só tickers com Position ativa

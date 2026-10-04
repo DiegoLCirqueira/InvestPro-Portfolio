@@ -6,11 +6,12 @@
 // com base nele.
 
 import type { Prisma } from "@prisma/client";
-import type { SavingsBoxResponse } from "@investpro/shared";
+import type { SavingsBoxResponse, SavingsBoxTransactionList } from "@investpro/shared";
 import { prisma } from "../../config/database.js";
 import { AppError } from "../auth/auth.service.js";
 import { runSerializableTx } from "../../shared/db/serializableTransaction.js";
 import { recordSnapshot } from "../portfolio/snapshot.service.js";
+import { assertFreeBalance } from "../order/order.reservation.js";
 import { estimateSimpleYield, SAVINGS_BOX_ANNUAL_RATE } from "./savings-box.domain.js";
 
 function round2(value: number): number {
@@ -42,13 +43,10 @@ async function executeDeposit(
   if (!portfolio) {
     throw new AppError("PORTFOLIO_NOT_FOUND", "Portfólio não encontrado", 404);
   }
-  if (portfolio.balance.toNumber() < amount) {
-    throw new AppError(
-      "PORTFOLIO_INSUFFICIENT_BALANCE",
-      "Saldo insuficiente no portfólio para este depósito",
-      400
-    );
-  }
+  await assertFreeBalance(tx, userId, portfolio.balance.toNumber(), amount, {
+    code: "PORTFOLIO_INSUFFICIENT_BALANCE",
+    message: "Saldo insuficiente no portfólio para este depósito",
+  });
 
   await tx.portfolio.update({
     where: { id: portfolio.id },
@@ -61,15 +59,21 @@ async function executeDeposit(
     update: { balance: { increment: amount } },
   });
 
+  await tx.savingsBoxTransaction.create({
+    data: { userId, type: "DEPOSIT", amount, balanceAfter: box.balance },
+  });
+
   return { balance: box.balance.toNumber(), createdAt: box.createdAt };
 }
 
 // Exportada pra compra de ativo com a Caixinha (order.service) resgatar na mesma
 // transação da ordem, com a mesma regra e o mesmo erro de saldo insuficiente.
+// Com fundingOrderId, o extrato registra ORDER_FUNDING ligado à compra.
 export async function executeWithdraw(
   tx: Prisma.TransactionClient,
   userId: string,
-  amount: number
+  amount: number,
+  fundingOrderId?: string
 ): Promise<{ balance: number; createdAt: Date }> {
   const box = await tx.savingsBox.findUnique({ where: { userId } });
   if (!box || box.balance.toNumber() < amount) {
@@ -88,6 +92,16 @@ export async function executeWithdraw(
   await tx.portfolio.update({
     where: { userId },
     data: { balance: { increment: amount } },
+  });
+
+  await tx.savingsBoxTransaction.create({
+    data: {
+      userId,
+      type: fundingOrderId ? "ORDER_FUNDING" : "WITHDRAW",
+      amount,
+      balanceAfter: updated.balance,
+      orderId: fundingOrderId ?? null,
+    },
   });
 
   return { balance: updated.balance.toNumber(), createdAt: updated.createdAt };
@@ -111,4 +125,54 @@ export async function withdraw(userId: string, amount: number): Promise<SavingsB
   );
   await recordSnapshot(userId, "SAVINGS");
   return toResponse(result.balance, result.createdAt);
+}
+
+// Cursor opaco = posição (createdAt, id) do último item da página: ordem
+// estável mesmo com dois movimentos no mesmo milissegundo, sem reler a linha.
+function encodeCursor(createdAt: Date, id: string): string {
+  return Buffer.from(`${createdAt.toISOString()}|${id}`).toString("base64url");
+}
+
+function decodeCursor(cursor: string): { createdAt: Date; id: string } {
+  const [iso, id] = Buffer.from(cursor, "base64url").toString().split("|");
+  const createdAt = new Date(iso ?? "");
+  if (!id || Number.isNaN(createdAt.getTime())) {
+    throw new AppError("VALIDATION_ERROR", "Cursor inválido", 400);
+  }
+  return { createdAt, id };
+}
+
+export async function listTransactions(
+  userId: string,
+  limit: number,
+  cursor?: string
+): Promise<SavingsBoxTransactionList> {
+  const after = cursor ? decodeCursor(cursor) : null;
+  const records = await prisma.savingsBoxTransaction.findMany({
+    where: {
+      userId,
+      ...(after && {
+        OR: [
+          { createdAt: { lt: after.createdAt } },
+          { createdAt: after.createdAt, id: { lt: after.id } },
+        ],
+      }),
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit + 1, // um a mais só pra saber se existe próxima página
+  });
+
+  const page = records.slice(0, limit);
+  const last = page.at(-1);
+  return {
+    items: page.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount.toNumber(),
+      balanceAfter: t.balanceAfter.toNumber(),
+      createdAt: t.createdAt.toISOString(),
+      orderId: t.orderId,
+    })),
+    nextCursor: records.length > limit && last ? encodeCursor(last.createdAt, last.id) : null,
+  };
 }

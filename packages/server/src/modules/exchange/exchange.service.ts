@@ -18,6 +18,7 @@ import type {
 import { AppError } from '../auth/auth.service.js'
 import { prisma } from '../../config/database.js'
 import { runSerializableTx } from '../../shared/db/serializableTransaction.js'
+import { assertFreeBalance } from '../order/order.reservation.js'
 import {
   availableCurrencies,
   calculateFee,
@@ -160,13 +161,10 @@ async function debitCurrency(
     if (!portfolio) {
       throw new AppError('PORTFOLIO_NOT_FOUND', 'Portfólio não encontrado', 404)
     }
-    if (portfolio.balance.toNumber() < amount) {
-      throw new AppError(
-        'PORTFOLIO_INSUFFICIENT_BALANCE',
-        'Saldo insuficiente em BRL para este câmbio',
-        400
-      )
-    }
+    await assertFreeBalance(tx, userId, portfolio.balance.toNumber(), amount, {
+      code: 'PORTFOLIO_INSUFFICIENT_BALANCE',
+      message: 'Saldo insuficiente em BRL para este câmbio',
+    })
     await tx.portfolio.update({
       where: { id: portfolio.id },
       data: { balance: { decrement: amount } },

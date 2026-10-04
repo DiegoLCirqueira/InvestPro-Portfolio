@@ -86,8 +86,9 @@ export async function deleteUser(email: string): Promise<void> {
   await prisma.balanceTopUp.deleteMany({
     where: { OR: [{ userId: user.id }, { actorUserId: user.id }] },
   })
-  // SavingsBox/CurrencyHolding/CurrencyExchange/PortfolioSnapshot também são FK Restrict pro User.
+  // SavingsBox(Transaction)/CurrencyHolding/CurrencyExchange/PortfolioSnapshot também são FK Restrict pro User.
   await prisma.portfolioSnapshot.deleteMany({ where: { userId: user.id } })
+  await prisma.savingsBoxTransaction.deleteMany({ where: { userId: user.id } })
   await prisma.savingsBox.deleteMany({ where: { userId: user.id } })
   await prisma.currencyHolding.deleteMany({ where: { userId: user.id } })
   await prisma.currencyExchange.deleteMany({ where: { userId: user.id } })

@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   createOrderInputSchema,
   orderListSchema,
+  orderReservationsSchema,
   orderSchema,
   sellableAssetListSchema,
 } from "@investpro/shared";
@@ -19,6 +20,8 @@ const orderListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
+
+const orderIdParamsSchema = z.object({ id: z.string().min(1) });
 
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -93,6 +96,51 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const user = request.user as { id: string };
       return orderService.listSellableAssets(user.id);
+    }
+  );
+
+  r.get(
+    "/api/v1/orders/reservations",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Orders"],
+        summary: "Saldo e posições reservados",
+        description:
+          "O que as ordens OPEN do usuário autenticado já prometeram: `balance` = custo das compras OPEN (quantidade × preço informado + 1% de taxa); `positions` = quantidade das vendas OPEN por ticker. Compra/venda a mercado, depósito na Caixinha, câmbio saindo de BRL e transferência só usam o saldo/posição livres (total menos o reservado). Sem ordens OPEN: `{ balance: 0, positions: {} }`.",
+        security: [{ BearerAuth: [] }],
+        response: {
+          200: orderReservationsSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return orderService.getOrderReservations(user.id);
+    }
+  );
+
+  r.post(
+    "/api/v1/orders/:id/cancel",
+    {
+      ...writeRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Orders"],
+        summary: "Cancelar ordem",
+        description:
+          "Cancela uma ordem OPEN ou PENDING do usuário autenticado e devolve a ordem com status CANCELLED; o saldo/posição que ela reservava fica livre na hora. Ordem de outra conta ou inexistente: 404 ORDER_NOT_FOUND. Ordem já executada ou cancelada: 409 ORDER_NOT_CANCELLABLE (de duas chamadas simultâneas, uma recebe 200 e a outra 409).",
+        security: [{ BearerAuth: [] }],
+        params: orderIdParamsSchema,
+        response: {
+          200: orderSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return orderService.cancelOrder(user.id, request.params.id);
     }
   );
 }

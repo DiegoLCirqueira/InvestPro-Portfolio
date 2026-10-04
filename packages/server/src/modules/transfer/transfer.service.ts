@@ -13,6 +13,7 @@ import type {
 import { prisma } from '../../config/database.js'
 import { AppError } from '../auth/auth.service.js'
 import { recordSnapshot } from '../portfolio/snapshot.service.js'
+import { assertFreeBalance } from '../order/order.reservation.js'
 import {
   calculateTotal,
   determineStatus,
@@ -71,13 +72,10 @@ async function executeTransferTx(
   }
 
   const total = round2(calculateTotal(input.amount, input.type))
-  if (portfolio.balance.toNumber() < total) {
-    throw new AppError(
-      'TRANSFER_INSUFFICIENT_BALANCE',
-      'Saldo insuficiente para realizar a transferência',
-      400
-    )
-  }
+  await assertFreeBalance(tx, userId, portfolio.balance.toNumber(), total, {
+    code: 'TRANSFER_INSUFFICIENT_BALANCE',
+    message: 'Saldo insuficiente para realizar a transferência',
+  })
 
   if (status === 'COMPLETED') {
     await tx.portfolio.update({
