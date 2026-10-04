@@ -79,6 +79,12 @@ export function formatToAccount(account: BankAccountInput): BankAccount {
   }
 }
 
+// Simula a execução online da transferência (determinística: sucesso). Fica
+// aqui, e não fixa no service, pra o caminho FAILED ser testável.
+export function executeExternally(): boolean {
+  return true
+}
+
 export function determineStatus(success: boolean): TransferStatus {
   return success ? 'COMPLETED' : 'FAILED'
 }
