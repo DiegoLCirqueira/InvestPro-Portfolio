@@ -388,6 +388,25 @@ export async function listOrders(
   }
 }
 
+// Cancela a ordem que ainda não executou; a reserva some junto, porque ela é
+// lida das ordens OPEN. O UPDATE condicional é atômico: de duas chamadas
+// simultâneas só uma acha a linha OPEN/PENDING, a outra recebe 409.
+export async function cancelOrder(userId: string, orderId: string): Promise<Order> {
+  const { count } = await prisma.order.updateMany({
+    where: { id: orderId, userId, status: { in: ['OPEN', 'PENDING'] } },
+    data: { status: 'CANCELLED' },
+  })
+  // Ordem de outra conta responde igual a inexistente: não revela que o id existe.
+  const record = await prisma.order.findFirst({ where: { id: orderId, userId } })
+  if (!record) {
+    throw new AppError('ORDER_NOT_FOUND', 'Ordem não encontrada', 404)
+  }
+  if (count === 0) {
+    throw new AppError('ORDER_NOT_CANCELLABLE', 'Só ordens abertas podem ser canceladas', 409)
+  }
+  return toOrder(record)
+}
+
 export async function getOrderReservations(userId: string): Promise<OrderReservations> {
   return getReservations(prisma, userId)
 }

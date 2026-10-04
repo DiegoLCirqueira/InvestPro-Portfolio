@@ -21,6 +21,8 @@ const orderListQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
+const orderIdParamsSchema = z.object({ id: z.string().min(1) });
+
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
@@ -116,6 +118,29 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const user = request.user as { id: string };
       return orderService.getOrderReservations(user.id);
+    }
+  );
+
+  r.post(
+    "/api/v1/orders/:id/cancel",
+    {
+      ...writeRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Orders"],
+        summary: "Cancelar ordem",
+        description:
+          "Cancela uma ordem OPEN ou PENDING do usuário autenticado e devolve a ordem com status CANCELLED; o saldo/posição que ela reservava fica livre na hora. Ordem de outra conta ou inexistente: 404 ORDER_NOT_FOUND. Ordem já executada ou cancelada: 409 ORDER_NOT_CANCELLABLE (de duas chamadas simultâneas, uma recebe 200 e a outra 409).",
+        security: [{ BearerAuth: [] }],
+        params: orderIdParamsSchema,
+        response: {
+          200: orderSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return orderService.cancelOrder(user.id, request.params.id);
     }
   );
 }
