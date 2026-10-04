@@ -124,9 +124,23 @@ describe('reserva das ordens OPEN', () => {
 
     const tooMuch = await order(token, { side: 'SELL', quantity: 3 }) // 6 - 4 reservadas = 2 livres
     expect(tooMuch.statusCode).toBe(400)
-    expect(tooMuch.json().error).toBe('ORDER_INSUFFICIENT_POSITION')
+    expect(tooMuch.json()).toMatchObject({
+      error: 'ORDER_INSUFFICIENT_POSITION',
+      message: 'Quantidade insuficiente na posição para venda (4 reservados em ordens abertas)',
+    })
 
     expect((await order(token, { side: 'SELL', quantity: 2 })).statusCode).toBe(200)
+  })
+
+  it('recusa de venda cita a quantidade reservada fracionada em pt-BR', async () => {
+    const { token } = await userWithReservedBalance()
+    expect((await order(token, { ticker: 'BTC', side: 'BUY', quantity: 1 })).statusCode).toBe(200)
+    expect((await order(token, { ticker: 'BTC', side: 'SELL', type: 'LIMIT', price: 30, quantity: 0.5 })).json().status).toBe('OPEN')
+
+    const res = await order(token, { ticker: 'BTC', side: 'SELL', quantity: 0.6 })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json().message).toBe('Quantidade insuficiente na posição para venda (0,5 reservados em ordens abertas)')
   })
 
   it('depósito na Caixinha respeita a reserva', async () => {
