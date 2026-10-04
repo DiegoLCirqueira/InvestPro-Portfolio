@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { cardClassName } from "@/components/ui/card";
+import { formatMonthYear } from "@/lib/format";
 
 const PHONE_REGEX = /^\+?\d{10,15}$/;
 
@@ -34,6 +35,21 @@ function ProfileFieldsSkeleton() {
         </div>
       ))}
     </div>
+  );
+}
+
+// Carregando: a coluna da direita também reserva o lugar dos seus cards (mesma grade 3 + 2).
+function SideCardsSkeleton() {
+  return (
+    <>
+      {[0, 1].map((card) => (
+        <div key={card} className={cn(cardClassName, "space-y-4")}>
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-56 max-w-full" />
+          <Skeleton className="h-11 w-full rounded-xl" />
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -197,20 +213,24 @@ export function UserProfile() {
         editable
         error={fieldErrors.fullName}
       />
-      <ProfileField label="Email" value={profile.email} />
-      <ProfileField
-        label="Telefone"
-        value={phone}
-        onChange={setPhone}
-        editable
-        placeholder="+5511999999999"
-        error={fieldErrors.phone}
-      />
+      {/* Nome na largura toda; Email e Telefone (campos curtos) lado a lado a partir de sm. */}
+      <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
+        <ProfileField label="Email" value={profile.email} />
+        <ProfileField
+          label="Telefone"
+          value={phone}
+          onChange={setPhone}
+          editable
+          placeholder="+5511999999999"
+          error={fieldErrors.phone}
+        />
+      </div>
 
-      {/* A única ação principal da página (verde cheio); as outras seções usam outline. */}
+      {/* A única ação principal da página (verde cheio); as outras seções usam outline. Largura
+          total no celular; à direita, com largura do texto, a partir de sm. */}
       <Button
         type="submit"
-        className="self-end"
+        className="w-full sm:w-auto sm:self-end"
         disabled={updateProfile.isPending}
       >
         {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
@@ -231,17 +251,23 @@ export function UserProfile() {
         Voltar
       </button>
 
+      {/* Um resumo só com o que já existe (sem card novo, que repetiria Dados pessoais). */}
       <PageHeader
         title="Perfil"
-        description="Seus dados, CPF, perfil de investidor e saldo de demonstração."
+        description={
+          profile?.createdAt ? `Membro desde ${formatMonthYear(profile.createdAt)}.` : undefined
+        }
       />
 
-      <div className="flex w-full max-w-2xl flex-col gap-6">
-        <ProfileSection title="Dados pessoais">{personalData}</ProfileSection>
+      {/* Grade do app (como Ordens/Caixinha), no lugar da coluna única de max-w-2xl que deixava a
+          metade direita vazia: à esquerda "quem você é", à direita "o que você usa". Colunas com
+          alturas independentes, e a ordem do DOM já é a do celular. */}
+      <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
+        <div className="nav:col-span-3 flex flex-col gap-4">
+          <ProfileSection title="Dados pessoais">{personalData}</ProfileSection>
 
-        {profile && (
-          <>
-            {/* id="cpf": destino do "Completar CPF" de Transferências (/profile#cpf). */}
+          {profile && (
+            /* id="cpf": destino do "Completar CPF" de Transferências (/profile#cpf). */
             <ProfileSection id="cpf" title="Documento">
               <CpfSection
                 savedCpf={profile.cpf}
@@ -249,27 +275,34 @@ export function UserProfile() {
                 shouldFocus={shouldFocusCpf}
               />
             </ProfileSection>
+          )}
+        </div>
 
-            <InvestorProfileSection />
-            <TopUpCard />
+        <div className="nav:col-span-2 flex flex-col gap-4">
+          {isLoading && <SideCardsSkeleton />}
+          {profile && (
+            <>
+              <InvestorProfileSection />
+              <TopUpCard />
 
-            {isAdmin && (
-              <ProfileSection
-                title="Administração"
-                description="Lista de todos os usuários cadastrados."
-              >
-                <div className="flex justify-end">
-                  <Button asChild variant="outline">
-                    <Link to="/admin/users">
-                      <ShieldCheck aria-hidden="true" />
-                      Abrir administração
-                    </Link>
-                  </Button>
-                </div>
-              </ProfileSection>
-            )}
-          </>
-        )}
+              {isAdmin && (
+                <ProfileSection
+                  title="Administração"
+                  description="Lista de todos os usuários cadastrados."
+                >
+                  <div className="flex justify-end">
+                    <Button asChild variant="outline">
+                      <Link to="/admin/users">
+                        <ShieldCheck aria-hidden="true" />
+                        Abrir administração
+                      </Link>
+                    </Button>
+                  </div>
+                </ProfileSection>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export function CpfSection({ savedCpf, onAlreadySet, shouldFocus }: CpfSectionPr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2" noValidate>
-      <div className="grid gap-4 nav:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <ProfileField
           label="CPF"
           id="profile-cpf"
@@ -78,11 +78,12 @@ export function CpfSection({ savedCpf, onAlreadySet, shouldFocus }: CpfSectionPr
           {error.message}
         </p>
       )}
+      {/* Mesma regra do "Salvar alterações": largura total no celular, à direita a partir de sm. */}
       <div className="flex justify-end">
         <Button
           type="submit"
           variant="outline"
-         
+          className="w-full sm:w-auto"
           disabled={cpfSetup.isSaving}
         >
           {cpfSetup.isSaving ? "Salvando..." : "Salvar CPF"}

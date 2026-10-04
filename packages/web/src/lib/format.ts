@@ -38,6 +38,13 @@ export function formatDateTimeMinutes(iso: string): string {
   return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+/** "setembro de 2026": mês por extenso e ano. */
+export function formatMonthYear(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
 export function formatDateShort(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";

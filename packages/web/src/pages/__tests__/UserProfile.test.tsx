@@ -146,3 +146,45 @@ describe("UserProfile (erros de validação)", () => {
     expect(apiMock.patch).not.toHaveBeenCalled();
   });
 });
+
+describe("UserProfile (grade no computador)", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset();
+  });
+
+  it("cabeçalho resume com a data de cadastro", async () => {
+    mockApi(null);
+    await renderProfile();
+
+    expect(screen.getByText("Membro desde setembro de 2026.")).toBeInTheDocument();
+  });
+
+  it("esquerda: Dados pessoais e Documento; direita: perfil de investidor e depósito", async () => {
+    mockApi(null);
+    await renderProfile();
+
+    const region = (name: string) => screen.getByRole("region", { name });
+    const left = region("Dados pessoais").parentElement as HTMLElement;
+    const right = region("Perfil de investidor").parentElement as HTMLElement;
+
+    expect(left).toHaveClass("nav:col-span-3");
+    expect(right).toHaveClass("nav:col-span-2");
+    expect(left.parentElement).toHaveClass("grid", "grid-cols-1", "nav:grid-cols-5");
+    expect(region("Documento").parentElement).toBe(left);
+    expect(region("Simular depósito").parentElement).toBe(right);
+  });
+
+  it("Email e Telefone lado a lado a partir de sm; salvar em largura total só no celular", async () => {
+    mockApi(null);
+    await renderProfile();
+
+    const emailRow = screen.getByLabelText("Email").closest(".grid") as HTMLElement;
+    expect(emailRow).toHaveClass("sm:grid-cols-2");
+    expect(emailRow).toContainElement(screen.getByLabelText("Telefone"));
+    expect(screen.getByRole("button", { name: "Salvar alterações" })).toHaveClass(
+      "w-full",
+      "sm:w-auto",
+      "sm:self-end",
+    );
+  });
+});
