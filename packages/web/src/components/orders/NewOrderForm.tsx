@@ -18,10 +18,7 @@ import { useCreateOrder, useSellableAssets } from "@/hooks/use-orders";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useOrderForm, type OrderEntryMode } from "@/hooks/use-order-form";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
-import {
-  useSavingsBox,
-  useSavingsBoxInOrdersPreference,
-} from "@/hooks/use-savings-box";
+import { useSavingsBox } from "@/hooks/use-savings-box";
 import {
   missingAmount,
   savingsBoxDraw,
@@ -82,7 +79,9 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
     refetch: refetchBalance,
   } = usePortfolioPositions();
   const savingsBox = useSavingsBox();
-  const [prefersSavingsBox, setPrefersSavingsBox] = useSavingsBoxInOrdersPreference();
+  // Desmarcado a cada ordem: tirar dinheiro de um investimento é escolha explícita (opt-in),
+  // não um padrão que segue valendo para as próximas compras.
+  const [prefersSavingsBox, setPrefersSavingsBox] = useState(false);
   // A Caixinha só entra na compra e só se houver dinheiro nela.
   const canUseSavingsBox = !form.isSell && savingsBox.data !== undefined && savingsBox.balance > 0;
   const usesSavingsBox = canUseSavingsBox && prefersSavingsBox;
@@ -152,6 +151,7 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
       return;
     }
     form.reset();
+    setPrefersSavingsBox(false);
     setShowRequired(false);
     void refetchSellableAssets();
     void refetchBalance();

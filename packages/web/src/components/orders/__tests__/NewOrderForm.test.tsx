@@ -126,7 +126,6 @@ describe("NewOrderForm", () => {
     mockCreateOrder.mutate.mockReset();
     mockPortfolio.balance = 1_000_000;
     mockSavingsBox.balance = 0;
-    localStorage.clear();
     useInsufficientBalanceStore.setState({ isOpen: false });
   });
 
@@ -222,7 +221,7 @@ describe("NewOrderForm", () => {
       renderForm();
       buyTenPetr4();
 
-      expect(checkbox()).toBeChecked();
+      fireEvent.click(checkbox());
       const split = screen.getByText("Como esta compra será paga").closest("[role=status]") as HTMLElement;
       expect(split).toHaveTextContent(/Do Saldo em conta\s*R\$\s?100,00/);
       expect(split).toHaveTextContent(/Da Caixinha\s*\+ R\$\s?203,00/);
@@ -244,26 +243,35 @@ describe("NewOrderForm", () => {
       mockSavingsBox.balance = 3_000;
       renderForm();
       buyTenPetr4();
+      fireEvent.click(checkbox());
 
       expect(screen.getByText("Tudo sai do Saldo em conta. A Caixinha não é usada.")).toBeInTheDocument();
       expect(screen.queryByText("Como esta compra será paga")).not.toBeInTheDocument();
       expect(submitButton()).toBeEnabled();
     });
 
-    it("desmarcada, volta à verificação do saldo em conta e lembra a escolha", () => {
+    it("vem desmarcada (opt-in): falta em conta barra o envio até a pessoa marcar", () => {
       mockPortfolio.balance = 100;
       mockSavingsBox.balance = 3_000;
-      const { unmount } = renderForm();
+      renderForm();
       buyTenPetr4();
 
-      fireEvent.click(checkbox());
-
+      expect(checkbox()).not.toBeChecked();
       expect(screen.getByText(/Faltam/)).toHaveTextContent(/Faltam R\$\s?203,00 para esta ordem/);
       expect(submitButton()).toBeDisabled();
+    });
 
-      unmount();
+    it("depois de enviar, volta desmarcada para a próxima ordem", async () => {
+      mockPortfolio.balance = 100;
+      mockSavingsBox.balance = 3_000;
+      mockCreateOrder.mutate.mockResolvedValue({} as Order);
       renderForm();
-      expect(checkbox()).not.toBeChecked();
+      buyTenPetr4();
+      fireEvent.click(checkbox());
+
+      fireEvent.click(submitButton());
+
+      await waitFor(() => expect(checkbox()).not.toBeChecked());
     });
 
     it("nem a soma basta: diz quanto falta mesmo com a Caixinha e não deixa enviar", () => {
@@ -271,6 +279,7 @@ describe("NewOrderForm", () => {
       mockSavingsBox.balance = 100;
       renderForm();
       buyTenPetr4();
+      fireEvent.click(checkbox());
 
       const alert = screen.getByText(/Faltam/).closest("[role=status]") as HTMLElement;
       expect(alert).toHaveTextContent(/Faltam R\$\s?103,00, mesmo usando a Caixinha/);
