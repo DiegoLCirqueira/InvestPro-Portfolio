@@ -93,8 +93,17 @@ export const sellableAssetListSchema = z.object({
   items: z.array(sellableAssetSchema),
 });
 
+// O que as ordens OPEN já prometeram: balance = custo das BUY OPEN (quantidade ×
+// preço informado + 1%); positions = quantidade das SELL OPEN por ticker. O
+// livre é o saldo/posição menos isso.
+export const orderReservationsSchema = z.object({
+  balance: z.number().nonnegative(),
+  positions: z.record(z.string(), z.number().positive()),
+});
+
 export type CreateOrderInput = z.infer<typeof createOrderInputSchema>;
 export type Order = z.infer<typeof orderSchema>;
 export type OrderList = z.infer<typeof orderListSchema>;
 export type SellableAsset = z.infer<typeof sellableAssetSchema>;
 export type SellableAssetList = z.infer<typeof sellableAssetListSchema>;
+export type OrderReservations = z.infer<typeof orderReservationsSchema>;

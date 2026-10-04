@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   createOrderInputSchema,
   orderListSchema,
+  orderReservationsSchema,
   orderSchema,
   sellableAssetListSchema,
 } from "@investpro/shared";
@@ -93,6 +94,28 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const user = request.user as { id: string };
       return orderService.listSellableAssets(user.id);
+    }
+  );
+
+  r.get(
+    "/api/v1/orders/reservations",
+    {
+      ...readRateLimit,
+      preHandler: [authenticate],
+      schema: {
+        tags: ["Orders"],
+        summary: "Saldo e posições reservados",
+        description:
+          "O que as ordens OPEN do usuário autenticado já prometeram: `balance` = custo das compras OPEN (quantidade × preço informado + 1% de taxa); `positions` = quantidade das vendas OPEN por ticker. Compra/venda a mercado, depósito na Caixinha, câmbio saindo de BRL e transferência só usam o saldo/posição livres (total menos o reservado). Sem ordens OPEN: `{ balance: 0, positions: {} }`.",
+        security: [{ BearerAuth: [] }],
+        response: {
+          200: orderReservationsSchema,
+        },
+      },
+    },
+    async (request) => {
+      const user = request.user as { id: string };
+      return orderService.getOrderReservations(user.id);
     }
   );
 }

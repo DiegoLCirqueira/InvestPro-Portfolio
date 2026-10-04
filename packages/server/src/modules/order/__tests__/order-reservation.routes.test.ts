@@ -157,3 +157,44 @@ describe('reserva das ordens OPEN', () => {
     expect(await balanceOf(userId)).toBe(1000)
   })
 })
+
+describe('GET /api/v1/orders/reservations', () => {
+  function reservationsOf(token: string) {
+    return app!.inject({
+      method: 'GET',
+      url: '/api/v1/orders/reservations',
+      headers: { authorization: `Bearer ${token}` },
+      remoteAddress: uniqueIp(),
+    })
+  }
+
+  it('sem ordens OPEN: { balance: 0, positions: {} }', async () => {
+    const email = uniqueEmail('order-reserve-empty')
+    emails.push(email)
+    const reg = await registerTestUser(app!, email)
+
+    const res = await reservationsOf(reg.body.accessToken as string)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ balance: 0, positions: {} })
+  })
+
+  it('soma o custo das BUY OPEN e as quantidades das SELL OPEN por ticker, só do usuário', async () => {
+    const { token } = await userWithReservedBalance() // 808 reservados
+    expect((await order(token, { side: 'BUY', quantity: 6 })).statusCode).toBe(200)
+    expect((await order(token, { side: 'SELL', type: 'LIMIT', price: 30, quantity: 2 })).statusCode).toBe(200)
+    expect((await order(token, { side: 'SELL', type: 'STOP', price: 20, quantity: 3 })).statusCode).toBe(200)
+    // Outra conta com reserva não aparece aqui.
+    await userWithReservedBalance()
+
+    const res = await reservationsOf(token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ balance: 808, positions: { VALE3: 5 } })
+  })
+
+  it('exige autenticação', async () => {
+    const res = await app!.inject({ method: 'GET', url: '/api/v1/orders/reservations' })
+    expect(res.statusCode).toBe(401)
+  })
+})

@@ -7,6 +7,7 @@
 // ordem criada ou cancelada ao mesmo tempo gera conflito e retry.
 
 import type { Prisma } from '@prisma/client'
+import type { OrderReservations } from '@investpro/shared'
 import { AppError } from '../auth/auth.service.js'
 import { calculateOrderFee } from './order.domain.js'
 
@@ -44,6 +45,22 @@ export async function reservedQuantity(client: OrderReader, userId: string, tick
     _sum: { quantity: true },
   })
   return _sum.quantity?.toNumber() ?? 0
+}
+
+// Reserva completa do usuário, pro site mostrar o livre sem recalcular pelo histórico.
+export async function getReservations(client: OrderReader, userId: string): Promise<OrderReservations> {
+  const [balance, sells] = await Promise.all([
+    reservedBalance(client, userId),
+    client.order.groupBy({
+      by: ['ticker'],
+      where: { userId, status: 'OPEN', side: 'SELL' },
+      _sum: { quantity: true },
+    }),
+  ])
+  const positions = Object.fromEntries(
+    sells.map((s) => [s.ticker, s._sum.quantity?.toNumber() ?? 0] as const).filter(([, quantity]) => quantity > 0)
+  )
+  return { balance, positions }
 }
 
 export function reservedNote(reserved: number): string {

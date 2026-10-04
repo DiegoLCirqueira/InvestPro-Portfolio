@@ -16,6 +16,7 @@ import type {
   CreateOrderInput,
   Order,
   OrderList,
+  OrderReservations,
   SellableAssetList,
 } from '@investpro/shared'
 import { prisma } from '../../config/database.js'
@@ -23,7 +24,13 @@ import { getAssetMeta, getQuote } from '../market/market.service.js'
 import { AppError } from '../auth/auth.service.js'
 import { recordSnapshot } from '../portfolio/snapshot.service.js'
 import { executeWithdraw } from '../savings-box/savings-box.service.js'
-import { buyCost, freeBalanceShortfall, reservedNote, reservedQuantity } from './order.reservation.js'
+import {
+  buyCost,
+  freeBalanceShortfall,
+  getReservations,
+  reservedNote,
+  reservedQuantity,
+} from './order.reservation.js'
 import {
   applyBuyFill,
   applySellFill,
@@ -379,6 +386,10 @@ export async function listOrders(
     page,
     limit,
   }
+}
+
+export async function getOrderReservations(userId: string): Promise<OrderReservations> {
+  return getReservations(prisma, userId)
 }
 
 // Ativos que o usuário pode vender agora: só tickers com Position ativa
