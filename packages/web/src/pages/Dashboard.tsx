@@ -11,11 +11,12 @@ import { SectionTitle } from "@/components/SectionTitle";
 import type { PortfolioPeriod } from "@/types/portfolio";
 import { formatPercent } from "@/lib/format";
 import { cardClassName } from "@/components/ui/card";
+import { changeToneClass } from "@/lib/change-tone";
 import { cn } from "@/lib/utils";
 
 // No Painel a saudação é o próprio título da página (antes ficava no cabeçalho só no desktop
 // e num h2 à parte no celular).
-function DashboardHeader({ change }: { change?: number }) {
+export function DashboardHeader({ change }: { change?: number }) {
   const user = useAuthStore((s) => s.user);
   const hour = new Date().getHours();
   const greeting =
@@ -35,7 +36,8 @@ function DashboardHeader({ change }: { change?: number }) {
         change !== undefined && (
           <>
             Seu portfólio {change >= 0 ? "rendeu" : "recuou"}{" "}
-            <span className="text-primary">
+            {/* Queda em vermelho (era verde mesmo negativa), zero neutro, alta em verde. */}
+            <span className={changeToneClass(change)}>
               {formatPercent(change, { showSign: true })}
             </span>{" "}
             no período.

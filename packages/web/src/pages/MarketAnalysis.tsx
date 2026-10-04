@@ -22,6 +22,7 @@ import {
 } from "@/lib/market";
 import type { MarketAsset, MarketAssetType } from "@/types/market";
 import { cardClassName } from "@/components/ui/card";
+import { changeToneClass } from "@/lib/change-tone";
 import { cn } from "@/lib/utils";
 
 // Tipo como texto simples (mesmo nome do filtro): com um selo colorido para o tipo e outro para
@@ -74,12 +75,8 @@ function SentimentBadge({ asset }: { asset: MarketAsset }) {
   );
 }
 
-// Variação zero é neutra: nem verde de alta nem vermelho de queda.
-function changeToneClass(asset: MarketAsset): string {
-  const pct = asset.changePercent ?? asset.change24h;
-  if (pct > 0) return "text-brand-primary";
-  if (pct < 0) return "text-destructive";
-  return "text-muted-foreground";
+function assetChangeToneClass(asset: MarketAsset): string {
+  return changeToneClass(asset.changePercent ?? asset.change24h);
 }
 
 // Clicar no ativo leva ao formulário de ordem já com ele escolhido.
@@ -128,7 +125,7 @@ function AssetRow({ asset }: { asset: MarketAsset }) {
               </span>
             </span>
             <span
-              className={`text-sm font-bold tabular-nums ${changeToneClass(asset)}`}
+              className={`text-sm font-bold tabular-nums ${assetChangeToneClass(asset)}`}
             >
               {formatPercent(asset.changePercent)}
             </span>
@@ -250,7 +247,7 @@ export function MarketAnalysis() {
                   </span>
                 </div>
                 <div
-                  className={`flex items-center justify-end md:justify-start gap-2 text-sm font-semibold ${changeToneClass(
+                  className={`flex items-center justify-end md:justify-start gap-2 text-sm font-semibold ${assetChangeToneClass(
                     index,
                   )}`}
                 >
@@ -377,7 +374,7 @@ export function MarketAnalysis() {
                           </div>
                         </td>
                         <td
-                          className={`py-3 text-sm font-bold tabular-nums text-right truncate border-y-2 ${rowBorder} ${changeToneClass(
+                          className={`py-3 text-sm font-bold tabular-nums text-right truncate border-y-2 ${rowBorder} ${assetChangeToneClass(
                             asset,
                           )}`}
                         >
