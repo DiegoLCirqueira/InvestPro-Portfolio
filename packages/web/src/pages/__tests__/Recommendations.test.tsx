@@ -84,6 +84,20 @@ describe("Recommendations (pelo perfil de investidor)", () => {
     expect(screen.getAllByRole("link", { name: /Depositar|Ver ativos|Ir para/ })).toHaveLength(3);
   });
 
+  it("reduzir moedas estrangeiras leva ao Câmbio (é lá que se vende moeda), reduzir ações a Ordens", async () => {
+    renderWith({
+      profile: "MODERATE",
+      allocation: [],
+      items: [
+        { id: "reduce-FOREIGN_CURRENCY", category: "RISK", title: "Reduzir a exposição a moedas estrangeiras", description: "..." },
+        { id: "reduce-STOCK", category: "RISK", title: "Reduzir a exposição a ações", description: "..." },
+      ],
+    });
+
+    expect(await screen.findByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
+    expect(screen.getByRole("link", { name: /Ir para Ordens/ })).toHaveAttribute("href", "/orders");
+  });
+
   it("deixa claro que é conteúdo educativo, sem alegar inteligência artificial", async () => {
     const { container } = renderWith({ profile: null, allocation: [], items: [] });
     await screen.findByRole("note");

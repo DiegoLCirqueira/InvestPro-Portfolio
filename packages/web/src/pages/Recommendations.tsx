@@ -89,7 +89,8 @@ function recommendationAction(item: PersonalizedRecommendation): { label: string
   if (item.id === "idle-cash") return { label: "Depositar na caixinha", to: SAVINGS_BOX_PATH };
   if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
   const [direction, type] = item.id.split("-");
-  if (direction === "increase" && type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
+  // Moeda estrangeira se compra e se vende no Câmbio (não em Ordens), para aumentar ou reduzir.
+  if (type === "FOREIGN_CURRENCY") return { label: "Ir para o Câmbio", to: "/exchange" };
   if (direction === "increase" && MARKET_TYPES.has(type)) {
     return { label: "Ver ativos no Mercado", to: `/market?tipo=${type}` };
   }
