@@ -71,7 +71,17 @@ function SavingsBoxDialogContent({
 
   // Depositar sai do saldo em conta; resgatar sai do saldo da Caixinha.
   const available = mode === "DEPOSIT" ? accountBalance : savingsBalance;
+  const where = mode === "DEPOSIT" ? "em conta" : "na Caixinha";
+  const isEmpty = available <= 0;
   const exceedsAvailable = amount > available;
+  // Botão desabilitado sempre com o motivo ao lado (antes só dizia "Você tem R$ X em conta").
+  const blockReason = isEmpty
+    ? mode === "DEPOSIT"
+      ? "Você não tem saldo em conta para depositar."
+      : "A Caixinha está vazia: não há o que resgatar."
+    : exceedsAvailable
+      ? `O valor passa do que você tem ${where}: faltam ${formatCurrency(amount - available)}. Você tem ${formatCurrency(available)} ${where}.`
+      : null;
 
   const handleError = useFinancialErrorHandler([
     mode === "DEPOSIT" ? "PORTFOLIO_INSUFFICIENT_BALANCE" : "SAVINGS_BOX_INSUFFICIENT_BALANCE",
@@ -89,6 +99,8 @@ function SavingsBoxDialogContent({
   const mutation = mode === "DEPOSIT" ? deposit : withdraw;
 
   const handleSubmit = useSubmitOnce(async () => {
+    // O motivo já está na tela; o Enter não passa por cima do botão desabilitado.
+    if (blockReason) return;
     if (amount <= 0) {
       toast.error("Informe um valor válido.");
       return;
@@ -130,14 +142,13 @@ function SavingsBoxDialogContent({
             input={amountInput}
             ariaLabel={`Valor a ${copy.action.toLowerCase()}`}
             invalid={exceedsAvailable}
-            describedBy={exceedsAvailable ? limitNoteId : undefined}
+            describedBy={blockReason ? limitNoteId : undefined}
             autoFocus
           />
           {/* Avisa antes de enviar, em vez de abrir o "Saldo insuficiente" por cima deste diálogo. */}
-          {exceedsAvailable && (
+          {blockReason && (
             <p id={limitNoteId} className="text-xs font-medium text-destructive">
-              Você tem {formatCurrency(available)}{" "}
-              {mode === "DEPOSIT" ? "em conta" : "na Caixinha"}.
+              {blockReason}
             </p>
           )}
         </FormField>
@@ -147,7 +158,11 @@ function SavingsBoxDialogContent({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={mutation.isPending || exceedsAvailable}>
+          <Button
+            type="submit"
+            disabled={mutation.isPending || blockReason !== null}
+            aria-describedby={blockReason ? limitNoteId : undefined}
+          >
             {mutation.isPending
               ? "Enviando..."
               : amount > 0

@@ -25,11 +25,11 @@ vi.mock("@/hooks/use-savings-box", () => ({
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
-function renderCard(url = "/") {
+function renderCard(url = "/", accountBalance = 1_250) {
   const onBalanceChange = vi.fn();
   render(
     <MemoryRouter initialEntries={[url]}>
-      <SavingsBoxRow accountBalance={1_250} onBalanceChange={onBalanceChange} />
+      <SavingsBoxRow accountBalance={accountBalance} onBalanceChange={onBalanceChange} />
     </MemoryRouter>,
   );
   return { onBalanceChange };
@@ -106,7 +106,22 @@ describe("SavingsBoxRow (Caixinha no topo de Seus Ativos)", () => {
     fireEvent.change(field, { target: { value: "200000" } });
 
     expect(field).toHaveAttribute("aria-invalid", "true");
-    expect(field).toHaveAccessibleDescription(/Você tem R\$\s?1\.250,00 em conta\./);
-    expect(screen.getByRole("button", { name: /Depositar R\$\s?2\.000,00/ })).toBeDisabled();
+    expect(field).toHaveAccessibleDescription(
+      /O valor passa do que você tem em conta: faltam R\$\s?750,00\. Você tem R\$\s?1\.250,00 em conta\./,
+    );
+    const submit = screen.getByRole("button", { name: /Depositar R\$\s?2\.000,00/ });
+    expect(submit).toBeDisabled();
+    // O botão desabilitado aponta para o motivo.
+    expect(submit).toHaveAccessibleDescription(/faltam R\$\s?750,00/);
+  });
+
+  it("sem saldo em conta, o depósito vem desabilitado já explicando o porquê", () => {
+    renderCard("/", 0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Depositar" }));
+
+    const submit = screen.getByRole("button", { name: "Depositar" });
+    expect(submit).toBeDisabled();
+    expect(submit).toHaveAccessibleDescription("Você não tem saldo em conta para depositar.");
   });
 });
