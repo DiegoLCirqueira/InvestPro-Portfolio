@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SavingsBox } from "@/pages/SavingsBox";
+import type { SavingsBoxTransaction } from "@/types/savings-box";
 
 const mocks = vi.hoisted(() => ({
   savings: { balance: 3_000, rate: 0.06, estimatedYield: 12.34 },
@@ -12,6 +13,17 @@ const mocks = vi.hoisted(() => ({
   deposit: vi.fn(),
   withdraw: vi.fn(),
   onDepositSuccess: undefined as (() => void) | undefined,
+  // Extrato: vazio por padrão.
+  transactions: {
+    items: [] as SavingsBoxTransaction[],
+    hasMore: false,
+    isLoading: false,
+    error: null as Error | null,
+    isLoadingMore: false,
+    loadMoreError: null as Error | null,
+  },
+  refetchTransactions: vi.fn(),
+  loadMore: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-savings-box", () => ({
@@ -27,6 +39,11 @@ vi.mock("@/hooks/use-savings-box", () => ({
     return { mutate: mocks.deposit, isPending: false };
   },
   useSavingsBoxWithdraw: () => ({ mutate: mocks.withdraw, isPending: false }),
+  useSavingsBoxTransactions: () => ({
+    ...mocks.transactions,
+    refetch: mocks.refetchTransactions,
+    loadMore: mocks.loadMore,
+  }),
 }));
 
 // Saldo em conta LIVRE (o reservado em ordens abertas já descontado).
@@ -55,6 +72,101 @@ describe("Página Caixinha", () => {
     mocks.deposit.mockReset();
     mocks.refetchSavings.mockReset();
     mocks.refetchAccount.mockReset();
+    mocks.refetchTransactions.mockReset();
+    mocks.loadMore.mockReset();
+    mocks.transactions = {
+      items: [],
+      hasMore: false,
+      isLoading: false,
+      error: null,
+      isLoadingMore: false,
+      loadMoreError: null,
+    };
+  });
+
+  describe("Movimentações", () => {
+    const movements = () => screen.getByRole("region", { name: "Movimentações" });
+    const tx = (overrides: Partial<SavingsBoxTransaction>): SavingsBoxTransaction => ({
+      id: "t1",
+      type: "DEPOSIT",
+      amount: 500,
+      balanceAfter: 3_000,
+      createdAt: "2026-10-04T13:05:00.000Z",
+      orderId: null,
+      ...overrides,
+    });
+
+    it("vazio: explica onde os movimentos vão aparecer", () => {
+      renderPage();
+
+      expect(movements()).toHaveTextContent("Seus depósitos e resgates aparecem aqui.");
+      expect(within(movements()).queryByRole("button", { name: "Ver mais" })).not.toBeInTheDocument();
+    });
+
+    it("lista depósito, resgate e uso numa compra com sinal, data e saldo depois", () => {
+      mocks.transactions.items = [
+        tx({ id: "a" }),
+        tx({ id: "b", type: "WITHDRAW", amount: 200, balanceAfter: 2_500 }),
+        tx({ id: "c", type: "ORDER_FUNDING", amount: 300, balanceAfter: 2_700, orderId: "o1" }),
+      ];
+      renderPage();
+
+      const rows = within(movements()).getAllByRole("listitem");
+      expect(rows).toHaveLength(3);
+      expect(rows[0]).toHaveTextContent(/Depósito.*\+R\$\s?500,00.*Saldo: R\$\s?3\.000,00/);
+      expect(rows[0]).toHaveTextContent(/\d{2}\/\d{2}\/2026, \d{2}:\d{2}/);
+      expect(rows[1]).toHaveTextContent(/Resgate.*−R\$\s?200,00/);
+      expect(rows[2]).toHaveTextContent(/Usado numa compra.*−R\$\s?300,00/);
+    });
+
+    it("com mais páginas, Ver mais pede a próxima", () => {
+      mocks.transactions.items = [tx({})];
+      mocks.transactions.hasMore = true;
+      renderPage();
+
+      fireEvent.click(within(movements()).getByRole("button", { name: "Ver mais" }));
+      expect(mocks.loadMore).toHaveBeenCalled();
+    });
+
+    it("falha no Ver mais avisa sem apagar a lista", () => {
+      mocks.transactions.items = [tx({})];
+      mocks.transactions.hasMore = true;
+      mocks.transactions.loadMoreError = new Error("rede");
+      renderPage();
+
+      expect(within(movements()).getByRole("alert")).toHaveTextContent(
+        "Não foi possível carregar mais movimentações.",
+      );
+      expect(within(movements()).getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    it("erro só no extrato: o resto da página segue e Tentar novamente recarrega", () => {
+      mocks.transactions.error = new Error("Falha");
+      renderPage();
+
+      expect(summary()).toBeInTheDocument();
+      expect(movements()).toHaveTextContent("Não foi possível carregar as movimentações");
+      fireEvent.click(within(movements()).getByRole("button", { name: "Tentar novamente" }));
+      expect(mocks.refetchTransactions).toHaveBeenCalled();
+    });
+
+    it("carregando: o bloco fica ocupado (aria-busy)", () => {
+      mocks.transactions.isLoading = true;
+      renderPage();
+
+      expect(movements()).toHaveAttribute("aria-busy", "true");
+    });
+
+    it("depois de depositar, o extrato recarrega do topo", async () => {
+      mocks.deposit.mockImplementation(async () => mocks.onDepositSuccess?.());
+      renderPage();
+
+      fireEvent.click(within(summary()).getByRole("button", { name: "Depositar" }));
+      fireEvent.change(screen.getByLabelText("Valor a depositar"), { target: { value: "10000" } });
+      fireEvent.click(screen.getByRole("button", { name: /Depositar R\$\s?100,00/ }));
+
+      await waitFor(() => expect(mocks.refetchTransactions).toHaveBeenCalled());
+    });
   });
 
   describe("com saldo", () => {

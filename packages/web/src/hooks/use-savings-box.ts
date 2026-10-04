@@ -84,6 +84,8 @@ export function useSavingsBox() {
   };
 }
 
+export type SavingsBoxTransactionsState = ReturnType<typeof useSavingsBoxTransactions>;
+
 export interface UseSavingsBoxMutationOptions {
   onSuccess?: (result: SavingsBoxResponse) => void;
   onError?: (error: Error) => void;

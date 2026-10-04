@@ -6,8 +6,9 @@ import { SavingsBoxDialog, type SavingsBoxMode } from "@/components/savings-box/
 import { SavingsBoxHowItWorks } from "@/components/savings-box/SavingsBoxHowItWorks";
 import { SavingsBoxSimulator } from "@/components/savings-box/SavingsBoxSimulator";
 import { SavingsBoxSummary } from "@/components/savings-box/SavingsBoxSummary";
+import { SavingsBoxTransactions } from "@/components/savings-box/SavingsBoxTransactions";
 import { SavingsBoxSkeleton } from "@/components/skeletons/SavingsBoxSkeleton";
-import { useSavingsBox } from "@/hooks/use-savings-box";
+import { useSavingsBox, useSavingsBoxTransactions } from "@/hooks/use-savings-box";
 import { useFreeBalance } from "@/hooks/use-free-balance";
 
 const TITLE = "Caixinha";
@@ -19,6 +20,7 @@ export function SavingsBox() {
   const savingsBox = useSavingsBox();
   // Só o saldo livre dá para depositar: o reservado em ordens abertas fica de fora.
   const account = useFreeBalance();
+  const transactions = useSavingsBoxTransactions();
   const [dialog, setDialog] = useState<{ mode: SavingsBoxMode; amount?: number } | null>(null);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   // Botão que abriu o diálogo, para o foco voltar a ele ao fechar.
@@ -72,16 +74,18 @@ export function SavingsBox() {
 
   const { balance, data } = savingsBox;
   const rate = data?.rate ?? 0;
-  const refetchBalances = () => {
+  const refetchAfterMovement = () => {
     void savingsBox.refetch();
     void account.refetch();
+    // O movimento entra no extrato: recomeça do topo para mostrá-lo.
+    void transactions.refetch();
   };
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
       <PageHeader title={TITLE} description={DESCRIPTION} />
 
-      {/* Como em Ordens: grade de 5 colunas no desktop; no celular, empilhado na ordem A → B → C. */}
+      {/* Como em Ordens: grade de 5 colunas no desktop; no celular, empilhado na ordem A → B → C → D. */}
       <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
         <SavingsBoxSummary
           balance={balance}
@@ -102,6 +106,7 @@ export function SavingsBox() {
           onDeposit={(event, amount) => open(event, "DEPOSIT", { amount })}
         />
         <SavingsBoxHowItWorks />
+        <SavingsBoxTransactions transactions={transactions} />
       </div>
 
       <SavingsBoxDialog
@@ -114,7 +119,7 @@ export function SavingsBox() {
         savingsBalance={balance}
         onSuccess={() => {
           if (openedFromEmptyState.current) focusDepositOnMount.current = true;
-          refetchBalances();
+          refetchAfterMovement();
         }}
       />
       {/* "Adicionar saldo grátis" do Painel: o primeiro passo quando não há saldo nem Caixinha. */}
