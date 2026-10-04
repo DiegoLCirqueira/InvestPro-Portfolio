@@ -3,6 +3,7 @@ import { renderHook } from "@testing-library/react";
 import { toast } from "sonner";
 import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import {
+  INSUFFICIENT_POSITION_MESSAGE,
   OPERATION_CONFLICT_MESSAGE,
   SERVICE_UNAVAILABLE_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
@@ -84,6 +85,15 @@ describe("useFinancialErrorHandler", () => {
     result.current(new ApiError(400, "Valor total da ordem é pequeno demais", "ORDER_TOTAL_TOO_SMALL"));
 
     expect(toast.error).toHaveBeenCalledWith(MIN_ORDER_TOTAL_MESSAGE, expect.any(Object));
+  });
+
+  it("posição insuficiente (venda que fica aberta) ganha mensagem que aponta as vendas abertas", () => {
+    const { result } = renderHook(() => useFinancialErrorHandler(["ORDER_INSUFFICIENT_BALANCE"]));
+
+    result.current(new ApiError(400, "Quantidade insuficiente", "ORDER_INSUFFICIENT_POSITION"));
+
+    expect(toast.error).toHaveBeenCalledWith(INSUFFICIENT_POSITION_MESSAGE, expect.any(Object));
+    expect(INSUFFICIENT_POSITION_MESSAGE).toMatch(/vendas abertas/);
   });
 
   it("401 avisa que a sessão expirou; outros erros mostram a mensagem do servidor", () => {

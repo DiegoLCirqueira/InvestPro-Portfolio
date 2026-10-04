@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { AlertCircle, Info, PiggyBank, Plus, Wallet } from "lucide-react";
+import { AlertCircle, Clock, Info, PiggyBank, Plus, Wallet } from "lucide-react";
 import { TopUpDialog } from "@/components/TopUpDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,18 +19,24 @@ interface SavingsBoxOption {
 
 interface OrderBalanceProps {
   available: number;
+  /** Compra LIMIT/STOP: o que as outras compras abertas já reservam (fora do disponível). */
+  reserved?: number;
   /** Só na compra e só com dinheiro na Caixinha; null esconde a linha e o checkbox. */
   savingsBox: SavingsBoxOption | null;
 }
 
 // Saldo à vista: a pessoa compara com "Você pagará" enquanto digita, em vez de descobrir a
 // falta só depois de enviar. Na compra, a Caixinha pode cobrir o que faltar.
-export function OrderBalance({ available, savingsBox }: OrderBalanceProps) {
+export function OrderBalance({ available, reserved = 0, savingsBox }: OrderBalanceProps) {
   const checkboxId = useId();
 
   return (
     <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-background px-4 py-3 text-sm">
       <BalanceRow icon={Wallet} label="Saldo disponível" value={available} />
+      {/* Explica por que o disponível é menor que o Saldo em conta do Painel. */}
+      {reserved > 0 && (
+        <BalanceRow icon={Clock} label="Reservado em ordens abertas" value={reserved} />
+      )}
       {savingsBox && (
         <>
           <BalanceRow icon={PiggyBank} label="Na Caixinha" value={savingsBox.balance} />

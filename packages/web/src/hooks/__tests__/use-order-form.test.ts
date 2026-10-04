@@ -4,7 +4,7 @@ import { act, renderHook } from "@testing-library/react";
 import { useOrderForm } from "@/hooks/use-order-form";
 import { MIN_ORDER_TOTAL_MESSAGE } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
-import type { SellableAsset } from "@/types/order";
+import type { Order, SellableAsset } from "@/types/order";
 
 const BTC: MarketAsset = { id: "2", ticker: "BTC", name: "Bitcoin", type: "CRYPTO", price: 300_000, change24h: 0 };
 const PETR4: MarketAsset = { id: "1", ticker: "PETR4", name: "Petrobras", type: "STOCK", price: 30, change24h: 0 };
@@ -12,7 +12,11 @@ const PETR4: MarketAsset = { id: "1", ticker: "PETR4", name: "Petrobras", type: 
 // Simula a digitação no campo de moeda: os dígitos são os centavos ("10000" = R$ 100,00).
 const digits = (value: string) => ({ target: { value } }) as ChangeEvent<HTMLInputElement>;
 
-function renderOrderForm(ticker = "BTC", sellableAssets: SellableAsset[] = []) {
+function renderOrderForm(
+  ticker = "BTC",
+  sellableAssets: SellableAsset[] = [],
+  orders: Order[] = [],
+) {
   return renderHook(() =>
     useOrderForm({
       marketAssets: [BTC, PETR4],
@@ -20,6 +24,7 @@ function renderOrderForm(ticker = "BTC", sellableAssets: SellableAsset[] = []) {
       sellableAssets,
       isSellableLoading: false,
       initialTicker: ticker,
+      orders,
     }),
   );
 }
@@ -117,5 +122,44 @@ describe("useOrderForm: valor mínimo por ordem (R$ 1,00)", () => {
 
     act(() => result.current.changeQuantity("0,000001")); // R$ 0,30, metade
     expect(result.current.quantityError).toBe(MIN_ORDER_TOTAL_MESSAGE);
+  });
+});
+
+describe("useOrderForm: ordens abertas (LIMIT/STOP)", () => {
+  const openOrder = (side: Order["side"], quantity: number, price: number): Order => ({
+    id: `${side}-${quantity}`,
+    assetId: "a",
+    ticker: "PETR4",
+    side,
+    type: "LIMIT",
+    quantity,
+    price,
+    status: "OPEN",
+    createdAt: "2026-10-03T10:00:00.000Z",
+    executedAt: null,
+    avgPrice: null,
+  });
+
+  it("venda LIMIT desconta as vendas abertas do ativo; a MARKET não", () => {
+    const { result } = renderOrderForm(
+      "PETR4",
+      [{ ticker: "PETR4", quantity: 10 }],
+      [openOrder("SELL", 8, 35)],
+    );
+    act(() => result.current.changeSide("SELL"));
+    act(() => result.current.changeQuantity("5"));
+    expect(result.current.quantityError).toBeNull();
+
+    act(() => result.current.setType("LIMIT"));
+    act(() => result.current.priceInput.onChange(digits("3500")));
+    expect(result.current.quantityError).toMatch(/8 já estão em vendas abertas/);
+  });
+
+  it("compra LIMIT expõe o custo das compras abertas como reservado; a MARKET não", () => {
+    const { result } = renderOrderForm("PETR4", [], [openOrder("BUY", 10, 30)]);
+    expect(result.current.reservedBalance).toBe(0);
+
+    act(() => result.current.setType("STOP"));
+    expect(result.current.reservedBalance).toBe(303);
   });
 });
