@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
-import { AlertCircle, Clock, Info, PiggyBank, Plus, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertCircle, ArrowRight, Clock, Info, PiggyBank, Plus, Wallet } from "lucide-react";
 import { TopUpDialog } from "@/components/TopUpDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   type BalanceShortfall,
 } from "@/lib/balance-shortfall";
 import { formatCurrency } from "@/lib/format";
+import { SAVINGS_BOX_PATH } from "@/lib/savings-box";
 
 interface SavingsBoxOption {
   balance: number;
@@ -56,6 +58,14 @@ export function OrderBalance({ available, reserved = 0, savingsBox }: OrderBalan
               </span>
             </label>
           </div>
+          {/* Atalho discreto para a página da Caixinha (depositar ou ver o rendimento). */}
+          <Link
+            to={SAVINGS_BOX_PATH}
+            className="inline-flex min-h-11 items-center gap-1 self-start text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Ver Caixinha
+            <ArrowRight size={12} aria-hidden="true" />
+          </Link>
         </>
       )}
     </div>

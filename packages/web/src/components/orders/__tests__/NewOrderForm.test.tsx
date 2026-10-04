@@ -214,6 +214,13 @@ describe("NewOrderForm", () => {
       expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     });
 
+    it("com a Caixinha oferecida, tem o atalho 'Ver Caixinha' para a página dela", () => {
+      mockSavingsBox.balance = 3_000;
+      renderForm();
+
+      expect(screen.getByRole("link", { name: "Ver Caixinha" })).toHaveAttribute("href", "/caixinha");
+    });
+
     it("falta em conta e a Caixinha cobre: mostra a divisão e envia useSavingsBox=true", async () => {
       mockPortfolio.balance = 100;
       mockSavingsBox.balance = 3_000;

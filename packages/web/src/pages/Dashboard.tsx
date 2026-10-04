@@ -1,4 +1,6 @@
+import { Navigate, useLocation } from "react-router-dom";
 import { AccountBalanceCard } from "../components/AccountBalanceCard";
+import { LEGACY_SAVINGS_BOX_HASH, SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { EvolutionChart } from "../components/EvolutionChart";
 import { Assets } from "../components/Assets";
 import { usePortfolio, usePortfolioHistory } from "@/hooks/usePortfolio";
@@ -56,6 +58,7 @@ const PERIOD_OPTIONS: { value: PortfolioPeriod; label: string }[] = [
 ];
 
 export function Dashboard() {
+  const { hash } = useLocation();
   const { period, setPeriod } = usePortfolioStore();
   const {
     balance,
@@ -82,6 +85,11 @@ export function Dashboard() {
   // Rentabilidade real do período (servidor), sem contar aportes/retiradas.
   const hasChangeData = returnPct !== null;
   const change = returnPct ?? 0;
+
+  // A Caixinha já morou aqui (/#caixinha): quem salvou o link vai para a página dela.
+  if (hash === LEGACY_SAVINGS_BOX_HASH) {
+    return <Navigate to={SAVINGS_BOX_PATH} replace />;
+  }
 
   if (isLoading) {
     return (

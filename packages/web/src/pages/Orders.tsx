@@ -9,7 +9,7 @@ import { NewOrderForm } from "@/components/orders/NewOrderForm";
 import { OrderRow } from "@/components/orders/OrderRow";
 import { useOrders } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
-import { SAVINGS_BOX_ANCHOR, SAVINGS_BOX_PATH } from "@/lib/savings-box";
+import { LEGACY_SAVINGS_BOX_HASH, SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +20,8 @@ export function Orders() {
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
 
-  // A Caixinha saiu de Ordens e foi para o Painel: quem tem o link antigo salvo cai lá.
-  if (hash === `#${SAVINGS_BOX_ANCHOR}`) {
+  // A Caixinha saiu de Ordens e tem página própria: quem tem o link antigo salvo cai lá.
+  if (hash === LEGACY_SAVINGS_BOX_HASH) {
     return <Navigate to={SAVINGS_BOX_PATH} replace />;
   }
 
