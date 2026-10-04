@@ -39,6 +39,14 @@ describe("OrderRow", () => {
     }
   });
 
+  it("Compra e Venda têm a mesma largura mínima: a etiqueta do tipo alinha entre as linhas", () => {
+    for (const [side, label] of [["BUY", "Compra"], ["SELL", "Venda"]] as const) {
+      const { unmount } = render(<OrderRow order={{ ...filledOrder, side }} />);
+      expect(screen.getByText(label)).toHaveClass("min-w-17", "shrink-0");
+      unmount();
+    }
+  });
+
   it("Cancelar só aparece em ordens abertas ou pendentes", () => {
     for (const status of ["OPEN", "PENDING"] as const) {
       const onCancel = vi.fn();
