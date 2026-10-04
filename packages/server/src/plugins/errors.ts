@@ -21,6 +21,39 @@ function rateLimitMessage(retryAfter: number | string | string[] | undefined): s
   return `Muitas requisições. Tente novamente em ${seconds} ${seconds === 1 ? "segundo" : "segundos"}.`;
 }
 
+// Issue de validação no formato do @fastify/type-provider-zod.
+interface ValidationIssue {
+  keyword?: string;
+  instancePath?: string;
+  message?: string;
+  params?: { keys?: string[] };
+}
+
+// Mensagens padrão do Zod v4 (locale en) começam assim e trazem detalhe interno
+// (tipos, lista de valores aceitos). As escritas no shared (refine, .max com
+// mensagem) são em pt-BR pro usuário e passam como estão.
+const ZOD_DEFAULT_MESSAGE = /^(Invalid|Too (big|small)|Unrecognized)\b/;
+
+function issueFields(issue: ValidationIssue): string[] {
+  if (issue.keyword === "unrecognized_keys" && issue.params?.keys) return issue.params.keys;
+  const field = (issue.instancePath ?? "").split("/").filter(Boolean).join(".");
+  return field ? [field] : [];
+}
+
+// Resposta curta em pt-BR: as mensagens escritas por nós + os campos com erro
+// genérico ("Dados inválidos: ticker"). O detalhe completo fica só no log.
+export function validationMessage(issues: readonly ValidationIssue[]): string {
+  const authored = new Set<string>();
+  const fields = new Set<string>();
+  for (const issue of issues) {
+    if (issue.message && !ZOD_DEFAULT_MESSAGE.test(issue.message)) authored.add(issue.message);
+    else issueFields(issue).forEach((field) => fields.add(field));
+  }
+  const parts = [...authored];
+  if (fields.size > 0) parts.push(`Dados inválidos: ${[...fields].join(", ")}`);
+  return parts.length > 0 ? parts.join("; ") : "Dados inválidos";
+}
+
 interface ErrorLike {
   code?: string;
   message?: string;
@@ -79,10 +112,14 @@ export async function registerErrorHandler(app: FastifyInstance): Promise<void> 
       err.validationContext ||
       (code !== undefined && VALIDATION_CODES.includes(code))
     ) {
-      const validationMessage = err.validation
-        ? `${message}; ${JSON.stringify(err.validation)}`
-        : message;
-      return sendError(reply, 400, "VALIDATION_ERROR", validationMessage);
+      if (!Array.isArray(err.validation)) {
+        return sendError(reply, 400, "VALIDATION_ERROR", message);
+      }
+      request.log.info(
+        { validation: err.validation, validationContext: err.validationContext },
+        "requisição recusada na validação"
+      );
+      return sendError(reply, 400, "VALIDATION_ERROR", validationMessage(err.validation));
     }
 
     // Rota inexistente cai aqui quando a requisição falha com 404.
