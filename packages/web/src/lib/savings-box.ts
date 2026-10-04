@@ -1,3 +1,5 @@
+import { formatPercent } from "@/lib/format";
+
 // A Caixinha tem página própria. Recomendações, Nova Ordem e quem quiser linkar para ela usam
 // este caminho.
 export const SAVINGS_BOX_PATH = "/caixinha";
@@ -20,10 +22,20 @@ export function simulateYield(amount: number, annualRate: number, months: number
   return roundCents((amount * annualRate * months) / 12);
 }
 
-/** Quanto do dinheiro livre (Caixinha + saldo em conta livre) está na Caixinha, em % inteiro. */
+/** Quanto do dinheiro livre (Caixinha + saldo em conta livre) está na Caixinha, em % (0 a 100). */
 export function savingsShare(savings: number, freeAccount: number) {
   const total = savings + freeAccount;
-  return total > 0 ? Math.round((savings / total) * 100) : 0;
+  return total > 0 ? (savings / total) * 100 : 0;
+}
+
+/**
+ * % inteiro para a barra "Seu dinheiro livre", sem chegar a 100% ou 0% por arredondamento:
+ * "100% rendendo" com dinheiro ainda parado em conta (99,86%) dizia que não havia nada a fazer.
+ */
+export function formatSavingsShare(share: number) {
+  if (share > 99 && share < 100) return `mais de ${formatPercent(99, { decimals: 0 })}`;
+  if (share > 0 && share < 1) return `menos de ${formatPercent(1, { decimals: 0 })}`;
+  return formatPercent(Math.round(share), { decimals: 0 });
 }
 
 // Valor inicial do simulador: o que já está guardado; sem isso, o que dá para guardar (até

@@ -205,6 +205,21 @@ describe("Página Caixinha", () => {
       expect(main).toHaveTextContent(/Rende cerca de R\$\s?15,00 por mês \(simulação\)\./);
     });
 
+    it("quase tudo guardado não vira 100%: ainda há dinheiro parado em conta", () => {
+      // 10.980,42 de 10.995,92 = 99,86%.
+      mocks.savings = { balance: 10_980.42, rate: 0.06, estimatedYield: 0 };
+      mocks.account = { free: 15.5, reserved: 0, isLoading: false, error: null };
+      renderPage();
+
+      expect(summary()).toHaveTextContent("mais de 99% rendendo");
+      expect(summary()).not.toHaveTextContent("100% rendendo");
+      expect(
+        within(summary()).getByRole("img", {
+          name: "mais de 99% do seu dinheiro livre está na Caixinha",
+        }),
+      ).toBeInTheDocument();
+    });
+
     it("não mostra mais o Rendimento estimado (retroativo, errado)", () => {
       renderPage();
 

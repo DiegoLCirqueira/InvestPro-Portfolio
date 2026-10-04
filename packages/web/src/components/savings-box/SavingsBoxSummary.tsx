@@ -5,7 +5,7 @@ import { ReservedBalanceNote } from "@/components/ReservedBalanceNote";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { savingsShare } from "@/lib/savings-box";
+import { formatSavingsShare, savingsShare } from "@/lib/savings-box";
 import { cn } from "@/lib/utils";
 
 type OpenHandler = (event: MouseEvent<HTMLButtonElement>) => void;
@@ -40,6 +40,7 @@ export function SavingsBoxSummary({
 }: SavingsBoxSummaryProps) {
   const isEmpty = balance <= 0;
   const share = savingsShare(balance, freeAccount);
+  const shareLabel = formatSavingsShare(share);
 
   return (
     <section
@@ -101,12 +102,12 @@ export function SavingsBoxSummary({
         <div className="flex flex-col gap-3 border-t border-border pt-5">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="text-muted-foreground">Seu dinheiro livre</span>
-            <span className="font-semibold text-primary">{share}% rendendo</span>
+            <span className="font-semibold text-primary">{shareLabel} rendendo</span>
           </div>
           {/* Os números estão na legenda: a barra só resume (por isso role="img" com o texto). */}
           <div
             role="img"
-            aria-label={`${share}% do seu dinheiro livre está na Caixinha`}
+            aria-label={`${shareLabel} do seu dinheiro livre está na Caixinha`}
             className="h-3 overflow-hidden rounded-full border border-border bg-secondary"
           >
             <div
