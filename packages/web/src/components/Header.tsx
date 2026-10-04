@@ -2,7 +2,6 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { User, CalendarDays, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
-import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { useAuthStore } from "@/stores/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -35,9 +34,9 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3 nav:gap-5 ml-auto">
+        {/* Sem sino de notificações: o servidor não tem módulo de notificações, e o menu só dizia
+            "Você não tem notificações". Volta quando houver eventos para mostrar. */}
         <ThemeToggle />
-
-        <NotificationsMenu />
 
         <div className="hidden nav:flex items-center gap-4 pl-5 border-l border-border">
           <div className="text-right hidden sm:block">
