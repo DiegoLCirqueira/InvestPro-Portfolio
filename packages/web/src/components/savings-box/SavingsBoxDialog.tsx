@@ -16,6 +16,7 @@ import { useFinancialErrorHandler } from "@/hooks/use-financial-error-handler";
 import { useSavingsBoxDeposit, useSavingsBoxWithdraw } from "@/hooks/use-savings-box";
 import { useSubmitOnce } from "@/hooks/use-submit-once";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export type SavingsBoxMode = "DEPOSIT" | "WITHDRAW";
 
@@ -91,6 +92,10 @@ function SavingsBoxDialogContent({
     : exceedsAvailable
       ? `O valor passa do que você tem ${where}: faltam ${formatCurrency(amount - available)}. Você tem ${formatCurrency(available)} ${where}.`
       : null;
+  // Sem valor ainda não é erro (texto neutro), mas o botão também fica desabilitado com o motivo
+  // na tela: antes ficava habilitado e o aviso só aparecia num toast ao clicar.
+  const disabledReason =
+    blockReason ?? (amount <= 0 ? `Informe o valor a ${copy.action.toLowerCase()}.` : null);
 
   const handleError = useFinancialErrorHandler([
     mode === "DEPOSIT" ? "PORTFOLIO_INSUFFICIENT_BALANCE" : "SAVINGS_BOX_INSUFFICIENT_BALANCE",
@@ -109,11 +114,7 @@ function SavingsBoxDialogContent({
 
   const handleSubmit = useSubmitOnce(async () => {
     // O motivo já está na tela; o Enter não passa por cima do botão desabilitado.
-    if (blockReason) return;
-    if (amount <= 0) {
-      toast.error("Informe um valor válido.");
-      return;
-    }
+    if (disabledReason) return;
     try {
       await mutation.mutate(amount);
     } catch {
@@ -168,13 +169,19 @@ function SavingsBoxDialogContent({
             input={amountInput}
             ariaLabel={`Valor a ${copy.action.toLowerCase()}`}
             invalid={exceedsAvailable}
-            describedBy={blockReason ? limitNoteId : undefined}
+            describedBy={disabledReason ? limitNoteId : undefined}
             autoFocus
           />
           {/* Avisa antes de enviar, em vez de abrir o "Saldo insuficiente" por cima deste diálogo. */}
-          {blockReason && (
-            <p id={limitNoteId} className="text-xs font-medium text-destructive">
-              {blockReason}
+          {disabledReason && (
+            <p
+              id={limitNoteId}
+              className={cn(
+                "text-xs",
+                blockReason ? "font-medium text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {disabledReason}
             </p>
           )}
         </FormField>
@@ -186,8 +193,8 @@ function SavingsBoxDialogContent({
           </Button>
           <Button
             type="submit"
-            disabled={mutation.isPending || blockReason !== null}
-            aria-describedby={blockReason ? limitNoteId : undefined}
+            disabled={mutation.isPending || disabledReason !== null}
+            aria-describedby={disabledReason ? limitNoteId : undefined}
           >
             {mutation.isPending
               ? "Enviando..."
