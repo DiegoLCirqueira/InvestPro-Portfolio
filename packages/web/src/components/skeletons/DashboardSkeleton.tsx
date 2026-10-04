@@ -1,4 +1,3 @@
-import { SavingsBoxRowSkeleton } from "@/components/skeletons/SavingsBoxRowSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cardClassName } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,6 @@ export function DashboardSkeleton() {
       <div className="lg:col-span-1 h-full min-h-0">
         <div className={cn(cardClassName, "h-full space-y-4")}>
           <Skeleton className="h-5 w-28" />
-          <SavingsBoxRowSkeleton />
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between p-3">

@@ -160,10 +160,7 @@ export function Dashboard() {
             ela vem do saldo + gráfico, e a lista de ativos rola dentro dela,
             com o valor total fixo no rodapé. */}
         <div className="nav:col-span-1 nav:h-0 nav:min-h-full">
-          <Assets
-            change={hasChangeData ? change : undefined}
-            onBalanceChange={refetch}
-          />
+          <Assets change={hasChangeData ? change : undefined} />
         </div>
       </div>
     </div>
