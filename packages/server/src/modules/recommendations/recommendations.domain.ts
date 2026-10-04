@@ -29,7 +29,7 @@ const agree = (type: AllocationType, singular: string, plural: string) =>
 
 export interface RecommendationInput {
   profile: InvestorProfileType | null
-  /** Valor investido por tipo (mesma base da Diversificação: posições + moedas, sem o caixa). */
+  /** Valor investido por tipo (mesma base da Diversificação: posições + Caixinha em renda fixa + moedas, sem o caixa). */
   invested: ReadonlyArray<{ type: AllocationType; value: number }>
   /** Saldo em conta (caixa). */
   cash: number
