@@ -47,6 +47,8 @@ interface SavingsBoxDialogProps {
   /** Reservado em ordens abertas: mostrado para explicar o saldo livre menor. */
   reservedBalance?: number;
   savingsBalance: number;
+  /** Valor já preenchido ao abrir (ex.: o "Depositar R$ X" do simulador da página). */
+  initialAmount?: number;
   /** Depois do movimento, para o Painel recarregar os dois saldos. */
   onSuccess: () => void;
   /** Botão que abriu o diálogo: recebe o foco de volta ao fechar. */
@@ -69,11 +71,12 @@ function SavingsBoxDialogContent({
   accountBalance,
   reservedBalance = 0,
   savingsBalance,
+  initialAmount,
   onSuccess,
   returnFocusTo,
 }: Omit<SavingsBoxDialogProps, "mode"> & { mode: SavingsBoxMode }) {
   const limitNoteId = useId();
-  const amountInput = useCurrencyDigitsInput();
+  const amountInput = useCurrencyDigitsInput({ initialAmount });
   const amount = amountInput.amount;
   const copy = COPY[mode];
 

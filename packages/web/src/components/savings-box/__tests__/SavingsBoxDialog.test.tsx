@@ -171,4 +171,23 @@ describe("SavingsBoxDialog (Depositar / Resgatar)", () => {
       fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
     }
   });
+
+  it("abre com o valor já preenchido quando recebe initialAmount", () => {
+    render(
+      <SavingsBoxDialog
+        mode="DEPOSIT"
+        onClose={vi.fn()}
+        returnFocusTo={{ current: null }}
+        accountBalance={1_250}
+        savingsBalance={0}
+        initialAmount={300}
+        onSuccess={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByLabelText("Valor a depositar") as HTMLInputElement).value).toMatch(
+      /R\$\s?300,00/,
+    );
+    expect(screen.getByRole("button", { name: /Depositar R\$\s?300,00/ })).toBeEnabled();
+  });
 });
