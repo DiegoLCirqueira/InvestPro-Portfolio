@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ArrowDownUp, LogIn } from "lucide-react";
 import { ExchangeSkeleton } from "@/components/skeletons/ExchangeSkeleton";
 import { EmptyState } from "@/components/EmptyState";
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 export function Exchange() {
   const { currencies, base, isLoading, error, refetch } = useExchange();
+  const minimumNoteId = useId();
 
   const [from, setFrom] = useState(base);
   const [to, setTo] = useState(currencies[0] ?? "USD");
@@ -95,7 +96,17 @@ export function Exchange() {
           <SectionTitle>Conversor</SectionTitle>
 
           <FormField label="Valor">
-            <CurrencyDigitsField input={amountInput} ariaLabel="Valor a converter" />
+            <CurrencyDigitsField
+              input={amountInput}
+              ariaLabel="Valor a converter"
+              invalid={flow.inputMinimumError !== null}
+              describedBy={flow.inputMinimumError ? minimumNoteId : undefined}
+            />
+            {flow.inputMinimumError && (
+              <p id={minimumNoteId} className="text-xs font-medium text-destructive">
+                {flow.inputMinimumError}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground" aria-live="polite">
               Disponível em {from}:{" "}
               <span className="font-bold text-foreground tabular-nums">
@@ -138,7 +149,8 @@ export function Exchange() {
           <Button
             type="submit"
             className="w-full"
-            disabled={flow.isSimulating}
+            disabled={flow.isSimulating || flow.inputMinimumError !== null}
+            aria-describedby={flow.inputMinimumError ? minimumNoteId : undefined}
           >
             {flow.isSimulating ? "Simulando..." : "Converter"}
           </Button>
@@ -151,6 +163,7 @@ export function Exchange() {
           simulation={flow.simulation}
           executed={flow.executed}
           isExecuting={flow.isExecuting}
+          blockReason={flow.simulationMinimumError}
           onExecute={handleExecute}
         />
       </div>

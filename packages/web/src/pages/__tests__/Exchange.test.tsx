@@ -310,3 +310,55 @@ describe("Exchange: botão de inverter no meio entre as duas caixas", () => {
     expect(swap.parentElement).not.toHaveClass("gap-3");
   });
 });
+
+describe("Exchange: mínimo de R$ 1,00 por conversão", () => {
+  beforeEach(() => {
+    apiMock.post.mockReset();
+    vi.mocked(toast.error).mockClear();
+  });
+
+  it("BRL abaixo de R$ 1,00: avisa no campo e não deixa simular", async () => {
+    mockApi();
+    await renderExchange();
+
+    typeAmount("99");
+    const field = screen.getByLabelText("Valor a converter");
+    expect(field).toHaveAccessibleDescription("O valor mínimo por conversão é R$ 1,00");
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Converter" })).toBeDisabled();
+
+    typeAmount("100");
+    expect(screen.queryByText("O valor mínimo por conversão é R$ 1,00")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Converter" })).toBeEnabled();
+  });
+
+  it("moeda estrangeira → BRL: abaixo de R$ 1,00 pela cotação simulada, não deixa realizar", async () => {
+    // US$ 0,15 × 5,20 = R$ 0,78.
+    mockApi({
+      convert: () =>
+        Promise.resolve({ ...QUOTE, from: "USD", to: "BRL", amount: 0.15, rate: 5.2, convertedAmount: 0.77, fee: 0 }),
+    });
+    await renderExchange();
+    fireEvent.click(screen.getByRole("button", { name: "Inverter moedas" }));
+    typeAmount("15");
+    clickConvert();
+
+    const realize = await screen.findByRole("button", { name: "Realizar conversão" });
+    expect(realize).toBeDisabled();
+    expect(realize).toHaveAccessibleDescription("O valor mínimo por conversão é R$ 1,00");
+    expect(postsTo("/exchange/execute")).toHaveLength(0);
+  });
+
+  it("erro da API (EXCHANGE_AMOUNT_TOO_SMALL) vira a mesma mensagem", async () => {
+    mockApi({
+      convert: () => Promise.reject(new ApiError(400, "valor pequeno", "EXCHANGE_AMOUNT_TOO_SMALL")),
+    });
+    await renderExchange();
+    typeAmount("1000");
+    clickConvert();
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("O valor mínimo por conversão é R$ 1,00", expect.anything()),
+    );
+  });
+});
