@@ -34,7 +34,7 @@ export async function transferRoutes(app: FastifyInstance): Promise<void> {
         tags: ["Transfers"],
         summary: "Criar transferência",
         description:
-          "Cria uma transferência bancária (PIX/TED/DOC) para o usuário autenticado.",
+          "Cria uma transferência bancária (PIX ou TED) para o usuário autenticado. PIX exige chave; TED exige conta de destino completa (banco, agência e conta) e tem tarifa de R$ 10. O DOC foi extinto em 2024: novas transferências DOC respondem 400 VALIDATION_ERROR, mas as antigas continuam no histórico.",
         security: [{ BearerAuth: [] }],
         body: createTransferInputSchema,
         response: {
