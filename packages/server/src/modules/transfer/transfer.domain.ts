@@ -48,12 +48,11 @@ export function validateTransfer(input: CreateTransferInput): string[] {
   if (!(input.amount > 0)) errors.push('Valor deve ser positivo')
   // PIX sem destino identificável debitaria o saldo sem entregar a ninguém.
   if (input.type === 'PIX') errors.push(...pixKeyErrors(input))
-  if (input.toAccount) {
-    // PIX identifica o destino pela chave (banco + agência); não exige número
-    // da conta. TED/DOC continuam exigindo os três campos.
-    const requiredFields =
-      input.type === 'PIX' ? (['bank', 'agency'] as const) : (['bank', 'agency', 'account'] as const)
-    for (const field of requiredFields) {
+  // PIX identifica o destino pela chave: a conta, se vier, só precisa de banco +
+  // agência. A TED (conta completa obrigatória) e o DOC (extinto) são barrados
+  // no schema (createTransferInputSchema), antes de chegar aqui.
+  if (input.type === 'PIX' && input.toAccount) {
+    for (const field of ['bank', 'agency'] as const) {
       if (!input.toAccount[field]) {
         errors.push(`Conta de destino inválida: campo ${field} obrigatório`)
       }
