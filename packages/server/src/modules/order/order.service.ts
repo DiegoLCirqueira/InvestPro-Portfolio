@@ -4,6 +4,7 @@
 // Portfolio.balance atomicamente via Prisma (isolamento Serializable, com
 // retry em conflito de serialização).
 
+import { randomUUID } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import type { Order as PrismaOrder } from '@prisma/client'
 import {
@@ -111,14 +112,16 @@ async function assertFreePosition(
 async function coverShortfallFromSavingsBox(
   tx: Prisma.TransactionClient,
   userId: string,
-  shortfall: number
+  shortfall: number,
+  orderId: string,
+  reserved: number
 ): Promise<void> {
   try {
-    await executeWithdraw(tx, userId, shortfall)
+    await executeWithdraw(tx, userId, shortfall, orderId)
   } catch (err) {
     // Pra quem compra, o erro é da ordem: saldo + Caixinha não cobrem o custo.
     if (err instanceof AppError && err.code === 'SAVINGS_BOX_INSUFFICIENT_BALANCE') {
-      throw insufficientBalance()
+      throw insufficientBalance(reserved)
     }
     throw err
   }
@@ -209,6 +212,9 @@ async function executeOrderTx(
 
   let orderAvgPrice: number | null = null
   let savingsBoxUsed = 0
+  // Id definido antes: o resgate da Caixinha (ORDER_FUNDING) acontece antes da
+  // Order ser criada e já precisa apontar pra ela no extrato.
+  const orderId = randomUUID()
 
   if (input.side === 'BUY') {
     const cost = buyCost(total)
@@ -218,7 +224,7 @@ async function executeOrderTx(
 
     if (shortfall > 0) {
       if (!input.useSavingsBox) throw insufficientBalance(reserved)
-      await coverShortfallFromSavingsBox(tx, userId, shortfall)
+      await coverShortfallFromSavingsBox(tx, userId, shortfall, orderId, reserved)
       savingsBoxUsed = shortfall
     }
 
@@ -290,6 +296,7 @@ async function executeOrderTx(
 
   const record = await tx.order.create({
     data: {
+      id: orderId,
       userId,
       assetId: asset.assetId ?? asset.ticker,
       ticker: asset.ticker,

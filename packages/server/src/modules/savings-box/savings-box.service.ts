@@ -59,15 +59,21 @@ async function executeDeposit(
     update: { balance: { increment: amount } },
   });
 
+  await tx.savingsBoxTransaction.create({
+    data: { userId, type: "DEPOSIT", amount, balanceAfter: box.balance },
+  });
+
   return { balance: box.balance.toNumber(), createdAt: box.createdAt };
 }
 
 // Exportada pra compra de ativo com a Caixinha (order.service) resgatar na mesma
 // transação da ordem, com a mesma regra e o mesmo erro de saldo insuficiente.
+// Com fundingOrderId, o extrato registra ORDER_FUNDING ligado à compra.
 export async function executeWithdraw(
   tx: Prisma.TransactionClient,
   userId: string,
-  amount: number
+  amount: number,
+  fundingOrderId?: string
 ): Promise<{ balance: number; createdAt: Date }> {
   const box = await tx.savingsBox.findUnique({ where: { userId } });
   if (!box || box.balance.toNumber() < amount) {
@@ -86,6 +92,16 @@ export async function executeWithdraw(
   await tx.portfolio.update({
     where: { userId },
     data: { balance: { increment: amount } },
+  });
+
+  await tx.savingsBoxTransaction.create({
+    data: {
+      userId,
+      type: fundingOrderId ? "ORDER_FUNDING" : "WITHDRAW",
+      amount,
+      balanceAfter: updated.balance,
+      orderId: fundingOrderId ?? null,
+    },
   });
 
   return { balance: updated.balance.toNumber(), createdAt: updated.createdAt };
