@@ -5,10 +5,11 @@ import {
   getBuyQuantityError,
   getSellQuantityError,
   quantityForAmount,
+  reservedByOpenOrders,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
-import type { SellableAsset } from "@/types/order";
+import type { Order, SellableAsset } from "@/types/order";
 
 const market: MarketAsset[] = [
   {
@@ -100,5 +101,51 @@ describe("quantityForAmount (compra de cripto por valor)", () => {
 
   it("valor pequeno demais para 1 satoshi dá zero", () => {
     expect(quantityForAmount(0.01, 2_000_000_000)).toBe(0);
+  });
+});
+
+describe("ordens abertas reservam saldo e posição (LIMIT/STOP)", () => {
+  const order = (overrides: Partial<Order>): Order => ({
+    id: "o",
+    assetId: "a",
+    ticker: "PETR4",
+    side: "BUY",
+    type: "LIMIT",
+    quantity: 10,
+    price: 30,
+    status: "OPEN",
+    createdAt: "2026-10-03T10:00:00.000Z",
+    executedAt: null,
+    avgPrice: null,
+    ...overrides,
+  });
+
+  it("compra: soma o custo (preço informado + 1%) só das compras abertas", () => {
+    const orders = [
+      order({}), // 300 + 3
+      order({ ticker: "VALE3", quantity: 1, price: 70 }), // 70 + 0,70
+      order({ status: "FILLED" }),
+      order({ side: "SELL" }),
+    ];
+
+    expect(reservedByOpenOrders(orders, "BUY", "BTC")).toBe(373.7);
+  });
+
+  it("venda: soma só as vendas abertas do mesmo ativo, sem ruído de ponto flutuante", () => {
+    const orders = [
+      order({ side: "SELL", ticker: "BTC", quantity: 0.1 }),
+      order({ side: "SELL", ticker: "btc", quantity: 0.2 }),
+      order({ side: "SELL", ticker: "ETH", quantity: 1 }),
+      order({ side: "SELL", ticker: "BTC", quantity: 5, status: "CANCELLED" }),
+    ];
+
+    expect(reservedByOpenOrders(orders, "SELL", "BTC")).toBe(0.3);
+  });
+
+  it("a venda desconta o reservado da posição e explica o motivo", () => {
+    expect(getSellQuantityError(0.2, 0.3, "BTC", 0.1)).toBeNull();
+    expect(getSellQuantityError(2, 4, "PETR4", 3)).toBe(
+      "Você possui apenas 4 de PETR4, e 3 já estão em vendas abertas. Reduza a quantidade.",
+    );
   });
 });

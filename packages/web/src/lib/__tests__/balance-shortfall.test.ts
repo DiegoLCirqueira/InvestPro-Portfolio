@@ -57,3 +57,11 @@ describe("balance-shortfall", () => {
     ).toMatch(/^R\$\s?550,00 em conta e R\$\s?3\.000,00 na Caixinha$/);
   });
 });
+
+describe("balance-shortfall: saldo reservado em ordens abertas", () => {
+  it("diz que o valor é o livre e quanto está reservado", () => {
+    expect(
+      shortfallHoldings({ kind: "order", cost: 500, available: 197, reserved: 303 }),
+    ).toMatch(/^R\$\s?197,00 livres em conta \(R\$\s?303,00 reservados em ordens abertas\)$/);
+  });
+});

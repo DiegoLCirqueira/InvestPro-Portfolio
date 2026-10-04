@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type RefObject } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyDigitsField } from "@/components/CurrencyDigitsField";
@@ -45,6 +45,8 @@ interface SavingsBoxDialogProps {
   savingsBalance: number;
   /** Depois do movimento, para o Painel recarregar os dois saldos. */
   onSuccess: () => void;
+  /** Botão que abriu o diálogo: recebe o foco de volta ao fechar. */
+  returnFocusTo: RefObject<HTMLElement | null>;
 }
 
 // Depositar e Resgatar abrem o mesmo diálogo, invertido: no Painel não há formulário fixo.
@@ -63,6 +65,7 @@ function SavingsBoxDialogContent({
   accountBalance,
   savingsBalance,
   onSuccess,
+  returnFocusTo,
 }: Omit<SavingsBoxDialogProps, "mode"> & { mode: SavingsBoxMode }) {
   const limitNoteId = useId();
   const amountInput = useCurrencyDigitsInput();
@@ -71,7 +74,17 @@ function SavingsBoxDialogContent({
 
   // Depositar sai do saldo em conta; resgatar sai do saldo da Caixinha.
   const available = mode === "DEPOSIT" ? accountBalance : savingsBalance;
+  const where = mode === "DEPOSIT" ? "em conta" : "na Caixinha";
+  const isEmpty = available <= 0;
   const exceedsAvailable = amount > available;
+  // Botão desabilitado sempre com o motivo ao lado (antes só dizia "Você tem R$ X em conta").
+  const blockReason = isEmpty
+    ? mode === "DEPOSIT"
+      ? "Você não tem saldo em conta para depositar."
+      : "A Caixinha está vazia: não há o que resgatar."
+    : exceedsAvailable
+      ? `O valor passa do que você tem ${where}: faltam ${formatCurrency(amount - available)}. Você tem ${formatCurrency(available)} ${where}.`
+      : null;
 
   const handleError = useFinancialErrorHandler([
     mode === "DEPOSIT" ? "PORTFOLIO_INSUFFICIENT_BALANCE" : "SAVINGS_BOX_INSUFFICIENT_BALANCE",
@@ -89,6 +102,8 @@ function SavingsBoxDialogContent({
   const mutation = mode === "DEPOSIT" ? deposit : withdraw;
 
   const handleSubmit = useSubmitOnce(async () => {
+    // O motivo já está na tela; o Enter não passa por cima do botão desabilitado.
+    if (blockReason) return;
     if (amount <= 0) {
       toast.error("Informe um valor válido.");
       return;
@@ -101,7 +116,16 @@ function SavingsBoxDialogContent({
   });
 
   return (
-    <DialogContent hideCloseButton className="flex flex-col gap-5">
+    <DialogContent
+      hideCloseButton
+      className="flex flex-col gap-5"
+      // Aberto por estado (sem Dialog.Trigger), o Radix não sabe para onde devolver o foco e ele
+      // se perdia ao fechar: volta para o Depositar/Resgatar que abriu.
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        returnFocusTo.current?.focus();
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1.5 pt-2.5">
           <DialogTitle>{copy.title}</DialogTitle>
@@ -130,14 +154,13 @@ function SavingsBoxDialogContent({
             input={amountInput}
             ariaLabel={`Valor a ${copy.action.toLowerCase()}`}
             invalid={exceedsAvailable}
-            describedBy={exceedsAvailable ? limitNoteId : undefined}
+            describedBy={blockReason ? limitNoteId : undefined}
             autoFocus
           />
           {/* Avisa antes de enviar, em vez de abrir o "Saldo insuficiente" por cima deste diálogo. */}
-          {exceedsAvailable && (
+          {blockReason && (
             <p id={limitNoteId} className="text-xs font-medium text-destructive">
-              Você tem {formatCurrency(available)}{" "}
-              {mode === "DEPOSIT" ? "em conta" : "na Caixinha"}.
+              {blockReason}
             </p>
           )}
         </FormField>
@@ -147,7 +170,11 @@ function SavingsBoxDialogContent({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={mutation.isPending || exceedsAvailable}>
+          <Button
+            type="submit"
+            disabled={mutation.isPending || blockReason !== null}
+            aria-describedby={blockReason ? limitNoteId : undefined}
+          >
             {mutation.isPending
               ? "Enviando..."
               : amount > 0

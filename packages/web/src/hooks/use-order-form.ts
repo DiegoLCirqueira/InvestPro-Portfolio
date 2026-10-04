@@ -7,13 +7,17 @@ import {
   findOwnedQuantity,
   getBuyQuantityError,
   getSellQuantityError,
+  isBelowMinOrderTotal,
+  MIN_ORDER_TOTAL_MESSAGE,
   normalizeTicker,
   quantityForAmount,
+  reservedByOpenOrders,
   sanitizeDecimalInput,
 } from "@/lib/order-form";
 import type { MarketAsset } from "@/types/market";
 import type {
   CreateOrderInput,
+  Order,
   OrderSide,
   OrderType,
   SellableAsset,
@@ -29,6 +33,8 @@ interface UseOrderFormOptions {
   isSellableLoading: boolean;
   /** Ativo já escolhido ao abrir (ex.: vindo do clique no Mercado). */
   initialTicker?: string;
+  /** Ordens do usuário: as abertas reservam saldo e posição para uma nova LIMIT/STOP. */
+  orders?: readonly Order[];
 }
 
 /**
@@ -42,6 +48,7 @@ export function useOrderForm({
   sellableAssets,
   isSellableLoading,
   initialTicker = "",
+  orders = [],
 }: UseOrderFormOptions) {
   const [ticker, setTicker] = useState(initialTicker);
   const [side, setSide] = useState<OrderSide>("BUY");
@@ -55,6 +62,8 @@ export function useOrderForm({
   const normalizedTicker = normalizeTicker(ticker);
   const needsPrice = type === "LIMIT" || type === "STOP";
   const isSell = side === "SELL";
+  // Só LIMIT/STOP descontam as ordens abertas (a MARKET executa na hora contra o saldo/posição).
+  const reserved = needsPrice ? reservedByOpenOrders(orders, side, normalizedTicker) : 0;
 
   const tickerOptions = buildTickerOptions(side, marketAssets, sellableAssets);
   const isTickerListLoading = isSell ? isSellableLoading : isMarketLoading;
@@ -83,17 +92,25 @@ export function useOrderForm({
   // Valor digitado, mas pequeno demais para a menor fração (8 casas) do ativo.
   const isAmountTooSmall = isByAmount && amountInput.amount > 0 && !hasValidQuantity;
 
-  const quantityError = isAmountTooSmall
-    ? `Valor baixo demais para comprar uma fração de ${normalizedTicker}.`
-    : !hasValidQuantity
-      ? null
-      : isSell
-        ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker)
-        : getBuyQuantityError(quantityValue, selectedAsset);
   const settlement =
     selectedAsset && hasValidQuantity
       ? computeOrderSettlement(side, quantityValue * referencePrice)
       : null;
+  const isWholePositionSale = isSell && ownedQuantity !== null && quantityValue === ownedQuantity;
+  // Na compra por valor, um valor abaixo do mínimo também cai aqui (antes de virar "fração").
+  const isBelowMinTotal = isByAmount
+    ? amountInput.amount > 0 && isBelowMinOrderTotal(amountInput.amount, false)
+    : settlement !== null && isBelowMinOrderTotal(settlement.total, isWholePositionSale);
+
+  const quantityError = isBelowMinTotal
+    ? MIN_ORDER_TOTAL_MESSAGE
+    : isAmountTooSmall
+      ? `Valor baixo demais para comprar uma fração de ${normalizedTicker}.`
+      : !hasValidQuantity
+        ? null
+        : isSell
+          ? getSellQuantityError(quantityValue, ownedQuantity, normalizedTicker, reserved)
+          : getBuyQuantityError(quantityValue, selectedAsset);
 
   const changeSide = (nextSide: OrderSide) => {
     setSide(nextSide);
@@ -177,6 +194,8 @@ export function useOrderForm({
       quantity: !hasValidQuantity && !isAmountTooSmall,
     },
     settlement,
+    /** Compra LIMIT/STOP: R$ já comprometidos com as outras compras abertas (sai do saldo livre). */
+    reservedBalance: isSell ? 0 : reserved,
     isPriceEstimated:
       selectedAsset !== undefined && isEstimatedPrice(selectedAsset),
     findSubmitError,

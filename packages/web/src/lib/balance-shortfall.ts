@@ -5,8 +5,10 @@ export interface BalanceShortfall {
   kind: "order" | "exchange" | "transfer";
   /** Custo total em R$ (com taxa ou tarifa). */
   cost: number;
-  /** Saldo em conta que a tela conhecia. */
+  /** Saldo em conta livre que a tela conhecia (já sem o reservado em ordens abertas). */
   available: number;
+  /** Ordem LIMIT/STOP: R$ que as outras compras abertas já reservam do saldo em conta. */
+  reserved?: number;
   /** Ativo da ordem, para a nota do valor pré-preenchido (ex.: "PETR4"). */
   ticker?: string;
   /** Tem tarifa embutida no custo (TED/DOC): a frase diz "custa", não "é de". */
@@ -34,9 +36,15 @@ export function savingsBoxDraw(shortfall: BalanceShortfall): number {
   return Math.min(accountGap(shortfall), shortfall.savingsBox ?? 0);
 }
 
-/** O que a pessoa tem: "R$ 550,00 em conta" e, se a Caixinha conta, "e R$ 3.000,00 na Caixinha". */
-export function shortfallHoldings({ available, savingsBox }: BalanceShortfall): string {
-  const account = `${formatCurrency(available)} em conta`;
+/**
+ * O que a pessoa tem: "R$ 550,00 em conta" e, se a Caixinha conta, "e R$ 3.000,00 na Caixinha".
+ * Com ordens abertas reservando saldo, diz que o valor é o livre e quanto está reservado (senão
+ * "Faltam R$ X" contradiria o saldo que ela vê no Painel).
+ */
+export function shortfallHoldings({ available, savingsBox, reserved }: BalanceShortfall): string {
+  const account = reserved
+    ? `${formatCurrency(available)} livres em conta (${formatCurrency(reserved)} reservados em ordens abertas)`
+    : `${formatCurrency(available)} em conta`;
   return savingsBox ? `${account} e ${formatCurrency(savingsBox)} na Caixinha` : account;
 }
 
