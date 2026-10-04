@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { ClipboardList, LogIn } from "lucide-react";
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton";
@@ -6,8 +7,10 @@ import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
+import { CancelOrderDialog } from "@/components/orders/CancelOrderDialog";
 import { OrderRow } from "@/components/orders/OrderRow";
-import { useOrders } from "@/hooks/use-orders";
+import { useFreeBalance } from "@/hooks/use-free-balance";
+import { useOrders, type Order } from "@/hooks/use-orders";
 import { ApiError } from "@/services/api";
 import { LEGACY_SAVINGS_BOX_HASH, SAVINGS_BOX_PATH } from "@/lib/savings-box";
 import { cardClassName } from "@/components/ui/card";
@@ -15,6 +18,11 @@ import { cn } from "@/lib/utils";
 
 export function Orders() {
   const { data, error, isLoading, refetch } = useOrders();
+  // Aqui (e não no formulário): cancelar no histórico libera reserva, e a Nova Ordem precisa ver.
+  const account = useFreeBalance();
+  const [cancelling, setCancelling] = useState<Order | null>(null);
+  // Botão "Cancelar" que abriu a confirmação, para o foco voltar a ele.
+  const cancelTriggerRef = useRef<HTMLElement | null>(null);
 
   const { hash } = useLocation();
 
@@ -68,7 +76,7 @@ export function Orders() {
       />
 
       <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
-        <NewOrderForm onCreated={() => void refetch()} />
+        <NewOrderForm onCreated={() => void refetch()} account={account} />
 
         {/* No desktop o histórico não define a altura da linha (h-0 + min-h-full):
             ela vem do formulário, e o histórico usa essa altura como máximo,
@@ -86,13 +94,30 @@ export function Orders() {
           ) : (
             <div className="flex flex-col divide-y divide-border nav:min-h-0 nav:overflow-y-auto pr-1 custom-scrollbar">
               {orders.map((order) => (
-                <OrderRow key={order.id} order={order} />
+                <OrderRow
+                  key={order.id}
+                  order={order}
+                  onCancel={(target, trigger) => {
+                    cancelTriggerRef.current = trigger;
+                    setCancelling(target);
+                  }}
+                />
               ))}
             </div>
           )}
         </div>
         </div>
       </div>
+
+      <CancelOrderDialog
+        order={cancelling}
+        onClose={() => setCancelling(null)}
+        onSettled={() => {
+          void refetch();
+          void account.refetch();
+        }}
+        returnFocusRef={cancelTriggerRef}
+      />
     </div>
   );
 }

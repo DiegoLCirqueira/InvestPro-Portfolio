@@ -23,3 +23,5 @@ export function useFreeBalance() {
     },
   };
 }
+
+export type FreeBalance = ReturnType<typeof useFreeBalance>;

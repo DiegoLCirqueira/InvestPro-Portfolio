@@ -26,7 +26,7 @@ import {
 } from "@/lib/balance-shortfall";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import { normalizeTicker, ORDER_TYPE_LABELS } from "@/lib/order-form";
-import { useFreeBalance } from "@/hooks/use-free-balance";
+import type { FreeBalance } from "@/hooks/use-free-balance";
 import { segmentClassName } from "@/components/ui/segmented";
 import type { OrderType } from "@/types/order";
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,14 @@ const SHORTFALL_ALERT_ID = "order-shortfall";
 
 interface NewOrderFormProps {
   onCreated: () => void;
+  /**
+   * Saldo e posição livres (o que as ordens abertas já reservaram não entra; vale para todo tipo).
+   * Vem da página: o histórico também mexe neles ao cancelar uma ordem.
+   */
+  account: FreeBalance;
 }
 
-export function NewOrderForm({ onCreated }: NewOrderFormProps) {
+export function NewOrderForm({ onCreated, account }: NewOrderFormProps) {
   const { data: marketData, isLoading: isMarketLoading } = useMarketAssets();
   const {
     sellableAssets,
@@ -59,8 +64,6 @@ export function NewOrderForm({ onCreated }: NewOrderFormProps) {
     error: sellableError,
     refetch: refetchSellableAssets,
   } = useSellableAssets();
-  // Saldo e posição livres: o que as ordens abertas já reservaram não entra (vale para todo tipo).
-  const account = useFreeBalance();
 
   const [searchParams] = useSearchParams();
 

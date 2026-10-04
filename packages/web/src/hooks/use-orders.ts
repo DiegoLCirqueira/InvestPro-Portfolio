@@ -63,6 +63,15 @@ export function useCreateOrder(
   });
 }
 
+/** POST /orders/:id/cancel: só OPEN/PENDING; a reserva da ordem é liberada na hora. */
+export function useCancelOrder(options: UseCreateOrderOptions = {}) {
+  return useMutation<Order, string>({
+    action: (orderId) => api.post<Order>(`/orders/${orderId}/cancel`),
+    onSuccess: options.onSuccess,
+    onError: options.onError,
+  });
+}
+
 export type { Order, OrderList, OrderSide, OrderType, OrderStatus } from "@/types/order";
 
 /** Saldo e posição reservados pelas ordens abertas do usuário (o servidor faz a conta). */

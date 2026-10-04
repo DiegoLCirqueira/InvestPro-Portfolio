@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { useFreeBalance } from "@/hooks/use-free-balance";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
 import { ApiError } from "@/services/api";
 import { useInsufficientBalanceStore } from "@/stores/insufficient-balance";
@@ -108,10 +109,15 @@ vi.mock("@/hooks/use-savings-box", async (importOriginal) => ({
 }));
 
 // O formulário lê ?ticker= (clique num ativo do Mercado), então precisa de um roteador.
+// Como na página de Ordens: o saldo livre vem de fora (os hooks dele estão mockados acima).
+function FormWithAccount() {
+  return <NewOrderForm onCreated={vi.fn()} account={useFreeBalance()} />;
+}
+
 function renderForm(path = "/orders") {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <NewOrderForm onCreated={vi.fn()} />
+      <FormWithAccount />
     </MemoryRouter>,
   );
 }

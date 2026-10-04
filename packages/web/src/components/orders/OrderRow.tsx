@@ -1,6 +1,7 @@
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { formatCurrency, formatDateTime, formatQuantity } from "@/lib/format";
-import { ORDER_TYPE_LABELS } from "@/lib/order-form";
+import { Button } from "@/components/ui/button";
+import { isCancellable, ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { Order, OrderSide, OrderStatus } from "@/types/order";
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; tone: StatusTone }> =
@@ -38,7 +39,13 @@ function OrderDetail({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function OrderRow({ order }: { order: Order }) {
+interface OrderRowProps {
+  order: Order;
+  /** Abre a confirmação de cancelamento; o botão (alvo do foco de volta) vai junto. */
+  onCancel?: (order: Order, trigger: HTMLButtonElement) => void;
+}
+
+export function OrderRow({ order, onCancel }: OrderRowProps) {
   const { price, avgPrice, fee } = order;
 
   return (
@@ -71,7 +78,20 @@ export function OrderRow({ order }: { order: Order }) {
             <OrderDetail label="Taxa" value={formatCurrency(fee)} />
           )}
         </span>
-        <span title={order.createdAt}>{formatDateTime(order.createdAt)}</span>
+        <span className="flex items-center gap-2">
+          <span title={order.createdAt}>{formatDateTime(order.createdAt)}</span>
+          {/* Só OPEN/PENDING. Alvo de 44px com margem negativa: a linha não cresce por causa dele. */}
+          {onCancel && isCancellable(order.status) && (
+            <Button
+              variant="ghost"
+              className="-my-3 -mr-2 px-2 text-xs text-destructive hover:text-destructive"
+              aria-label={`Cancelar ordem de ${order.side === "BUY" ? "compra" : "venda"} de ${formatQuantity(order.quantity)} ${order.ticker}`}
+              onClick={(event) => onCancel(order, event.currentTarget)}
+            >
+              Cancelar
+            </Button>
+          )}
+        </span>
       </div>
     </div>
   );

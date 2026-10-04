@@ -1,7 +1,7 @@
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import type { MarketAsset } from "@/types/market";
-import type { OrderSide, OrderType, SellableAsset } from "@/types/order";
+import type { OrderSide, OrderStatus, OrderType, SellableAsset } from "@/types/order";
 
 /** Nome do tipo de ordem na interface (o enum da API fica só no código). */
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
@@ -9,6 +9,11 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   LIMIT: "Limitada",
   STOP: "Stop",
 };
+
+/** Só ordens que ainda não executaram podem ser canceladas (mesma regra do servidor). */
+export function isCancellable(status: OrderStatus) {
+  return status === "OPEN" || status === "PENDING";
+}
 
 // Mesma regra do @investpro/shared (order/order.schema.ts; o web não importa o shared):
 // ações e renda fixa só em unidades inteiras na compra; cripto aceita fração.
