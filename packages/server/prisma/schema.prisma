@@ -9,31 +9,32 @@ datasource db {
 }
 
 model User {
-  id                   String               @id @default(uuid())
-  email                String               @unique
-  passwordHash         String
-  fullName             String
-  cpf                  String?              @unique
-  phone                String?
-  role                 Role                 @default(USER)
+  id                     String                  @id @default(uuid())
+  email                  String                  @unique
+  passwordHash           String
+  fullName               String
+  cpf                    String?                 @unique
+  phone                  String?
+  role                   Role                    @default(USER)
   // Perfil de investidor (questionário). Pontuação e data guardadas para auditoria.
-  investorProfile      InvestorProfile?
-  investorProfileScore Int?
-  investorProfileAt    DateTime?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  portfolio            Portfolio?
-  refreshTokens        RefreshToken[]
-  bankAccounts         BankAccount[]
-  transfers            Transfer[]
-  orders               Order[]
-  passwordResetTokens  PasswordResetToken[]
-  topUpsReceived       BalanceTopUp[]       @relation("TopUpReceiver")
-  topUpsActed          BalanceTopUp[]       @relation("TopUpActor")
-  savingsBox           SavingsBox?
-  currencyHoldings     CurrencyHolding[]
-  currencyExchanges    CurrencyExchange[]
-  portfolioSnapshots   PortfolioSnapshot[]
+  investorProfile        InvestorProfile?
+  investorProfileScore   Int?
+  investorProfileAt      DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  portfolio              Portfolio?
+  refreshTokens          RefreshToken[]
+  bankAccounts           BankAccount[]
+  transfers              Transfer[]
+  orders                 Order[]
+  passwordResetTokens    PasswordResetToken[]
+  topUpsReceived         BalanceTopUp[]          @relation("TopUpReceiver")
+  topUpsActed            BalanceTopUp[]          @relation("TopUpActor")
+  savingsBox             SavingsBox?
+  savingsBoxTransactions SavingsBoxTransaction[]
+  currencyHoldings       CurrencyHolding[]
+  currencyExchanges      CurrencyExchange[]
+  portfolioSnapshots     PortfolioSnapshot[]
 }
 
 // Portfolio/Position: dado financeiro (saldo, posições de investimento) sujeito a
@@ -81,6 +82,30 @@ model SavingsBox {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+// Extrato da Caixinha: uma linha por movimento, gravada na mesma transação dele;
+// balanceAfter é o saldo da Caixinha logo depois. Só a partir desta versão (sem
+// backfill). orderId sem FK: no ORDER_FUNDING o resgate é gravado antes da Order
+// existir na mesma transação. Restrict pro User como o resto do histórico (ADR 0001).
+model SavingsBoxTransaction {
+  id           String                    @id @default(uuid())
+  userId       String
+  type         SavingsBoxTransactionType
+  amount       Decimal                   @db.Decimal(15, 2)
+  balanceAfter Decimal                   @db.Decimal(15, 2)
+  orderId      String?
+  createdAt    DateTime                  @default(now())
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+// ORDER_FUNDING: resgate automático pra cobrir uma compra (useSavingsBox).
+enum SavingsBoxTransactionType {
+  DEPOSIT
+  WITHDRAW
+  ORDER_FUNDING
 }
 
 model RefreshToken {
