@@ -82,8 +82,10 @@ export function NewOrderForm({ onCreated, orders }: NewOrderFormProps) {
   // Desmarcado a cada ordem: tirar dinheiro de um investimento é escolha explícita (opt-in),
   // não um padrão que segue valendo para as próximas compras.
   const [prefersSavingsBox, setPrefersSavingsBox] = useState(false);
-  // A Caixinha só entra na compra e só se houver dinheiro nela.
-  const canUseSavingsBox = !form.isSell && savingsBox.data !== undefined && savingsBox.balance > 0;
+  // A Caixinha só entra na compra a mercado e só se houver dinheiro nela: LIMIT/STOP que fica
+  // aberta não resgata nada (o servidor confere só o saldo em conta), então nem é oferecida.
+  const canUseSavingsBox =
+    !form.isSell && !form.needsPrice && savingsBox.data !== undefined && savingsBox.balance > 0;
   const usesSavingsBox = canUseSavingsBox && prefersSavingsBox;
 
   // Saldo livre: em LIMIT/STOP, as outras compras abertas já reservam parte do saldo em conta.

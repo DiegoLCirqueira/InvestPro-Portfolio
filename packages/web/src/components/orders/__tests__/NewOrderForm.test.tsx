@@ -294,6 +294,20 @@ describe("NewOrderForm", () => {
       );
     });
 
+    it("LIMIT/STOP não oferecem a Caixinha (ordem que fica aberta não resgata)", () => {
+      mockSavingsBox.balance = 3_000;
+      renderForm();
+      expect(checkbox()).toBeInTheDocument();
+
+      for (const type of ["Limitada", "Stop"]) {
+        fireEvent.click(screen.getByLabelText("Tipo"));
+        fireEvent.click(screen.getByRole("option", { name: type }));
+
+        expect(screen.queryByText("Na Caixinha")).not.toBeInTheDocument();
+        expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+      }
+    });
+
     it("venda nunca oferece a Caixinha nem envia useSavingsBox", async () => {
       mockSavingsBox.balance = 3_000;
       mockSellable.assets = [{ ticker: "PETR4", quantity: 20 }];
