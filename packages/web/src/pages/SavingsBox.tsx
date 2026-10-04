@@ -96,7 +96,10 @@ export function SavingsBox() {
           onDeposit={(event) => open(event, "DEPOSIT")}
           onWithdraw={(event) => open(event, "WITHDRAW")}
           onFirstDeposit={(event) => open(event, "DEPOSIT", { fromEmptyState: true })}
-          onTopUp={() => setIsTopUpOpen(true)}
+          onTopUp={(event) => {
+            openerRef.current = event.currentTarget;
+            setIsTopUpOpen(true);
+          }}
         />
         <SavingsBoxSimulator
           balance={balance}
@@ -106,7 +109,7 @@ export function SavingsBox() {
           onDeposit={(event, amount) => open(event, "DEPOSIT", { amount })}
         />
         <SavingsBoxHowItWorks />
-        <SavingsBoxTransactions transactions={transactions} />
+        <SavingsBoxTransactions transactions={transactions} savingsBalance={balance} />
       </div>
 
       <SavingsBoxDialog
@@ -126,6 +129,7 @@ export function SavingsBox() {
       <TopUpDialog
         open={isTopUpOpen}
         onOpenChange={setIsTopUpOpen}
+        returnFocusRef={openerRef}
         onSuccess={() => void account.refetch()}
       />
     </div>

@@ -23,6 +23,8 @@ export function Orders() {
   const [cancelling, setCancelling] = useState<Order | null>(null);
   // Botão "Cancelar" que abriu a confirmação, para o foco voltar a ele.
   const cancelTriggerRef = useRef<HTMLElement | null>(null);
+  // Depois de cancelar, o botão some com o estado "aberta": o foco vai para o título do histórico.
+  const historyTitleRef = useRef<HTMLHeadingElement>(null);
 
   const { hash } = useLocation();
 
@@ -83,7 +85,9 @@ export function Orders() {
             rolando por dentro quando passa dela. */}
         <div className="nav:col-span-3 nav:self-stretch nav:h-0 nav:min-h-full">
         <div className={cn(cardClassName, "nav:max-h-full flex flex-col gap-4")}>
-          <SectionTitle>Histórico de Ordens</SectionTitle>
+          <SectionTitle ref={historyTitleRef} tabIndex={-1} className="focus:outline-none">
+            Histórico de Ordens
+          </SectionTitle>
 
           {orders.length === 0 ? (
             <EmptyState
@@ -113,6 +117,7 @@ export function Orders() {
         order={cancelling}
         onClose={() => setCancelling(null)}
         onSettled={() => {
+          cancelTriggerRef.current = historyTitleRef.current;
           void refetch();
           void account.refetch();
         }}

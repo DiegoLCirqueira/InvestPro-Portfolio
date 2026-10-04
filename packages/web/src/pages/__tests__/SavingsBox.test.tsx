@@ -51,7 +51,26 @@ vi.mock("@/hooks/use-free-balance", () => ({
   useFreeBalance: () => ({ ...mocks.account, refetch: mocks.refetchAccount }),
 }));
 
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+// "Adicionar saldo grátis" (diálogo do Painel): o depósito deixa R$ 100 em conta.
+vi.mock("@/hooks/usePortfolio", () => ({
+  usePortfolioPositions: () => ({ balance: 0, isLoading: false, refetch: vi.fn() }),
+  useTopUpLimit: () => ({
+    data: { limit: 3_000_000, used: 0, remaining: 3_000_000 },
+    refetch: vi.fn(),
+  }),
+  useTopUpPortfolio: (options: { onSuccess?: () => void } = {}) => ({
+    mutate: async () => {
+      mocks.account = { ...mocks.account, free: 100 };
+      options.onSuccess?.();
+      return { balance: 100 };
+    },
+    isPending: false,
+  }),
+}));
+
+vi.mock("sonner", () => ({
+  toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
+}));
 
 function renderPage() {
   render(
@@ -96,11 +115,21 @@ describe("Página Caixinha", () => {
       ...overrides,
     });
 
-    it("vazio: explica onde os movimentos vão aparecer", () => {
+    it("vazio com a Caixinha vazia: explica onde os movimentos vão aparecer", () => {
+      mocks.savings = { balance: 0, rate: 0.06, estimatedYield: 0 };
       renderPage();
 
       expect(movements()).toHaveTextContent("Seus depósitos e resgates aparecem aqui.");
       expect(within(movements()).queryByRole("button", { name: "Ver mais" })).not.toBeInTheDocument();
+    });
+
+    it("vazio com dinheiro guardado (Caixinha antiga): diz desde quando o extrato registra", () => {
+      renderPage();
+
+      expect(movements()).toHaveTextContent(
+        "As movimentações são registradas a partir de 04/10/2026.",
+      );
+      expect(movements()).not.toHaveTextContent("Seus depósitos e resgates aparecem aqui.");
     });
 
     it("lista depósito, resgate e uso numa compra com sinal, data e saldo depois", () => {
@@ -184,6 +213,21 @@ describe("Página Caixinha", () => {
       ).toBeInTheDocument();
       expect(main).toHaveTextContent(/Parado no Saldo em conta\s*R\$\s?1\.250,00/);
       expect(main).toHaveTextContent(/Rende cerca de R\$\s?15,00 por mês \(simulação\)\./);
+    });
+
+    it("quase tudo guardado não vira 100%: ainda há dinheiro parado em conta", () => {
+      // 10.980,42 de 10.995,92 = 99,86%.
+      mocks.savings = { balance: 10_980.42, rate: 0.06, estimatedYield: 0 };
+      mocks.account = { free: 15.5, reserved: 0, isLoading: false, error: null };
+      renderPage();
+
+      expect(summary()).toHaveTextContent("mais de 99% rendendo");
+      expect(summary()).not.toHaveTextContent("100% rendendo");
+      expect(
+        within(summary()).getByRole("img", {
+          name: "mais de 99% do seu dinheiro livre está na Caixinha",
+        }),
+      ).toBeInTheDocument();
     });
 
     it("não mostra mais o Rendimento estimado (retroativo, errado)", () => {
@@ -319,6 +363,20 @@ describe("Página Caixinha", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Adicionar saldo grátis" }));
       expect(screen.getByRole("dialog", { name: "Adicionar saldo grátis" })).toBeInTheDocument();
+    });
+
+    it("depois do saldo grátis, o foco fica no botão que passa a ser o primeiro depósito", async () => {
+      mocks.account = { free: 0, reserved: 0, isLoading: false, error: null };
+      renderPage();
+
+      fireEvent.click(screen.getByRole("button", { name: "Adicionar saldo grátis" }));
+      fireEvent.change(screen.getByLabelText("Valor a adicionar"), { target: { value: "10000" } });
+      fireEvent.click(screen.getByRole("button", { name: /Adicionar R\$\s?100,00/ }));
+
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Fazer o primeiro depósito" })).toHaveFocus(),
+      );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 

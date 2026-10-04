@@ -5,7 +5,7 @@ import { ReservedBalanceNote } from "@/components/ReservedBalanceNote";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { savingsShare } from "@/lib/savings-box";
+import { formatSavingsShare, savingsShare } from "@/lib/savings-box";
 import { cn } from "@/lib/utils";
 
 type OpenHandler = (event: MouseEvent<HTMLButtonElement>) => void;
@@ -22,7 +22,7 @@ interface SavingsBoxSummaryProps {
   /** Vazia: abre o primeiro depósito (é outro botão, que some quando a Caixinha enche). */
   onFirstDeposit: OpenHandler;
   /** Vazia e sem saldo em conta: abre o "Adicionar saldo grátis" do Painel. */
-  onTopUp: () => void;
+  onTopUp: OpenHandler;
   depositRef?: Ref<HTMLButtonElement>;
 }
 
@@ -40,6 +40,7 @@ export function SavingsBoxSummary({
 }: SavingsBoxSummaryProps) {
   const isEmpty = balance <= 0;
   const share = savingsShare(balance, freeAccount);
+  const shareLabel = formatSavingsShare(share);
 
   return (
     <section
@@ -80,34 +81,33 @@ export function SavingsBoxSummary({
 
       {isEmpty ? (
         // Vazia: convite no lugar do valor zerado, sem Resgatar. Sem saldo em conta, o primeiro
-        // passo é adicionar saldo (é simulado e grátis).
-        freeAccount > 0 ? (
-          <EmptyState
-            icon={PiggyBank}
-            title="Sua Caixinha está vazia"
-            message="Guarde parte do Saldo em conta e ele passa a render 100% do CDI na simulação."
-            action={{ label: "Fazer o primeiro depósito", onClick: onFirstDeposit }}
-            className="py-6"
-          />
-        ) : (
-          <EmptyState
-            icon={PiggyBank}
-            title="Sua Caixinha está vazia"
-            message="Adicione saldo grátis e depois guarde uma parte aqui."
-            action={{ label: "Adicionar saldo grátis", onClick: onTopUp }}
-            className="py-6"
-          />
-        )
+        // passo é adicionar saldo (é simulado e grátis). Um EmptyState só, mudando o texto: depois
+        // do saldo grátis o mesmo botão vira "Fazer o primeiro depósito" e o foco continua nele.
+        <EmptyState
+          icon={PiggyBank}
+          title="Sua Caixinha está vazia"
+          message={
+            freeAccount > 0
+              ? "Guarde parte do Saldo em conta e ele passa a render 100% do CDI na simulação."
+              : "Adicione saldo grátis e depois guarde uma parte aqui."
+          }
+          action={
+            freeAccount > 0
+              ? { label: "Fazer o primeiro depósito", onClick: onFirstDeposit }
+              : { label: "Adicionar saldo grátis", onClick: onTopUp }
+          }
+          className="py-6"
+        />
       ) : (
         <div className="flex flex-col gap-3 border-t border-border pt-5">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="text-muted-foreground">Seu dinheiro livre</span>
-            <span className="font-semibold text-primary">{share}% rendendo</span>
+            <span className="font-semibold text-primary">{shareLabel} rendendo</span>
           </div>
           {/* Os números estão na legenda: a barra só resume (por isso role="img" com o texto). */}
           <div
             role="img"
-            aria-label={`${share}% do seu dinheiro livre está na Caixinha`}
+            aria-label={`${shareLabel} do seu dinheiro livre está na Caixinha`}
             className="h-3 overflow-hidden rounded-full border border-border bg-secondary"
           >
             <div
