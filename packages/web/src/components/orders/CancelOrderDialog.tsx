@@ -32,7 +32,10 @@ interface CancelOrderDialogProps {
   /** Ordem a cancelar; null fecha o diálogo. */
   order: Order | null;
   onClose: () => void;
-  /** Depois de cancelar (ou de saber que a lista estava velha), para recarregar histórico e saldo. */
+  /**
+   * Depois de cancelar (ou de saber que a lista estava velha), antes de fechar: para recarregar
+   * histórico e saldo e, se quiser, trocar o returnFocusRef.
+   */
   onSettled: () => void;
   /** Recebe o foco ao fechar: o diálogo não tem Trigger do Radix. */
   returnFocusRef: React.RefObject<HTMLElement | null>;
@@ -63,8 +66,9 @@ export function CancelOrderDialog({
     } catch {
       // Mensagem já mostrada no onError; a lista recarrega igual.
     }
-    onClose();
+    // Antes de fechar: a página pode trocar o alvo do foco de volta (o botão Cancelar some).
     onSettled();
+    onClose();
   };
 
   return (
