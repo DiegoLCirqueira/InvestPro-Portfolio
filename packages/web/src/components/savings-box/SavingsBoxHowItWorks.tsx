@@ -19,15 +19,19 @@ const STEPS = [
   },
 ];
 
-/** [C] Como funciona: referência, por isso fica por último no celular. */
+/**
+ * [C] Como funciona: referência, por isso fica por último no celular. No computador tem a altura
+ * do "Quanto rende" ao lado: a sobra vai para o espaço entre os passos (e não um vão só antes da
+ * dica), e a dica fica no fim, alinhada ao botão do simulador.
+ */
 export function SavingsBoxHowItWorks() {
   return (
     <section
       aria-labelledby="caixinha-como"
-      className={cn(cardClassName, "nav:col-span-2 flex flex-col gap-4")}
+      className={cn(cardClassName, "nav:col-span-2 nav:self-stretch flex flex-col gap-4")}
     >
       <SectionTitle id="caixinha-como">Como funciona</SectionTitle>
-      <ol className="flex flex-col gap-4">
+      <ol className="flex flex-col gap-4 nav:flex-1 nav:justify-between">
         {STEPS.map((step, index) => (
           <li key={step.title} className="flex gap-3">
             <span

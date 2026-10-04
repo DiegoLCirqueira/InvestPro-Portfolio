@@ -269,6 +269,17 @@ describe("Página Caixinha", () => {
         "/orders",
       );
     });
+
+    it("no computador, Como funciona estica até a altura do Quanto rende (celular: natural)", () => {
+      renderPage();
+
+      const how = screen.getByRole("region", { name: "Como funciona" });
+      expect(how).toHaveClass("nav:self-stretch");
+      expect(simulator()).toHaveClass("nav:self-stretch");
+      // A sobra vai para entre os passos, não para um vão só antes da dica.
+      expect(within(how).getByRole("list")).toHaveClass("nav:flex-1", "nav:justify-between");
+      expect(how.className).not.toMatch(/(^|\s)self-stretch/);
+    });
   });
 
   describe("simulador Quanto rende", () => {

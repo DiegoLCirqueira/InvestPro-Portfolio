@@ -61,7 +61,7 @@ export function SavingsBoxSimulator({
   return (
     <section
       aria-labelledby="caixinha-simulador"
-      className={cn(cardClassName, "nav:col-span-3 flex flex-col gap-5")}
+      className={cn(cardClassName, "nav:col-span-3 nav:self-stretch flex flex-col gap-5")}
     >
       <SectionTitle id="caixinha-simulador">Quanto rende</SectionTitle>
 
@@ -121,7 +121,8 @@ export function SavingsBoxSimulator({
         Não é promessa de rendimento.
       </p>
 
-      <div className="flex flex-col gap-2">
+      {/* No fim do card, como a dica do "Como funciona": se ele for o mais alto, sobra aqui. */}
+      <div className="flex flex-col gap-2 nav:mt-auto">
         <Button
           onClick={(event) => onDeposit(event, amount)}
           disabled={disabledReason !== null}
