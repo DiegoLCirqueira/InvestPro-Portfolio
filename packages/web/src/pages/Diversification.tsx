@@ -61,6 +61,14 @@ function CategoryCard({
         />
         <span className="font-bold text-foreground text-sm">
           {CATEGORY_LABELS[item.type] ?? item.label}
+          {/* A Caixinha entra na renda fixa: o valor diz quanto dela está ali, para o total da
+              classe não parecer maior que as posições de renda fixa compradas. */}
+          {item.savingsBox !== undefined && item.savingsBox > 0 && (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              (inclui {formatCurrency(item.savingsBox)} na Caixinha)
+            </span>
+          )}
         </span>
       </div>
 

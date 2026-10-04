@@ -51,6 +51,8 @@ export interface PortfolioDiversificationItem {
   label: string;
   value: number;
   percentage: number;
+  /** Só em FIXED_INCOME: quanto do valor é a Caixinha (ela conta como renda fixa). */
+  savingsBox?: number;
 }
 
 export interface PortfolioDiversificationResponse {
