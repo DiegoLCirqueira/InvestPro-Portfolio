@@ -4,6 +4,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
+import { TED_REQUIRES_ACCOUNT_MESSAGE } from '@investpro/shared'
 import { prisma } from '../../../config/database.js'
 import {
   deleteUser,
@@ -18,6 +19,8 @@ import {
 
 // Chave e-mail válida pro DICT: PIX sem chave válida é recusado (validateTransfer).
 const VALID_PIX_KEY = 'qa-pix@investpro.com'
+// Conta completa: a TED exige banco, agência e conta.
+const TED_ACCOUNT = { bank: '001', agency: '1234', account: '56789-0' }
 
 let app: FastifyInstance | undefined
 let email = ''
@@ -115,6 +118,53 @@ describe('POST /api/v1/transfers', () => {
       },
     })
     expect(res.statusCode).toBe(400)
+    expect(res.json()).toEqual({ error: 'VALIDATION_ERROR', message: TED_REQUIRES_ACCOUNT_MESSAGE })
+  })
+
+  it('TED sem conta de destino: 400 VALIDATION_ERROR, nada persistido nem debitado', async () => {
+    const [balanceBefore, totalBefore] = [(await getPortfolioOf(token)).balance, await transfersTotalOf(token)]
+
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'TED', amount: 25 },
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json()).toEqual({ error: 'VALIDATION_ERROR', message: TED_REQUIRES_ACCOUNT_MESSAGE })
+    expect((await getPortfolioOf(token)).balance).toBe(balanceBefore)
+    expect(await transfersTotalOf(token)).toBe(totalBefore)
+  })
+
+  it('DOC novo é recusado (400 VALIDATION_ERROR com a mensagem do DOC extinto)', async () => {
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/transfers',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      remoteAddress: uniqueIp(),
+      payload: { type: 'DOC', amount: 15, toAccount: TED_ACCOUNT },
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json()).toEqual({ error: 'VALIDATION_ERROR', message: 'O DOC foi extinto em 2024. Use PIX ou TED.' })
+  })
+
+  it('DOC antigo continua no histórico', async () => {
+    const userId = (await prisma.user.findUniqueOrThrow({ where: { email } })).id
+    const old = await prisma.transfer.create({
+      data: { userId, status: 'COMPLETED', type: 'DOC', amount: 40, completedAt: new Date() },
+    })
+
+    const res = await app!.inject({
+      method: 'GET',
+      url: '/api/v1/transfers?page=1&limit=100',
+      headers: { authorization: `Bearer ${token}` },
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().items).toContainEqual(expect.objectContaining({ id: old.id, type: 'DOC', amount: 40 }))
   })
 
   it('retorna 400 para transferência inválida (amount negativo)', async () => {
@@ -259,7 +309,7 @@ describe('POST /api/v1/transfers — persistência real no Postgres', () => {
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'DOC', amount: 15, pixKey: VALID_PIX_KEY, description: 'DOC sem chave' },
+      payload: { type: 'TED', amount: 15, pixKey: VALID_PIX_KEY, toAccount: TED_ACCOUNT, description: 'TED com chave enviada' },
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()
@@ -369,7 +419,7 @@ describe('transferência sobrevive a um restart do servidor', () => {
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${restartToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'DOC', amount: 77.7, description: 'Antes do restart' },
+      payload: { type: 'TED', amount: 77.7, toAccount: TED_ACCOUNT, description: 'Antes do restart' },
     })
     expect(created.statusCode).toBe(200)
     const transferId = created.json().id as string
@@ -427,7 +477,7 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'TED', amount: 95, description: 'Deve ser rejeitada por saldo' },
+      payload: { type: 'TED', amount: 95, toAccount: TED_ACCOUNT, description: 'Deve ser rejeitada por saldo' },
     })
     expect(res.statusCode).toBe(400)
     expect(res.json().error).toBe('TRANSFER_INSUFFICIENT_BALANCE')
@@ -462,7 +512,7 @@ describe('regra de saldo: valida saldo suficiente e debita Portfolio.balance (bu
       url: '/api/v1/transfers',
       headers: { authorization: `Bearer ${balanceToken}`, 'content-type': 'application/json' },
       remoteAddress: uniqueIp(),
-      payload: { type: 'TED', amount: 500, description: 'TED com tarifa' },
+      payload: { type: 'TED', amount: 500, toAccount: TED_ACCOUNT, description: 'TED com tarifa' },
     })
     expect(res.statusCode).toBe(200)
     expect(res.json().status).toBe('COMPLETED')

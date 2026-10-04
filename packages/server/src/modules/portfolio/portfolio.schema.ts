@@ -46,10 +46,12 @@ export const diversificationItemSchema = z.object({
   label: z.string(),
   value: z.number(),
   percentage: z.number(),
+  // Só em FIXED_INCOME, quando há Caixinha: quanto do value é a Caixinha.
+  savingsBox: z.number().positive().optional(),
 })
 
 export const diversificationResponseSchema = z.object({
-  // Total INVESTIDO (posições + moedas estrangeiras), sem o caixa: é o
+  // Total INVESTIDO (posições + Caixinha + moedas estrangeiras), sem o caixa: é o
   // denominador das porcentagens, que somam 100%. Nome mantido por compatibilidade.
   totalBalance: z.number(),
   breakdown: z.array(diversificationItemSchema),

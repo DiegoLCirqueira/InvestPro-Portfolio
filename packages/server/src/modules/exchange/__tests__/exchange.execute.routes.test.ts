@@ -243,3 +243,49 @@ describe('POST /api/v1/exchange/execute', () => {
     expect(res.statusCode).toBe(401)
   })
 })
+
+describe('POST /api/v1/exchange/execute — mínimo de R$ 1,00 por conversão', () => {
+  let minEmail = ''
+  let minToken = ''
+  let minUserId = ''
+
+  beforeAll(async () => {
+    minEmail = uniqueEmail('exchange-min')
+    const reg = await registerTestUser(app!, minEmail)
+    minToken = reg.body.accessToken as string
+    minUserId = reg.body.user.id as string
+    await fundPortfolio(minUserId, 100)
+    await prisma.currencyHolding.create({ data: { userId: minUserId, currency: 'USD', balance: 10 } })
+  })
+
+  afterAll(async () => {
+    await deleteUser(minEmail)
+  })
+
+  function executeAs(payload: Record<string, unknown>) {
+    return app!.inject({
+      method: 'POST',
+      url: '/api/v1/exchange/execute',
+      headers: { authorization: `Bearer ${minToken}` },
+      remoteAddress: uniqueIp(),
+      payload,
+    })
+  }
+
+  it('BRL de origem: R$ 0,99 recusa sem mexer em nada, R$ 1,00 executa', async () => {
+    const tooSmall = await executeAs({ from: 'BRL', to: 'USD', amount: 0.99 })
+    expect(tooSmall.statusCode).toBe(400)
+    expect(tooSmall.json()).toEqual({ error: 'EXCHANGE_AMOUNT_TOO_SMALL', message: 'O valor mínimo por conversão é R$ 1,00' })
+    expect((await prisma.portfolio.findUniqueOrThrow({ where: { userId: minUserId } })).balance.toNumber()).toBe(100)
+
+    expect((await executeAs({ from: 'BRL', to: 'USD', amount: 1 })).statusCode).toBe(200)
+  })
+
+  it('moeda estrangeira de origem vale pela cotação: US$ 0,19 (R$ 0,95) recusa, US$ 0,20 (R$ 1,00) executa', async () => {
+    const tooSmall = await executeAs({ from: 'USD', to: 'BRL', amount: 0.19 })
+    expect(tooSmall.statusCode).toBe(400)
+    expect(tooSmall.json().error).toBe('EXCHANGE_AMOUNT_TOO_SMALL')
+
+    expect((await executeAs({ from: 'USD', to: 'BRL', amount: 0.2 })).statusCode).toBe(200)
+  })
+})

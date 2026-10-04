@@ -49,6 +49,11 @@ export const currencyListResponseSchema = z.object({
 export const EXECUTABLE_CURRENCIES = CURRENCIES;
 export const executableCurrencySchema = currencySchema;
 
+// Valor mínimo por conversão, em BRL (origem convertida pela cotação usada).
+// Abaixo disso a taxa de 1% arredonda pra zero e fatiar a troca fugiria dela.
+export const MIN_EXCHANGE_BRL = 1;
+export const MIN_EXCHANGE_MESSAGE = 'O valor mínimo por conversão é R$ 1,00';
+
 export const executeExchangeInputSchema = z.object({
   from: executableCurrencySchema,
   to: executableCurrencySchema,

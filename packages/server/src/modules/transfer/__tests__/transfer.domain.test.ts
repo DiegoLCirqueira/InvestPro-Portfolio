@@ -89,13 +89,10 @@ describe('validateTransfer', () => {
     expect(validateTransfer(baseInput({ type: 'TED', pixKey: undefined }))).toEqual([])
   })
 
-  it('TED sem número da conta é inválida', () => {
-    const input = baseInput({
-      type: 'TED',
-      toAccount: { id: 'x', bank: 'Banco X', agency: '0001' },
-    })
+  it('PIX com conta de destino sem agência é inválida', () => {
+    const input = baseInput({ toAccount: { id: 'x', bank: 'Banco X', agency: '' } })
     const errors = validateTransfer(input)
-    expect(errors.join(' ')).toContain('account')
+    expect(errors.join(' ')).toContain('agency')
   })
 })
 

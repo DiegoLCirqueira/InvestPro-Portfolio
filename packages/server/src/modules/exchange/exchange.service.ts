@@ -15,6 +15,7 @@ import type {
   ExecutableCurrency,
   ExecuteExchangeResponse,
 } from '@investpro/shared'
+import { MIN_EXCHANGE_BRL, MIN_EXCHANGE_MESSAGE } from '@investpro/shared'
 import { AppError } from '../auth/auth.service.js'
 import { prisma } from '../../config/database.js'
 import { runSerializableTx } from '../../shared/db/serializableTransaction.js'
@@ -229,15 +230,24 @@ async function executeExchangeTx(
   })
 }
 
-// Crédito que arredonda pra zero (valor pequeno demais pra moeda de destino)
-// não pode debitar a origem sem entregar nada.
-function assertConvertedAmountIsPositive(convertedAmount: number): void {
-  if (convertedAmount > 0) return
-  throw new AppError(
-    'EXCHANGE_AMOUNT_TOO_SMALL',
-    'Valor pequeno demais: a conversão resultaria em zero na moeda de destino',
-    400
-  )
+// Valor de origem em BRL pela cotação da própria conversão; em par sem BRL
+// (USD→EUR), pela cotação viva da origem pra BRL.
+async function amountInBrl(
+  from: ExecutableCurrency,
+  to: ExecutableCurrency,
+  amount: number,
+  rate: number
+): Promise<number> {
+  if (from === 'BRL') return amount
+  if (to === 'BRL') return amount * rate
+  return amount * (await liveRates.getRate(from, 'BRL', { maxAgeMs: EXECUTE_MAX_RATE_AGE_MS }))
+}
+
+// Abaixo de R$ 1,00 a taxa de 1% arredonda pra zero (fatiar fugiria dela) e o
+// crédito pode zerar. O mínimo também garante crédito positivo em toda moeda.
+function assertMinimumExchange(valueInBrl: number): void {
+  if (roundCurrency(valueInBrl, 'BRL') >= MIN_EXCHANGE_BRL) return
+  throw new AppError('EXCHANGE_AMOUNT_TOO_SMALL', MIN_EXCHANGE_MESSAGE, 400)
 }
 
 // Câmbio de verdade (debita/credita saldo real), diferente de `convert` (só
@@ -262,8 +272,8 @@ export async function executeExchange(
   }
 
   const rate = await liveRates.getRate(from, to, { maxAgeMs: EXECUTE_MAX_RATE_AGE_MS })
+  assertMinimumExchange(await amountInBrl(from, to, amount, rate))
   const { convertedAmount, fee } = buildConversion(from, to, amount, rate, 'down')
-  assertConvertedAmountIsPositive(convertedAmount)
 
   const record = await runSerializableTx(
     (tx) => executeExchangeTx(tx, userId, from, to, amount, convertedAmount, rate, fee),

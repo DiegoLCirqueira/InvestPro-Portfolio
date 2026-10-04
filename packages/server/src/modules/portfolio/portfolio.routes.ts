@@ -82,7 +82,7 @@ export async function portfolioRoutes(app: FastifyInstance): Promise<void> {
         tags: ["Portfolio"],
         summary: "Diversificação do portfólio",
         description:
-          "Retorna a composição do portfólio por tipo de ativo.",
+          "Retorna a composição do que está investido por classe (posições, Caixinha e moedas estrangeiras; sem o saldo em conta). A Caixinha soma em Renda fixa (FIXED_INCOME), e esse item traz `savingsBox` com quanto do valor é Caixinha.",
         security: [{ BearerAuth: [] }],
         response: {
           200: diversificationResponseSchema,

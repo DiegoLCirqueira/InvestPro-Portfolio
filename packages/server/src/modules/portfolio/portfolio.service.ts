@@ -198,15 +198,20 @@ export async function getDiversification(userId: string) {
 
   // Moedas estrangeiras entram como uma fatia própria, em BRL (mesma cotação
   // do patrimônio no gráfico de evolução).
-  const foreign = await foreignCurrencyValueInBrl(userId);
+  const [foreign, box] = await Promise.all([
+    foreignCurrencyValueInBrl(userId),
+    prisma.savingsBox.findUnique({ where: { userId, deletedAt: null }, select: { balance: true } }),
+  ]);
   const slices = foreign > 0 ? [...positions, { type: "FOREIGN_CURRENCY" as const, currentValue: foreign }] : positions;
+  const savingsBox = box ? box.balance.toNumber() : 0;
 
-  // Denominador = só o que está INVESTIDO (posições + moedas), sem o caixa:
+  // Denominador = só o que está INVESTIDO (posições + Caixinha + moedas), sem o caixa:
   // a diversificação responde "de cada R$ 100 investidos, quanto está em cada
   // lugar" — as fatias somam 100%. Com o caixa no total, as fatias ficavam
   // pequenas e a soma não fechava (ex.: 13,6% numa conta com muito caixa).
   // O saldo em conta aparece no Painel ("Saldo em conta").
-  const totalInvested = Math.round(slices.reduce((sum, p) => sum + p.currentValue, 0) * 100) / 100;
+  const totalInvested =
+    Math.round((slices.reduce((sum, p) => sum + p.currentValue, 0) + savingsBox) * 100) / 100;
 
-  return calculateDiversification(slices, totalInvested);
+  return calculateDiversification(slices, totalInvested, savingsBox);
 }

@@ -66,4 +66,19 @@ describe('calculateDiversification', () => {
     expect(result.breakdown.map((b) => b.value)).toEqual([900, 500, 100])
     expect(result.breakdown.map((b) => b.type)).toEqual(['STOCK', 'CRYPTO', 'FIXED_INCOME'])
   })
+
+  it('a Caixinha soma em FIXED_INCOME e só esse item traz savingsBox', () => {
+    const result = calculateDiversification(
+      [
+        { type: 'FIXED_INCOME', currentValue: 100 },
+        { type: 'STOCK', currentValue: 300 },
+      ],
+      1000,
+      600,
+    )
+    expect(result.breakdown).toEqual([
+      { type: 'FIXED_INCOME', label: TYPE_LABELS.FIXED_INCOME, value: 700, percentage: 70, savingsBox: 600 },
+      { type: 'STOCK', label: TYPE_LABELS.STOCK, value: 300, percentage: 30 },
+    ])
+  })
 })

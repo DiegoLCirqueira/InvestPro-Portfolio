@@ -79,7 +79,7 @@ export async function executeWithdraw(
   if (!box || box.balance.toNumber() < amount) {
     throw new AppError(
       "SAVINGS_BOX_INSUFFICIENT_BALANCE",
-      "Saldo insuficiente na caixinha para este resgate",
+      "Saldo insuficiente na Caixinha para este resgate",
       400
     );
   }
