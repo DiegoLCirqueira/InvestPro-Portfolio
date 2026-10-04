@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { X } from "lucide-react";
 import { TopUpForm } from "@/components/profile/TopUpForm";
 import {
@@ -16,6 +17,11 @@ interface TopUpDialogProps {
   /** Valor já preenchido e a nota que o explica (ex.: o que falta para a ordem). */
   initialAmount?: number;
   note?: string;
+  /**
+   * Recebe o foco ao fechar. Aberto por estado (sem Dialog.Trigger), o Radix devolve o foco a um
+   * trigger que não existe, e ele caía no body.
+   */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
 // "Adicionar saldo grátis": aberto pelo card do Painel e pelo "Saldo insuficiente". O X fica
@@ -26,12 +32,21 @@ export function TopUpDialog({
   onSuccess,
   initialAmount,
   note,
+  returnFocusRef,
 }: TopUpDialogProps) {
   const close = () => onOpenChange(false);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideCloseButton className="flex flex-col gap-5">
+      <DialogContent
+        hideCloseButton
+        className="flex flex-col gap-5"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusRef?.current) return;
+          event.preventDefault();
+          returnFocusRef.current.focus();
+        }}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5 pt-2.5">
             <DialogTitle>Adicionar saldo grátis</DialogTitle>
