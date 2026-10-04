@@ -37,6 +37,16 @@ export function SavingsBox() {
     openerRef.current = event.currentTarget;
     setMode(nextMode);
   };
+  // Primeiro depósito pelo estado vazio: o botão que abriu o diálogo some quando a Caixinha deixa
+  // de estar vazia, e o foco se perdia. Marcado aqui, o foco vai para o Depositar que o substitui.
+  const focusDepositOnMount = useRef(false);
+  const depositRef = (node: HTMLButtonElement | null) => {
+    if (!node || !focusDepositOnMount.current) return;
+    focusDepositOnMount.current = false;
+    // Também vira o alvo do foco de volta, caso o diálogo termine de fechar depois.
+    openerRef.current = node;
+    node.focus();
+  };
 
   if (savingsBox.isLoading || portfolio.isLoading) {
     return (
@@ -133,7 +143,9 @@ export function SavingsBox() {
               </dl>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button onClick={(event) => open(event, "DEPOSIT")}>Depositar</Button>
+                <Button ref={depositRef} onClick={(event) => open(event, "DEPOSIT")}>
+                  Depositar
+                </Button>
                 <Button variant="outline" onClick={(event) => open(event, "WITHDRAW")}>
                   Resgatar
                 </Button>
@@ -181,6 +193,7 @@ export function SavingsBox() {
         reservedBalance={portfolio.reserved}
         savingsBalance={balance}
         onSuccess={() => {
+          if (isEmpty) focusDepositOnMount.current = true;
           void savingsBox.refetch();
           void portfolio.refetch();
         }}

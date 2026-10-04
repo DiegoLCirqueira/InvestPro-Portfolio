@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   savings: { balance: 3_000, rate: 0.06, estimatedYield: 12.34 },
   deposit: vi.fn(),
   withdraw: vi.fn(),
+  onDepositSuccess: undefined as (() => void) | undefined,
 }));
 
 vi.mock("@/hooks/use-savings-box", () => ({
@@ -17,7 +18,10 @@ vi.mock("@/hooks/use-savings-box", () => ({
     error: null,
     refetch: vi.fn(),
   }),
-  useSavingsBoxDeposit: () => ({ mutate: mocks.deposit, isPending: false }),
+  useSavingsBoxDeposit: (options: { onSuccess?: () => void }) => {
+    mocks.onDepositSuccess = options.onSuccess;
+    return { mutate: mocks.deposit, isPending: false };
+  },
   useSavingsBoxWithdraw: () => ({ mutate: mocks.withdraw, isPending: false }),
 }));
 
@@ -38,6 +42,7 @@ function renderPage() {
 describe("Página Caixinha", () => {
   beforeEach(() => {
     mocks.savings = { balance: 3_000, rate: 0.06, estimatedYield: 12.34 };
+    mocks.deposit.mockReset();
   });
 
   it("mostra o saldo guardado, o rendimento da API e o saldo em conta disponível", () => {
@@ -76,5 +81,24 @@ describe("Página Caixinha", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Fazer o primeiro depósito" }));
     expect(screen.getByRole("dialog", { name: "Depositar na Caixinha" })).toBeInTheDocument();
+  });
+
+  it("depois do primeiro depósito pelo estado vazio, o foco vai para o novo Depositar", async () => {
+    mocks.savings = { balance: 0, rate: 0.06, estimatedYield: 0 };
+    // O depósito enche a Caixinha (como o refetch traria) e conclui pelo onSuccess do hook.
+    mocks.deposit.mockImplementation(async () => {
+      mocks.savings = { balance: 100, rate: 0.06, estimatedYield: 0 };
+      mocks.onDepositSuccess?.();
+    });
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Fazer o primeiro depósito" }));
+    fireEvent.change(screen.getByLabelText("Valor a depositar"), { target: { value: "10000" } });
+    fireEvent.click(screen.getByRole("button", { name: /Depositar R\$\s?100,00/ }));
+
+    const main = screen.getByRole("region", { name: "Guardado na Caixinha" });
+    await waitFor(() =>
+      expect(within(main).getByRole("button", { name: "Depositar" })).toHaveFocus(),
+    );
   });
 });
