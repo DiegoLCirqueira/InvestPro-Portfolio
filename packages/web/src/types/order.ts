@@ -53,3 +53,10 @@ export interface SellableAsset {
 export interface SellableAssetList {
   items: SellableAsset[];
 }
+
+// GET /orders/reservations: o que as ordens abertas (OPEN) já prometeram. balance = custo das
+// compras abertas (preço + 1%); positions = quantidade em vendas abertas, por ticker.
+export interface OrderReservations {
+  balance: number;
+  positions: Record<string, number>;
+}

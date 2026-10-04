@@ -41,7 +41,10 @@ interface SavingsBoxDialogProps {
   /** Qual movimento está aberto; null fecha o diálogo. */
   mode: SavingsBoxMode | null;
   onClose: () => void;
+  /** Saldo em conta LIVRE (sem o reservado em ordens abertas): é o que dá para depositar. */
   accountBalance: number;
+  /** Reservado em ordens abertas: mostrado para explicar o saldo livre menor. */
+  reservedBalance?: number;
   savingsBalance: number;
   /** Depois do movimento, para o Painel recarregar os dois saldos. */
   onSuccess: () => void;
@@ -63,6 +66,7 @@ function SavingsBoxDialogContent({
   mode,
   onClose,
   accountBalance,
+  reservedBalance = 0,
   savingsBalance,
   onSuccess,
   returnFocusTo,
@@ -74,7 +78,9 @@ function SavingsBoxDialogContent({
 
   // Depositar sai do saldo em conta; resgatar sai do saldo da Caixinha.
   const available = mode === "DEPOSIT" ? accountBalance : savingsBalance;
-  const where = mode === "DEPOSIT" ? "em conta" : "na Caixinha";
+  // Com reserva, o que conta é o livre: "livres em conta" evita contradizer o saldo do Painel.
+  const accountWhere = reservedBalance > 0 ? "livres em conta" : "em conta";
+  const where = mode === "DEPOSIT" ? accountWhere : "na Caixinha";
   const isEmpty = available <= 0;
   const exceedsAvailable = amount > available;
   // Botão desabilitado sempre com o motivo ao lado (antes só dizia "Você tem R$ X em conta").
@@ -138,10 +144,18 @@ function SavingsBoxDialogContent({
       </div>
 
       <dl className="grid grid-cols-[1fr_auto] gap-y-1.5 rounded-xl bg-secondary px-3.5 py-3 text-sm text-muted-foreground">
-        <dt>Saldo em conta</dt>
+        <dt>{reservedBalance > 0 ? "Saldo livre em conta" : "Saldo em conta"}</dt>
         <dd className="font-semibold tabular-nums text-foreground">
           {formatCurrency(accountBalance)}
         </dd>
+        {reservedBalance > 0 && (
+          <>
+            <dt>Reservado em ordens abertas</dt>
+            <dd className="font-semibold tabular-nums text-foreground">
+              {formatCurrency(reservedBalance)}
+            </dd>
+          </>
+        )}
         <dt>Na Caixinha</dt>
         <dd className="font-semibold tabular-nums text-foreground">
           {formatCurrency(savingsBalance)}

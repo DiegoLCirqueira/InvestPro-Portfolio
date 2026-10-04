@@ -68,7 +68,7 @@ export function Orders() {
       />
 
       <div className="grid grid-cols-1 nav:grid-cols-5 gap-4 items-start">
-        <NewOrderForm onCreated={() => void refetch()} orders={orders} />
+        <NewOrderForm onCreated={() => void refetch()} />
 
         {/* No desktop o histórico não define a altura da linha (h-0 + min-h-full):
             ela vem do formulário, e o histórico usa essa altura como máximo,

@@ -20,8 +20,10 @@ interface ExchangeInput {
 interface UseExchangeFlowOptions {
   input: ExchangeInput;
   onExecuted: () => void;
-  /** Saldo disponível na moeda de origem (em BRL, o saldo em conta). */
+  /** Saldo disponível na moeda de origem (em BRL, o saldo em conta livre). */
   availableInOrigin: number;
+  /** Em BRL: reservado em ordens abertas, para o "Saldo insuficiente" explicar o livre menor. */
+  reservedInOrigin?: number;
   /** Recarrega o saldo depois de adicionar saldo pelo "Saldo insuficiente". */
   onBalanceAdded: () => void;
 }
@@ -35,6 +37,7 @@ export function useExchangeFlow({
   input,
   onExecuted,
   availableInOrigin,
+  reservedInOrigin,
   onBalanceAdded,
 }: UseExchangeFlowOptions) {
   const handleFinancialError = useFinancialErrorHandler(INSUFFICIENT_BALANCE_CODES);
@@ -43,7 +46,13 @@ export function useExchangeFlow({
     handleFinancialError(
       error,
       input.from === "BRL"
-        ? { kind: "exchange", cost: input.amount, available: availableInOrigin, onBalanceAdded }
+        ? {
+            kind: "exchange",
+            cost: input.amount,
+            available: availableInOrigin,
+            reserved: reservedInOrigin || undefined,
+            onBalanceAdded,
+          }
         : undefined,
     );
   const convert = useConvertExchange({ onError: handleError });

@@ -1,8 +1,7 @@
 import type { ComboboxOption } from "@/components/ui/combobox";
 import { formatCurrency, formatQuantity } from "@/lib/format";
 import type { MarketAsset } from "@/types/market";
-import { computeOrderSettlement } from "@/lib/order-fee";
-import type { Order, OrderSide, OrderType, SellableAsset } from "@/types/order";
+import type { OrderSide, OrderType, SellableAsset } from "@/types/order";
 
 /** Nome do tipo de ordem na interface (o enum da API fica só no código). */
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
@@ -94,8 +93,8 @@ export function findOwnedQuantity(
 }
 
 /**
- * Venda acima do que está livre na posição. Em LIMIT/STOP, as outras vendas abertas do mesmo
- * ativo já reservam parte dela (reservedQuantity), como o servidor confere ao criar a ordem.
+ * Venda acima do que está livre na posição: as vendas abertas do mesmo ativo já reservam parte
+ * dela (reservedQuantity, de GET /orders/reservations), como o servidor confere.
  */
 export function getSellQuantityError(
   quantity: number,
@@ -111,27 +110,6 @@ export function getSellQuantityError(
   return reservedQuantity > 0
     ? `${owned}, e ${formatQuantity(reservedQuantity)} já estão em vendas abertas. Reduza a quantidade.`
     : `${owned}. Reduza a quantidade.`;
-}
-
-/**
- * O que as ordens abertas (OPEN) já reservam, para uma nova LIMIT/STOP: na compra, o custo
- * (preço informado + taxa) das outras compras abertas; na venda, a quantidade das outras
- * vendas abertas do mesmo ativo. Espelha a checagem do servidor ao criar a ordem.
- */
-export function reservedByOpenOrders(orders: readonly Order[], side: OrderSide, ticker: string) {
-  const open = orders.filter((order) => order.status === "OPEN" && order.side === side);
-  if (side === "BUY") {
-    const cost = open.reduce(
-      (sum, order) => sum + computeOrderSettlement("BUY", order.quantity * (order.price ?? 0)).netAmount,
-      0,
-    );
-    return Math.round(cost * 100) / 100;
-  }
-  const normalized = normalizeTicker(ticker);
-  const quantity = open
-    .filter((order) => normalizeTicker(order.ticker) === normalized)
-    .reduce((sum, order) => sum + order.quantity, 0);
-  return Number(quantity.toFixed(ORDER_QUANTITY_DECIMAL_PLACES));
 }
 
 // Aceita vírgula como separador decimal; devolve null se não for um número

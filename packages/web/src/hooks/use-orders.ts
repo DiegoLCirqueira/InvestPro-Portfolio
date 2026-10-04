@@ -4,6 +4,7 @@ import { useMutation } from "@/hooks/use-mutation";
 import type {
   CreateOrderInput,
   Order,
+  OrderReservations,
   OrderList,
   SellableAsset,
   SellableAssetList,
@@ -63,3 +64,20 @@ export function useCreateOrder(
 }
 
 export type { Order, OrderList, OrderSide, OrderType, OrderStatus } from "@/types/order";
+
+/** Saldo e posição reservados pelas ordens abertas do usuário (o servidor faz a conta). */
+export function useOrderReservations() {
+  const query = useQuery<OrderReservations>({
+    fetcher: () => api.get<OrderReservations>("/orders/reservations"),
+    deps: [],
+  });
+
+  return {
+    data: query.data,
+    balance: query.data?.balance ?? 0,
+    positions: query.data?.positions ?? {},
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}

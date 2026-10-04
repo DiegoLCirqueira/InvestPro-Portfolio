@@ -66,6 +66,17 @@ vi.mock("@/hooks/use-orders", () => ({
     mockCreateOrder.onError = options.onError;
     return { mutate: mockCreateOrder.mutate, isPending: false, error: null };
   },
+  // GET /orders/reservations: sem ordens abertas por padrão.
+  useOrderReservations: () => ({
+    balance: mockReservations.balance,
+    positions: mockReservations.positions,
+    refetch: vi.fn(),
+  }),
+}));
+
+const mockReservations = vi.hoisted(() => ({
+  balance: 0,
+  positions: {} as Record<string, number>,
 }));
 
 // Saldo em conta: alto por padrão, para os testes que não tratam de saldo não esbarrarem nele.
@@ -125,6 +136,8 @@ describe("NewOrderForm", () => {
     mockSellable.isLoading = false;
     mockCreateOrder.mutate.mockReset();
     mockPortfolio.balance = 1_000_000;
+    mockReservations.balance = 0;
+    mockReservations.positions = {};
     mockSavingsBox.balance = 0;
     useInsufficientBalanceStore.setState({ isOpen: false });
   });
@@ -181,6 +194,30 @@ describe("NewOrderForm", () => {
 
       expect(screen.queryByText(/Faltam/)).not.toBeInTheDocument();
       expect(submitButton()).toBeEnabled();
+    });
+
+    it("compra a mercado usa o saldo LIVRE e mostra o reservado em ordens abertas", () => {
+      mockPortfolio.balance = 500;
+      mockReservations.balance = 400; // sobram R$ 100 livres
+      renderForm();
+      buyTenPetr4(); // R$ 303
+
+      expect(screen.getByText("Reservado em ordens abertas")).toBeInTheDocument();
+      const alert = screen.getByText(/Faltam/).closest("[role=status]") as HTMLElement;
+      expect(alert).toHaveTextContent(/Faltam R\$\s?203,00 para esta ordem/);
+      expect(alert).toHaveTextContent(/R\$\s?100,00 livres em conta \(R\$\s?400,00 reservados/);
+      expect(submitButton()).toBeDisabled();
+    });
+
+    it("venda a mercado só usa a posição livre (sem o que está em vendas abertas)", () => {
+      mockSellable.assets = [{ ticker: "PETR4", quantity: 12 }];
+      mockReservations.positions = { PETR4: 5 };
+      renderForm();
+      fireEvent.click(screen.getByRole("button", { name: "Venda" }));
+      buyTenPetr4(); // 10 PETR4, só 7 livres
+
+      expect(screen.getByRole("alert")).toHaveTextContent(/5 já estão em vendas abertas/);
+      expect(submitButton()).toBeDisabled();
     });
 
     it("na venda mostra só o saldo, sem aviso: a checagem é de quantidade", () => {

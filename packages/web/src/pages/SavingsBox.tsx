@@ -4,13 +4,14 @@ import { ArrowRight, PiggyBank } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { PageHeader } from "@/components/PageHeader";
+import { ReservedBalanceNote } from "@/components/ReservedBalanceNote";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SavingsBoxDialog, type SavingsBoxMode } from "@/components/savings-box/SavingsBoxDialog";
 import { SavingsBoxSkeleton } from "@/components/skeletons/SavingsBoxSkeleton";
 import { Button } from "@/components/ui/button";
 import { cardClassName } from "@/components/ui/card";
 import { useSavingsBox } from "@/hooks/use-savings-box";
-import { usePortfolioPositions } from "@/hooks/usePortfolio";
+import { useFreeBalance } from "@/hooks/use-free-balance";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,8 @@ const HOW_IT_WORKS = [
 // A Caixinha ganhou página própria (antes era uma linha em "Seus Ativos", no Painel).
 export function SavingsBox() {
   const savingsBox = useSavingsBox();
-  const portfolio = usePortfolioPositions();
+  // Só o saldo livre dá para depositar: o reservado em ordens abertas fica de fora.
+  const portfolio = useFreeBalance();
   const [mode, setMode] = useState<SavingsBoxMode | null>(null);
   // Botão que abriu o diálogo, para o foco voltar a ele ao fechar.
   const openerRef = useRef<HTMLElement | null>(null);
@@ -139,13 +141,16 @@ export function SavingsBox() {
             </>
           )}
 
-          <p className="border-t border-border pt-4 text-sm text-muted-foreground">
-            Disponível para depositar:{" "}
-            <strong className="font-semibold tabular-nums text-foreground">
-              {formatCurrency(portfolio.balance)}
-            </strong>{" "}
-            (Saldo em conta)
-          </p>
+          <div className="flex flex-col gap-1 border-t border-border pt-4">
+            <p className="text-sm text-muted-foreground">
+              Disponível para depositar:{" "}
+              <strong className="font-semibold tabular-nums text-foreground">
+                {formatCurrency(portfolio.free)}
+              </strong>{" "}
+              (Saldo em conta)
+            </p>
+            <ReservedBalanceNote reserved={portfolio.reserved} />
+          </div>
         </section>
 
         <section
@@ -172,7 +177,8 @@ export function SavingsBox() {
         mode={mode}
         onClose={() => setMode(null)}
         returnFocusTo={openerRef}
-        accountBalance={portfolio.balance}
+        accountBalance={portfolio.free}
+        reservedBalance={portfolio.reserved}
         savingsBalance={balance}
         onSuccess={() => {
           void savingsBox.refetch();
