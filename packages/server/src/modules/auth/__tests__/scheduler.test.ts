@@ -17,7 +17,7 @@ vi.mock('../../../config/database.js', () => ({
   },
 }))
 
-import { cleanupExpiredRefreshTokens } from '../scheduler.js'
+import { cleanupExpiredRefreshTokens, cleanupRefreshTokensIfDue } from '../scheduler.js'
 
 describe('cleanupExpiredRefreshTokens', () => {
   it('remove apenas tokens com expiresAt no passado e devolve a contagem', async () => {
@@ -40,5 +40,39 @@ describe('cleanupExpiredRefreshTokens', () => {
     const cutoff = where.expiresAt.lt as Date
     expect(cutoff.getTime()).toBeLessThanOrEqual(Date.now())
     expect(cutoff.getTime()).toBeGreaterThan(Date.now() - 5000)
+  })
+})
+
+describe('cleanupRefreshTokensIfDue (serverless)', () => {
+  it('roda na primeira chamada e no máximo uma vez por intervalo', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.deleteMany.mockReset().mockResolvedValue({ count: 1 })
+      const log = { error: vi.fn() }
+
+      await cleanupRefreshTokensIfDue(log, 60_000)
+      expect(cleanupRefreshTokensIfDue(log, 60_000)).toBeNull()
+      expect(mocks.deleteMany).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(60_000)
+      await cleanupRefreshTokensIfDue(log, 60_000)
+      expect(mocks.deleteMany).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('falha no banco vai pro log e não derruba a requisição', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.advanceTimersByTime(10 * 60 * 60 * 1000) // garante que já passou o intervalo
+      mocks.deleteMany.mockReset().mockRejectedValue(new Error('db fora'))
+      const log = { error: vi.fn() }
+
+      await expect(cleanupRefreshTokensIfDue(log, 60_000)).resolves.toBeUndefined()
+      expect(log.error).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

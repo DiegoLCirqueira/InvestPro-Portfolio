@@ -31,6 +31,7 @@ import {
 // rede independentes pro mesmo par, dobrando o consumo do limite de requisições
 // da AwesomeAPI (incidente de 429 em produção). Ver currencyPairOf/fetchCurrencyPairQuote.
 import { liveRates } from '../exchange/exchange.rates.js'
+import { env } from '../../config/env.js'
 
 const ADAPTERS: Record<string, MarketDataSource> = {
   brapi: brapiSource,
@@ -127,6 +128,9 @@ function buildAssetList(): Asset[] {
 }
 
 export async function getAssets(query: AssetQuery): Promise<AssetList> {
+  // Sem o scheduler (serverless), a lista busca as cotações quando venceram.
+  if (env.SERVERLESS) await refreshQuotesIfStale()
+
   let items = cacheGet<Asset[]>(ASSETS_CACHE_KEY)
   if (!items) {
     items = buildAssetList()
@@ -160,11 +164,37 @@ export async function getAssets(query: AssetQuery): Promise<AssetList> {
   }
 }
 
+// Busca de um ticker sem cache; o resultado (ou o fallback) vai pro cache.
+async function fetchQuote(seed: SeedAsset): Promise<MarketQuote> {
+  const cacheKey = quoteCacheKey(seed.ticker)
+  const adapter = ADAPTERS[seed.source]
+  if (adapter) {
+    try {
+      const quote = (await adapter.fetchQuotes([seed]))[0]
+      if (quote) {
+        cacheSet(cacheKey, quote, QUOTE_TTL_MS)
+        return quote
+      }
+    } catch (err) {
+      logError(`Fonte ${seed.source} indisponível para ${seed.ticker}; usando fallback`, err)
+    }
+  } else {
+    logError(`Sem adapter para a fonte ${seed.source} de ${seed.ticker}; usando fallback`)
+  }
+
+  const fallback = seedAsQuote(seed)
+  cacheSet(cacheKey, fallback, QUOTE_TTL_MS)
+  return fallback
+}
+
+// Pedidos simultâneos do mesmo ticker com cache vencido esperam a mesma busca,
+// em vez de cada um gastar uma chamada (e o limite) da fonte.
+const quotesInFlight = new Map<string, Promise<MarketQuote>>()
+
 export async function getQuote(ticker: string): Promise<Quote> {
   const normalized = ticker.toUpperCase()
-  const cacheKey = quoteCacheKey(normalized)
 
-  const cached = cacheGet<MarketQuote>(cacheKey)
+  const cached = cacheGet<MarketQuote>(quoteCacheKey(normalized))
   if (cached) return toQuote(cached)
 
   const seed = findAsset(normalized)
@@ -172,25 +202,12 @@ export async function getQuote(ticker: string): Promise<Quote> {
     throw new AppError('ASSET_NOT_FOUND', `Ativo ${ticker} não encontrado`, 404)
   }
 
-  const adapter = ADAPTERS[seed.source]
-  if (adapter) {
-    try {
-      const quotes = await adapter.fetchQuotes([seed])
-      const quote = quotes[0]
-      if (quote) {
-        cacheSet(cacheKey, quote, QUOTE_TTL_MS)
-        return toQuote(quote)
-      }
-    } catch (err) {
-      logError(`Fonte ${seed.source} indisponível para ${normalized}; usando fallback`, err)
-    }
-  } else {
-    logError(`Sem adapter para a fonte ${seed.source} de ${normalized}; usando fallback`)
+  let pending = quotesInFlight.get(normalized)
+  if (!pending) {
+    pending = fetchQuote(seed).finally(() => quotesInFlight.delete(normalized))
+    quotesInFlight.set(normalized, pending)
   }
-
-  const fallback = seedAsQuote(seed)
-  cacheSet(cacheKey, fallback, QUOTE_TTL_MS)
-  return toQuote(fallback)
+  return toQuote(await pending)
 }
 
 export interface AssetMeta {
@@ -297,7 +314,7 @@ async function refreshAwesomeApiGroup(assets: SeedAsset[]): Promise<void> {
   if (otherAssets.length > 0) await refreshByAdapter('awesomeapi', otherAssets)
 }
 
-export async function refreshQuotes(): Promise<void> {
+async function fetchAllQuotes(): Promise<void> {
   const bySource: Record<string, SeedAsset[]> = {}
 
   for (const seed of baseAssets) {
@@ -313,4 +330,27 @@ export async function refreshQuotes(): Promise<void> {
       source === 'awesomeapi' ? refreshAwesomeApiGroup(assets) : refreshByAdapter(source, assets)
     )
   )
+}
+let refreshInFlight: Promise<void> | undefined
+let lastRefreshStartedAt = 0
+
+// O scheduler e as requisições (serverless) compartilham a busca em andamento:
+// nunca duas buscas do catálogo inteiro ao mesmo tempo.
+export function refreshQuotes(): Promise<void> {
+  if (!refreshInFlight) {
+    lastRefreshStartedAt = Date.now()
+    refreshInFlight = fetchAllQuotes().finally(() => {
+      refreshInFlight = undefined
+    })
+  }
+  return refreshInFlight
+}
+
+// Conta a partir do INÍCIO da última busca: assim a próxima sai antes de as
+// cotações da anterior (TTL contado do fim) expirarem e virarem "estimadas".
+// Quem chega com uma busca já em andamento espera por ela (senão leria o
+// catálogo ainda sem cotação).
+export function refreshQuotesIfStale(): Promise<void> {
+  if (refreshInFlight || Date.now() - lastRefreshStartedAt >= QUOTE_TTL_MS) return refreshQuotes()
+  return Promise.resolve()
 }

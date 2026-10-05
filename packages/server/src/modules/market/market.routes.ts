@@ -20,6 +20,7 @@ import { readRateLimit } from '../../shared/middleware/rateLimit.js'
 import * as marketService from './market.service.js'
 import { configureLogger } from './market.service.js'
 import { startMarketScheduler } from './scheduler.js'
+import { env } from '../../config/env.js'
 
 const tickerParamsSchema = z.object({
   ticker: z.string().min(1),
@@ -105,5 +106,6 @@ export async function marketRoutes(app: FastifyInstance): Promise<void> {
     }
   )
 
-  startMarketScheduler(app.log)
+  // Serverless: as cotações vencidas são buscadas sob demanda (market.service).
+  if (!env.SERVERLESS) startMarketScheduler(app.log)
 }
