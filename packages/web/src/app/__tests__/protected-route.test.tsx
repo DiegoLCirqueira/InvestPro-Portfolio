@@ -98,4 +98,44 @@ describe("ProtectedRoute", () => {
     await waitFor(() => expect(screen.getByText("Conteúdo privado")).toBeInTheDocument());
     expect(refresh).toHaveBeenCalledTimes(2);
   });
+
+  describe("mensagem conforme a causa (com sessão anterior)", () => {
+    beforeEach(() => {
+      useAuthStore.setState({ user: STORED_USER });
+    });
+
+    it("429: muitas requisições", async () => {
+      stubRefresh({ status: "unavailable", error: new ApiError(429, "Muitas requisições") });
+
+      renderProtected();
+
+      expect(
+        await screen.findByText(/O servidor está recebendo muitas requisições no momento/),
+      ).toBeInTheDocument();
+    });
+
+    it.each([
+      ["rede", new TypeError("Failed to fetch")],
+      ["404", new ApiError(404, "Application not found")],
+      ["500", new ApiError(500, "Erro interno")],
+    ])("%s: não conectou ao servidor, com Tentar novamente", async (_cause, error) => {
+      stubRefresh({ status: "unavailable", error });
+
+      renderProtected();
+
+      expect(
+        await screen.findByText("Não foi possível conectar ao servidor. Tente novamente em instantes."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/muitas requisições/)).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+    });
+
+    it("401: vai para o login", async () => {
+      stubRefresh({ status: "unauthenticated" });
+
+      renderProtected();
+
+      expect(await screen.findByText("Tela de login (volta para /privado)")).toBeInTheDocument();
+    });
+  });
 });

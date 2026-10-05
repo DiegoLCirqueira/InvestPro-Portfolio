@@ -26,6 +26,8 @@ export function useSessionBootstrap() {
     useAuthStore.getState().isAuthenticated ? "ready" : "checking",
   );
   const [attempt, setAttempt] = useState(0);
+  // Causa do "unavailable": decide a mensagem (429 × servidor fora do ar).
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (useAuthStore.getState().isAuthenticated) return;
@@ -34,6 +36,7 @@ export function useSessionBootstrap() {
     refresh().then((result) => {
       if (!cancelled) {
         setStatus(result.status === "unavailable" ? "unavailable" : "ready");
+        setError(result.status === "unavailable" ? result.error : null);
       }
     });
     return () => {
@@ -46,5 +49,5 @@ export function useSessionBootstrap() {
     setAttempt((current) => current + 1);
   };
 
-  return { status, retry };
+  return { status, error, retry };
 }
