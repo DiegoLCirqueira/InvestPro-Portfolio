@@ -16,7 +16,7 @@ import {
 } from "./auth.schema.js";
 import { env } from "../../config/env.js";
 import * as authService from "./auth.service.js";
-import { startRefreshTokenCleanup } from "./scheduler.js";
+import { cleanupRefreshTokensIfDue, startRefreshTokenCleanup } from "./scheduler.js";
 import { rateLimitPerMinute } from "../../shared/middleware/rateLimit.js";
 
 const REFRESH_COOKIE = "investpro_refresh_token";
@@ -217,5 +217,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  startRefreshTokenCleanup(app.log);
+  if (env.SERVERLESS) {
+    // Escopo do plugin: só as rotas de auth disparam. Aguardada ANTES da
+    // resposta: depois dela a função serverless pode congelar no meio da limpeza
+    // (custa um deleteMany numa requisição por hora por instância).
+    app.addHook("onRequest", async (request) => {
+      await cleanupRefreshTokensIfDue(request.log);
+    });
+  } else {
+    startRefreshTokenCleanup(app.log);
+  }
 }

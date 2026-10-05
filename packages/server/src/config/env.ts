@@ -66,6 +66,9 @@ if (
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
+  // Função serverless (a Vercel injeta VERCEL=1): sem processo contínuo, então
+  // nada de setInterval; cotações e limpeza de tokens rodam sob demanda.
+  SERVERLESS: process.env.SERVERLESS === "1" || process.env.VERCEL === "1",
   PORT: parseInt(process.env.PORT ?? "3001", 10),
   DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://localhost:5432/investpro?schema=public",
   JWT_SECRET: jwtSecret,

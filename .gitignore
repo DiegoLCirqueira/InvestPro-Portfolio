@@ -4,6 +4,10 @@ node_modules
 # Build outputs
 dist
 dist-ssr
+# Função serverless da API (gerados no build da Vercel) e config local da CLI
+packages/server/dist-serverless
+packages/server/public
+.vercel
 *.local
 
 # Test coverage

@@ -1,11 +1,17 @@
+// rhel-openssl-3.0.x: runtime das funções da Vercel.
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
+// DATABASE_URL: em produção, o pooler do Supabase em modo transação (porta 6543,
+// ?pgbouncer=true&connection_limit=1), que aguenta várias funções serverless.
+// DIRECT_URL: conexão direta (porta 5432), usada só pelas migrações, que o
+// pooler em modo transação não suporta. Fora da produção, as duas são iguais.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
