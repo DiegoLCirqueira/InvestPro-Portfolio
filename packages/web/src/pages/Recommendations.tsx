@@ -47,13 +47,9 @@ export function Recommendations() {
       ) : error || !data ? (
         <ErrorState message="Não foi possível carregar as recomendações." onRetry={() => void refetch()} />
       ) : (
-        <div className="grid gap-6 nav:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] nav:items-start">
-          <section aria-label="Sugestões" className="space-y-4">
-            {data.items.map((item) => (
-              <RecommendationCard key={item.id} item={item} />
-            ))}
-          </section>
-
+        // "Seu perfil" no topo, em largura total, e as sugestões em duas colunas: cada linha tem a
+        // altura do maior card, em vez de uma pilha estreita ao lado de um painel de outra altura.
+        <div className="flex flex-col gap-6">
           {data.profile && (
             <aside className={cn(cardClassName, "space-y-5")}>
               <div className="flex items-start justify-between gap-3">
@@ -81,6 +77,16 @@ export function Recommendations() {
               </Link>
             </aside>
           )}
+
+          {/* Com número ímpar de sugestões, a última ocupa a linha toda (sem meia linha vazia). */}
+          <section
+            aria-label="Sugestões"
+            className="grid gap-4 nav:grid-cols-2 nav:[&>*:last-child:nth-child(odd)]:col-span-2"
+          >
+            {data.items.map((item) => (
+              <RecommendationCard key={item.id} item={item} />
+            ))}
+          </section>
         </div>
       )}
     </div>
@@ -108,7 +114,7 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
   const badge = CATEGORY_BADGES[item.category];
   const action = recommendationAction(item);
   return (
-    <article className={cardClassName}>
+    <article className={cn(cardClassName, "flex flex-col")}>
       {/* Selo ao lado do título (também no celular) e descrição em largura total embaixo: antes,
           numa coluna à direita de título + descrição, o selo espremia o texto em ~5 palavras. */}
       <div className="flex items-start justify-between gap-3">
@@ -119,7 +125,8 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
       {action && (
-        <Button asChild variant="link" className="mt-2 px-0">
+        // mt-auto: a ação fica no pé do card, alinhada entre os cards da mesma linha.
+        <Button asChild variant="link" className="mt-auto self-start px-0 pt-2">
           <Link to={action.to}>
             {action.label}
             <ArrowRight aria-hidden="true" />
@@ -127,7 +134,7 @@ function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
         </Button>
       )}
       {item.category === "PROFILE" && (
-        <Button asChild className="mt-4">
+        <Button asChild className="mt-auto self-start">
           <Link to="/profile/investor-profile">
             <Compass aria-hidden="true" />
             Responder o questionário

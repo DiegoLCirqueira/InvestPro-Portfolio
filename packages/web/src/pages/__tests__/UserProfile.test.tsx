@@ -160,19 +160,20 @@ describe("UserProfile (grade no computador)", () => {
     expect(screen.getByText("Membro desde setembro de 2026.")).toBeInTheDocument();
   });
 
-  it("esquerda: Dados pessoais e Documento; direita: perfil de investidor e depósito", async () => {
+  it("cards em pares numa grade de 2 colunas, na ordem do celular", async () => {
     mockApi(null);
     await renderProfile();
 
     const region = (name: string) => screen.getByRole("region", { name });
-    const left = region("Dados pessoais").parentElement as HTMLElement;
-    const right = region("Perfil de investidor").parentElement as HTMLElement;
+    const grid = region("Dados pessoais").parentElement as HTMLElement;
 
-    expect(left).toHaveClass("nav:col-span-3");
-    expect(right).toHaveClass("nav:col-span-2");
-    expect(left.parentElement).toHaveClass("grid", "grid-cols-1", "nav:grid-cols-5");
-    expect(region("Documento").parentElement).toBe(left);
-    expect(region("Simular depósito").parentElement).toBe(right);
+    expect(grid).toHaveClass("grid", "grid-cols-1", "nav:grid-cols-2");
+    // Todos os cards são filhos diretos da mesma grade: cada linha (par) tem a mesma altura.
+    const order = ["Dados pessoais", "Documento", "Perfil de investidor", "Simular depósito"];
+    for (const name of order) expect(region(name).parentElement).toBe(grid);
+    const children = Array.from(grid.children);
+    const indexes = order.map((name) => children.indexOf(region(name)));
+    expect(indexes).toEqual([...indexes].sort((x, y) => x - y));
   });
 
   it("Email e Telefone lado a lado a partir de sm; salvar em largura total só no celular", async () => {
