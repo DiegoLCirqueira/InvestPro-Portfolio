@@ -36,7 +36,8 @@ function run(label, command, args, env = {}) {
   }
 }
 
-const dbEnv = { DATABASE_URL: TEST_DATABASE_URL }
+// DIRECT_URL (directUrl do Prisma, usada pelas migrações) é o mesmo banco de testes.
+const dbEnv = { DATABASE_URL: TEST_DATABASE_URL, DIRECT_URL: TEST_DATABASE_URL }
 
 run('Subindo o Postgres de testes (docker compose)', 'docker', [
   'compose', '-f', composeFile, 'up', '-d', '--wait', 'postgres-test',

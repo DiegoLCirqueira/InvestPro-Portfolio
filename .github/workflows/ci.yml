@@ -41,6 +41,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/investpro?schema=public
+      # Migrações usam a conexão direta (directUrl); no banco do job é a mesma.
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/investpro?schema=public
 
     steps:
       - name: Checkout
