@@ -7,6 +7,15 @@ import { useAuthStore } from "@/stores/auth";
 export type SessionBootstrapStatus = "checking" | "ready" | "unavailable";
 
 /**
+ * Houve sessão neste navegador? O token não é guardado, mas o usuário é (persist do auth): é o
+ * sinal para esperar o refresh em vez de tratar como visitante. Um 401 no refresh ou o logout o
+ * apagam.
+ */
+export function useHadSession() {
+  return useAuthStore((s) => s.user !== null);
+}
+
+/**
  * Cold load: o access token não é persistido (WI-21), então a sessão é
  * restaurada a partir do cookie httpOnly de refresh, que é a única fonte de
  * verdade sobre autenticação.
