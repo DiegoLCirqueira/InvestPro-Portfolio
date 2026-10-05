@@ -148,7 +148,7 @@ describe("UserProfile (erros de validação)", () => {
   });
 });
 
-describe("UserProfile (grade no computador)", () => {
+describe("UserProfile (layout)", () => {
   beforeEach(() => {
     apiMock.get.mockReset();
   });
@@ -160,15 +160,14 @@ describe("UserProfile (grade no computador)", () => {
     expect(screen.getByText("Membro desde setembro de 2026.")).toBeInTheDocument();
   });
 
-  it("cards em pares numa grade de 2 colunas, na ordem do celular", async () => {
+  it("seções uma embaixo da outra, numa coluna só", async () => {
     mockApi(null);
     await renderProfile();
 
     const region = (name: string) => screen.getByRole("region", { name });
     const grid = region("Dados pessoais").parentElement as HTMLElement;
 
-    expect(grid).toHaveClass("grid", "grid-cols-1", "nav:grid-cols-2");
-    // Todos os cards são filhos diretos da mesma grade: cada linha (par) tem a mesma altura.
+    expect(grid).toHaveClass("flex", "flex-col", "max-w-2xl");
     const order = ["Dados pessoais", "Documento", "Perfil de investidor", "Simular depósito"];
     for (const name of order) expect(region(name).parentElement).toBe(grid);
     const children = Array.from(grid.children);

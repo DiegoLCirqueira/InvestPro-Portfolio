@@ -96,20 +96,18 @@ function ProfileSection({
   title,
   description,
   children,
-  className,
 }: {
   id?: string;
   title: string;
   description?: string;
   children: ReactNode;
-  className?: string;
 }) {
   const titleId = `${id ?? title.toLowerCase().replace(/\W+/g, "-")}-title`;
   return (
     <section
       id={id}
       aria-labelledby={titleId}
-      className={cn(cardClassName, "flex flex-col gap-4", className)}
+      className={cn(cardClassName, "flex flex-col gap-4")}
     >
       <div className="space-y-1">
         <SectionTitle id={titleId}>{title}</SectionTitle>
@@ -261,10 +259,9 @@ export function UserProfile() {
         }
       />
 
-      {/* Duas colunas de cards em pares (Dados pessoais | Documento, Perfil de investidor |
-          Simular depósito): cada linha tem a altura do maior card, então os pares ficam alinhados,
-          em vez de duas pilhas de alturas diferentes. A ordem do DOM já é a do celular. */}
-      <div className="grid grid-cols-1 nav:grid-cols-2 gap-4">
+      {/* Uma seção embaixo da outra, numa coluna de leitura confortável (pedido do Diego:
+          as grades lado a lado deixavam os cards desalinhados). */}
+      <div className="flex w-full max-w-2xl flex-col gap-6">
         <ProfileSection title="Dados pessoais">{personalData}</ProfileSection>
 
         {profile && (
@@ -288,7 +285,6 @@ export function UserProfile() {
               <ProfileSection
                 title="Administração"
                 description="Lista de todos os usuários cadastrados."
-                className="nav:col-span-2"
               >
                 <div className="flex justify-end">
                   <Button asChild variant="outline">
