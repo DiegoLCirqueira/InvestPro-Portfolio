@@ -9,7 +9,7 @@
 // engine do Prisma).
 
 import { build } from 'esbuild'
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,5 +33,7 @@ await build({
   logLevel: 'info',
 })
 
-// A Vercel exige um diretório de saída; vazio, pra não publicar nada estático.
+// A Vercel exige um diretório de saída e recusa um vazio. Só o robots.txt, que também
+// pede aos robôs que não indexem a API; nada mais estático é publicado.
 await mkdir(path.join(serverDir, 'public'), { recursive: true })
+await writeFile(path.join(serverDir, 'public', 'robots.txt'), 'User-agent: *\nDisallow: /\n')
