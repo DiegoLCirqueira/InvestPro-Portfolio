@@ -109,7 +109,9 @@ export function normalizeInput(
   sourceLabel: string,
 ): NormalizedNews {
   const title = stripHtml(item.title) || 'Sem título'
-  const summary = summarize(item.description)
+  // Feed que repete a manchete no resumo: mostrar duas vezes não informa nada.
+  const description = summarize(item.description)
+  const summary = normalizeHeadline(description) === normalizeHeadline(title) ? '' : description
   return {
     guid: item.guid || item.url,
     title,
@@ -158,6 +160,41 @@ export function dedupeNews<T extends NormalizedNews>(items: ReadonlyArray<T>): T
     if (!seen.has(key)) seen.set(key, item)
   }
   return [...seen.values()]
+}
+
+// Manchete comparável entre fontes: sem caixa, acentos e pontuação
+// ("Furacão Isaias deixa 2 mortos..." = "furacao isaias deixa 2 mortos").
+export function normalizeHeadline(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Mn}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
+
+// Mesma manchete em fontes diferentes só conta como a mesma notícia se saiu
+// perto no tempo: um título genérico ("Ibovespa fecha em alta") volta todo dia.
+export const SAME_HEADLINE_WINDOW_MS = 24 * 60 * 60 * 1000
+
+const publishedTime = (item: NormalizedNews) => (item.publishedAt ? Date.parse(item.publishedAt) : 0)
+
+// Fica uma notícia por manchete: a que tem resumo (a outra costuma repetir o
+// título) e, empatando, a mais recente. Espera a lista já ordenada da mais
+// recente pra mais antiga (sortNewsByDate).
+export function dedupeHeadlines<T extends NormalizedNews>(items: ReadonlyArray<T>): T[] {
+  const kept: T[] = []
+  for (const item of items) {
+    const headline = normalizeHeadline(item.title)
+    const index = kept.findIndex(
+      (other) =>
+        normalizeHeadline(other.title) === headline &&
+        Math.abs(publishedTime(other) - publishedTime(item)) <= SAME_HEADLINE_WINDOW_MS
+    )
+    if (index === -1) kept.push(item)
+    else if (!kept[index].summary && item.summary) kept[index] = item
+  }
+  return kept
 }
 
 export function sortNewsByDate<T extends NormalizedNews>(items: ReadonlyArray<T>): T[] {
