@@ -101,3 +101,38 @@ describe('buildRecommendations', () => {
     expect(buildRecommendations({ ...base, cash: 2_000, equity: 10_000 }).items.map((item) => item.id)).toContain('idle-cash')
   })
 })
+
+describe('Caixinha nas recomendações de renda fixa', () => {
+  // Moderado: referência 45% renda fixa. Aqui 64,4% (1.500 de Caixinha em 2.330).
+  const invested = [
+    { type: 'FIXED_INCOME' as const, value: 1_500 },
+    { type: 'STOCK' as const, value: 830 },
+  ]
+
+  it('reduce-FIXED_INCOME cita quanto da renda fixa é Caixinha, sem mudar o id', () => {
+    const result = buildRecommendations({ profile: 'MODERATE', invested, cash: 0, equity: 2_330, savingsBox: 1_500 })
+    const item = result.items.find((i) => i.id === 'reduce-FIXED_INCOME')
+
+    expect(item?.description).toMatch(/^Hoje renda fixa \(inclui R\$\s1\.500,00 na Caixinha\) representa 64,4%/)
+  })
+
+  it('increase-FIXED_INCOME também cita a Caixinha', () => {
+    const result = buildRecommendations({
+      profile: 'MODERATE',
+      invested: [{ type: 'FIXED_INCOME', value: 100 }, { type: 'STOCK', value: 900 }],
+      cash: 0,
+      equity: 1_000,
+      savingsBox: 100,
+    })
+
+    expect(result.items.find((i) => i.id === 'increase-FIXED_INCOME')?.description).toMatch(/\(inclui R\$\s100,00 na Caixinha\)/)
+  })
+
+  it('sem Caixinha, a frase fica como antes e as outras classes nunca citam a Caixinha', () => {
+    const result = buildRecommendations({ profile: 'MODERATE', invested, cash: 0, equity: 2_330 })
+
+    expect(result.items.find((i) => i.id === 'reduce-FIXED_INCOME')?.description).toMatch(/^Hoje renda fixa representa/)
+    const withBox = buildRecommendations({ profile: 'MODERATE', invested, cash: 0, equity: 2_330, savingsBox: 1_500 })
+    expect(withBox.items.filter((i) => !i.id.endsWith('FIXED_INCOME')).every((i) => !i.description.includes('Caixinha)'))).toBe(true)
+  })
+})
