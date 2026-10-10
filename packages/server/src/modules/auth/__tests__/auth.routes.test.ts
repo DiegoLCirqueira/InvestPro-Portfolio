@@ -805,3 +805,74 @@ describe('POST /api/v1/auth/refresh — janela de tolerância de reuso', () => {
     expect(await activeTokenCountOf(userId)).toBe(1) // só a do login B
   }, 60000)
 })
+
+// M1: o cookie de refresh tinha Path=/api/v1/auth/refresh e não chegava no
+// /logout, que então não revogava o token. Agora o caminho é /api/v1/auth.
+describe('cookie de refresh cobre /refresh e /logout', () => {
+  const REFRESH_COOKIE = 'investpro_refresh_token'
+  const NEW_PATH = '/api/v1/auth'
+  const LEGACY_PATH = '/api/v1/auth/refresh'
+  const emails: string[] = []
+
+  afterAll(async () => {
+    await Promise.all(emails.map(deleteUser))
+  })
+
+  async function register(prefix: string) {
+    const email = uniqueEmail(prefix)
+    emails.push(email)
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      remoteAddress: uniqueIp(),
+      payload: { email, password: 'SenhaForte123', fullName: 'QA Cookie' },
+    })
+    return res.cookies.find((c) => c.name === REFRESH_COOKIE)!
+  }
+
+  const post = (url: string, token: string) =>
+    app!.inject({ method: 'POST', url, remoteAddress: uniqueIp(), cookies: { [REFRESH_COOKIE]: token } })
+
+  // clearCookie grava o cookie vazio e já expirado.
+  const clearedAt = (res: Awaited<ReturnType<typeof post>>, path: string) =>
+    res.cookies.some((c) => c.name === REFRESH_COOKIE && c.path === path && c.value === '' && c.expires! <= new Date())
+
+  it('o cadastro grava o cookie em /api/v1/auth, httpOnly', async () => {
+    const cookie = await register('cookie-path')
+
+    expect(cookie.path).toBe(NEW_PATH)
+    expect(cookie.httpOnly).toBe(true)
+  })
+
+  it('logout → refresh com o token antigo = 401', async () => {
+    const cookie = await register('logout-revokes')
+
+    const logout = await post('/api/v1/auth/logout', cookie.value)
+    expect(logout.statusCode).toBe(200)
+    expect(clearedAt(logout, NEW_PATH)).toBe(true)
+    expect(clearedAt(logout, LEGACY_PATH)).toBe(true)
+
+    const refresh = await post('/api/v1/auth/refresh', cookie.value)
+    expect(refresh.statusCode).toBe(401)
+    const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashRefreshToken(cookie.value) } })
+    expect(stored).toBeNull()
+  })
+
+  it('transição: cookie do caminho antigo ainda renova e é regravado no caminho novo', async () => {
+    // O navegador manda o cookie antigo só pro /refresh; pro servidor é o mesmo token.
+    const legacy = await register('legacy-cookie')
+    await makeDueForRotation(legacy.value)
+
+    const refresh = await post('/api/v1/auth/refresh', legacy.value)
+
+    expect(refresh.statusCode).toBe(200)
+    const rewritten = refresh.cookies.find((c) => c.name === REFRESH_COOKIE && c.path === NEW_PATH)
+    expect(rewritten?.value).toBeTruthy()
+    expect(rewritten?.value).not.toBe(legacy.value)
+    expect(clearedAt(refresh, LEGACY_PATH)).toBe(true)
+
+    // Com o cookie já no caminho novo, o logout recebe e revoga.
+    expect((await post('/api/v1/auth/logout', rewritten!.value)).statusCode).toBe(200)
+    expect((await post('/api/v1/auth/refresh', rewritten!.value)).statusCode).toBe(401)
+  })
+})

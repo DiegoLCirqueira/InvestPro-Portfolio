@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   applySourcePolicy,
   categorizeNews,
+  dedupeHeadlines,
   dedupeNews,
+  normalizeHeadline,
   normalizeInput,
   sortNewsByDate,
   stripHtml,
@@ -139,5 +141,82 @@ describe('toNewsId', () => {
   it('gera id estável a partir da url', () => {
     expect(toNewsId('guid', 'https://x.com/a')).toBe(toNewsId('guid', 'https://x.com/a'))
     expect(toNewsId('guid', 'https://x.com/a')).not.toBe(toNewsId('guid', 'https://x.com/b'))
+  })
+})
+describe('normalizeHeadline', () => {
+  it('ignora caixa, acentos e pontuação', () => {
+    expect(normalizeHeadline('Furacão Isaías deixa 2 mortos — e milhares sem energia!')).toBe(
+      normalizeHeadline('furacao isaias deixa 2 mortos e milhares sem energia')
+    )
+  })
+})
+
+describe('normalizeInput: resumo igual ao título', () => {
+  const raw = { guid: 'g', url: 'https://x/1', publishedAt: null }
+
+  it('vira resumo vazio', () => {
+    const item = normalizeInput(
+      { ...raw, title: 'Furacão Isaias deixa 2 mortos nos EUA', description: '<p>Furacão Isaias deixa 2 mortos nos EUA.</p>' },
+      'InfoMoney'
+    )
+    expect(item.summary).toBe('')
+  })
+
+  it('resumo diferente do título continua', () => {
+    const item = normalizeInput(
+      { ...raw, title: 'Furacão Isaias deixa 2 mortos', description: 'Tempestade atinge a costa leste.' },
+      'InfoMoney'
+    )
+    expect(item.summary).toBe('Tempestade atinge a costa leste.')
+  })
+})
+
+describe('dedupeHeadlines', () => {
+  const news = (source: string, title: string, publishedAt: string, summary = 'Resumo.'): NormalizedNews => ({
+    guid: `${source}-${publishedAt}`,
+    title,
+    summary,
+    source,
+    category: 'WORLD',
+    url: `https://${source}.example/${publishedAt}`,
+    publishedAt,
+  })
+
+  it('mesma manchete de fontes diferentes vira uma só: a mais recente', () => {
+    const result = dedupeHeadlines(
+      sortNewsByDate([
+        news('investing', 'Furacão Isaias deixa 2 mortos nos EUA', '2026-10-05T12:49:00Z'),
+        news('infomoney', 'Furacão Isaías deixa 2 mortos nos EUA!', '2026-10-05T13:40:00Z'),
+      ])
+    )
+    expect(result.map((n) => n.source)).toEqual(['infomoney'])
+  })
+
+  it('prefere a que tem resumo, mesmo sendo a mais antiga', () => {
+    const result = dedupeHeadlines(
+      sortNewsByDate([
+        news('investing', 'Furacão Isaias deixa 2 mortos', '2026-10-05T12:49:00Z', 'Tempestade atinge a costa.'),
+        news('infomoney', 'Furacão Isaias deixa 2 mortos', '2026-10-05T13:40:00Z', ''),
+      ])
+    )
+    expect(result.map((n) => n.source)).toEqual(['investing'])
+  })
+
+  it('a mesma manchete fora da janela de 24 h são notícias diferentes', () => {
+    const result = dedupeHeadlines(
+      sortNewsByDate([
+        news('infomoney', 'Ibovespa fecha em alta', '2026-10-05T18:00:00Z'),
+        news('infomoney', 'Ibovespa fecha em alta', '2026-10-03T18:00:00Z'),
+      ])
+    )
+    expect(result).toHaveLength(2)
+  })
+
+  it('manchetes diferentes ficam todas', () => {
+    const result = dedupeHeadlines([
+      news('a', 'Selic sobe', '2026-10-05T12:00:00Z'),
+      news('b', 'Selic cai', '2026-10-05T12:00:00Z'),
+    ])
+    expect(result).toHaveLength(2)
   })
 })

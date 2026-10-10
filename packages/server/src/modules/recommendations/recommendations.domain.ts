@@ -35,6 +35,8 @@ export interface RecommendationInput {
   cash: number
   /** Patrimônio total (caixa + investimentos + caixinha + moedas). */
   equity: number
+  /** Saldo da Caixinha, já somado em renda fixa em `invested` (ausente = sem Caixinha). */
+  savingsBox?: number
 }
 
 export interface RecommendationResult {
@@ -83,9 +85,16 @@ function idleCashRecommendation(input: RecommendationInput): PersonalizedRecomme
   }
 }
 
+// Quem tem a renda fixa na Caixinha precisa saber que ela entra na conta (e
+// que reduzir a renda fixa pode ser resgatar da Caixinha, não vender ordens).
+function savingsBoxNote(type: AllocationType, savingsBox: number): string {
+  return type === 'FIXED_INCOME' && savingsBox > 0 ? ` (inclui ${formatBrl(savingsBox)} na Caixinha)` : ''
+}
+
 function deviationRecommendations(
   profile: InvestorProfileType,
-  allocation: AllocationComparison[]
+  allocation: AllocationComparison[],
+  savingsBox: number
 ): PersonalizedRecommendation[] {
   const profileLabel = INVESTOR_PROFILE_INFO[profile].label
   return allocation
@@ -94,7 +103,7 @@ function deviationRecommendations(
     .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
     .map((item): PersonalizedRecommendation => {
       const label = TEXT_LABELS[item.type]
-      const current = `Hoje ${label} ${agree(item.type, 'representa', 'representam')} ${formatPct(item.currentPct)} do que você tem investido`
+      const current = `Hoje ${label}${savingsBoxNote(item.type, savingsBox)} ${agree(item.type, 'representa', 'representam')} ${formatPct(item.currentPct)} do que você tem investido`
       if (item.diff < 0) {
         return {
           id: `increase-${item.type}`,
@@ -160,7 +169,7 @@ export function buildRecommendations(input: RecommendationInput): Recommendation
     }
   }
 
-  const deviations = deviationRecommendations(profile, allocation)
+  const deviations = deviationRecommendations(profile, allocation, input.savingsBox ?? 0)
   const aligned: PersonalizedRecommendation[] =
     deviations.length === 0
       ? [

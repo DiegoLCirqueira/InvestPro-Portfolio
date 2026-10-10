@@ -13,6 +13,7 @@ import { NEWS_SOURCES, type NewsSource } from './sources.js'
 import {
   CATEGORY_ORDER,
   applySourcePolicy,
+  dedupeHeadlines,
   dedupeNews,
   normalizeInput,
   sortNewsByDate,
@@ -105,7 +106,7 @@ async function fetchAllSources(): Promise<NewsItem[]> {
     }))
   )
 
-  return sortNewsByDate(deduped).map(toNewsItem)
+  return dedupeHeadlines(sortNewsByDate(deduped)).map(toNewsItem)
 }
 
 export async function getNews(query: NewsQuery): Promise<NewsList> {

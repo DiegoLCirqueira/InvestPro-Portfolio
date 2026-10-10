@@ -107,4 +107,13 @@ describe('Caixinha como Renda fixa', () => {
       message: 'Saldo insuficiente na Caixinha para este resgate',
     })
   })
+
+  it('renda fixa acima da referência, toda na Caixinha: a recomendação cita a Caixinha e mantém o id', async () => {
+    const token = await moderateWithSavingsBox(1500, 830) // 64,4% em renda fixa
+
+    const res = await get(token, '/api/v1/recommendations')
+
+    const reduce = res.json().items.find((item: { id: string }) => item.id === 'reduce-FIXED_INCOME')
+    expect(reduce.description).toMatch(/^Hoje renda fixa \(inclui R\$\s1\.500,00 na Caixinha\) representa 64,4%/)
+  })
 })

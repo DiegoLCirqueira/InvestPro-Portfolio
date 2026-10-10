@@ -16,6 +16,7 @@ export async function getRecommendations(userId: string): Promise<PersonalizedRe
     invested: diversification.breakdown.map((item) => ({ type: item.type, value: item.value })),
     cash: portfolio.balance,
     equity: portfolio.totalEquity,
+    savingsBox: diversification.breakdown.find((item) => item.type === 'FIXED_INCOME')?.savingsBox ?? 0,
   })
 
   return { profile: profileType, ...result }
