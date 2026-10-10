@@ -63,7 +63,8 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         tags: ["Orders"],
         summary: "Listar ordens",
-        description: "Lista as ordens do usuário autenticado, com paginação.",
+        description:
+          "Lista as ordens do usuário autenticado, com paginação. Em ordens executadas (FILLED), `price` é o preço de execução com as casas da cotação, `fee` é a taxa cobrada e `netAmount` o total liquidado no saldo em conta (debitado na compra, creditado na venda), exatamente como na execução. Em ordens anteriores a esses campos, `fee` e `netAmount` são calculados a partir do preço guardado.",
         security: [{ BearerAuth: [] }],
         querystring: orderListQuerySchema,
         response: {
