@@ -1,4 +1,9 @@
-// Com "reduzir movimento" ligado no sistema, rolagens programáticas pulam direto (sem animação).
+// "Reduzir movimento" ligado no sistema: animações e rolagens por código ficam desligadas.
+export function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Com movimento reduzido, rolagens programáticas pulam direto (sem animação).
 export function preferredScrollBehavior(): ScrollBehavior {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  return prefersReducedMotion() ? "auto" : "smooth";
 }

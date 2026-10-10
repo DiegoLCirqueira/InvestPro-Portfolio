@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { preferredScrollBehavior } from "@/lib/motion";
+import { preferredScrollBehavior, prefersReducedMotion } from "@/lib/motion";
 
 const mockReducedMotion = (reduce: boolean) =>
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -14,5 +14,12 @@ describe("movimento reduzido", () => {
     expect(preferredScrollBehavior()).toBe("auto");
     mockReducedMotion(false);
     expect(preferredScrollBehavior()).toBe("smooth");
+  });
+
+  it("animações seguem a preferência do sistema", () => {
+    mockReducedMotion(true);
+    expect(prefersReducedMotion()).toBe(true);
+    mockReducedMotion(false);
+    expect(prefersReducedMotion()).toBe(false);
   });
 });

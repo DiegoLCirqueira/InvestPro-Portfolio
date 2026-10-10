@@ -8,6 +8,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { axisCurrencyFormatter } from "@/lib/chart-axis";
+import { prefersReducedMotion } from "@/lib/motion";
 import type {
   PortfolioHistoryPoint,
   PortfolioIntradayPoint,
@@ -45,8 +46,9 @@ const formatTime = (isoInstant: string) =>
 // espaço livre (flex-1); em telas baixas ele encolhe para o Painel caber sem
 // empurrar o valor total de "Seus Ativos" para fora da tela.
 // Série real do patrimônio: um ponto por dia; no 1º dia da conta, a evolução
-// dentro do dia (horários), pra linha existir desde o início. Sem animação:
-// a linha não "redesenha" inteira quando o saldo muda.
+// dentro do dia (horários), pra linha existir desde o início. Com o gráfico
+// montado, trocar o período (7D → 30D…) anima a linha dos valores antigos para
+// os novos, em vez de pular; com "reduzir movimento" no sistema, a troca é seca.
 export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
   const isDaily = data.length >= 2;
   const points: ChartPoint[] = isDaily
@@ -119,7 +121,9 @@ export function EvolutionChart({ data, intraday = [] }: EvolutionChartProps) {
             stroke="var(--color-primary)"
             strokeWidth={3}
             fill="url(#colorValue)"
-            isAnimationActive={false}
+            isAnimationActive={!prefersReducedMotion()}
+            animationDuration={600}
+            animationEasing="ease-in-out"
           />
         </AreaChart>
       </ResponsiveContainer>
