@@ -35,40 +35,47 @@ const REFRESH_RATE_LIMIT = rateLimitPerMinute(30);
 
 const IS_PRODUCTION = env.NODE_ENV === "production";
 
+// Menor caminho que cobre /refresh E /logout (o logout precisa receber o token
+// pra revogá-lo no banco). Não chega em /api/v1/users etc.: o navegador só
+// envia o cookie pra /api/v1/auth e o que está abaixo dele.
+const REFRESH_COOKIE_PATH = "/api/v1/auth";
+// Caminho antigo (só /refresh): o logout não recebia o cookie e não revogava o
+// token. Cookies gravados antes da mudança ainda existem nele até serem trocados.
+const LEGACY_REFRESH_COOKIE_PATH = "/api/v1/auth/refresh";
+
+function refreshCookieOptions(path: string) {
+  return {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    // Front e back são domínios diferentes em produção — cookie cross-site só é
+    // enviado em fetch/XHR com SameSite=None+Secure (Lax não vai, exceto
+    // navegação top-level GET). Local dev continua Lax (mesmo domínio/porta, sem
+    // HTTPS). WI-32: causa raiz do logout inesperado ao expirar o access token.
+    sameSite: IS_PRODUCTION ? ("none" as const) : ("lax" as const),
+    path,
+  };
+}
+
 function setRefreshCookie(
-  reply: { setCookie: Function },
+  reply: { setCookie: Function; clearCookie: Function },
   token: string,
   rememberMe: boolean
 ): void {
   reply.setCookie(REFRESH_COOKIE, token, {
-    httpOnly: true,
-    secure: IS_PRODUCTION,
-    // Front (Vercel) e back (Railway) são domínios diferentes em produção —
-    // cookie cross-site só é enviado em fetch/XHR com SameSite=None+Secure
-    // (Lax não vai, exceto navegação top-level GET). Local dev continua Lax
-    // (mesmo domínio/porta, sem HTTPS). WI-32: causa raiz do logout
-    // inesperado ao expirar o access token em produção.
-    sameSite: IS_PRODUCTION ? "none" : "lax",
-    path: "/api/v1/auth/refresh",
+    ...refreshCookieOptions(REFRESH_COOKIE_PATH),
     // WI-27: maxAge do cookie acompanha a duração real do refresh token no
     // banco — senão o navegador descartaria o cookie antes (ou manteria
     // depois) do token de fato expirar.
     maxAge: rememberMe ? REFRESH_COOKIE_MAX_AGE_REMEMBER_ME : REFRESH_COOKIE_MAX_AGE,
   });
+  // Os dois juntos fariam o /refresh receber primeiro o do caminho mais
+  // específico (o antigo, com o token velho): toda gravação apaga o antigo.
+  reply.clearCookie(REFRESH_COOKIE, refreshCookieOptions(LEGACY_REFRESH_COOKIE_PATH));
 }
 
 function clearRefreshCookie(reply: { clearCookie: Function }): void {
-  reply.clearCookie(REFRESH_COOKIE, {
-    httpOnly: true,
-    secure: IS_PRODUCTION,
-    // Front (Vercel) e back (Railway) são domínios diferentes em produção —
-    // cookie cross-site só é enviado em fetch/XHR com SameSite=None+Secure
-    // (Lax não vai, exceto navegação top-level GET). Local dev continua Lax
-    // (mesmo domínio/porta, sem HTTPS). WI-32: causa raiz do logout
-    // inesperado ao expirar o access token em produção.
-    sameSite: IS_PRODUCTION ? "none" : "lax",
-    path: "/api/v1/auth/refresh",
-  });
+  reply.clearCookie(REFRESH_COOKIE, refreshCookieOptions(REFRESH_COOKIE_PATH));
+  reply.clearCookie(REFRESH_COOKIE, refreshCookieOptions(LEGACY_REFRESH_COOKIE_PATH));
 }
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
