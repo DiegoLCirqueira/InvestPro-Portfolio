@@ -94,7 +94,7 @@ describe('histórico de ordens = o que foi liquidado', () => {
     ])
   })
 
-  it('ordem antiga, sem fee/netAmount gravados, continua com o cálculo a partir do preço guardado', async () => {
+  it('ordem antiga, sem fee/netAmount gravados: taxa estimada como antes e sem total (o preço antigo foi cortado)', async () => {
     const { userId, token } = await newUser(0)
     await prisma.order.create({
       data: {
@@ -105,8 +105,10 @@ describe('histórico de ordens = o que foi liquidado', () => {
 
     const [legacy] = await historyOf(token)
 
-    // 300 × 4,99 = 1.497,00; taxa 14,97; total 1.511,97
-    expect(legacy).toMatchObject({ price: 4.99, fee: 14.97, netAmount: 1511.97 })
+    // 300 × 4,99 = 1.497,00; taxa 14,97. Sem netAmount: recalculá-lo do preço cortado
+    // podia divergir do débito real.
+    expect(legacy).toMatchObject({ price: 4.99, fee: 14.97 })
+    expect(legacy).not.toHaveProperty('netAmount')
   })
 
   it('ordem OPEN não tem taxa nem total liquidado', async () => {

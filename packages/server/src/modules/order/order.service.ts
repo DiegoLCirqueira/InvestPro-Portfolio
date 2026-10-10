@@ -54,19 +54,18 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-// Ordens anteriores às colunas fee/netAmount: deriva do preço/quantidade
-// persistidos, com as mesmas fórmulas da execução, só quando a ordem de fato
-// preencheu. Usa `price` (preço desta execução), não `avgPrice` (média da
-// Position, que mistura fills anteriores em compras incrementais).
-function legacySettlement(
+// Ordens anteriores às colunas fee/netAmount: só a taxa estimada, derivada do
+// preço/quantidade persistidos (como antes), quando a ordem de fato preencheu.
+// Sem netAmount: o preço antigo foi gravado cortado em 2 casas, então um total
+// recalculado poderia divergir do que foi debitado/creditado de verdade.
+// Usa `price` (preço desta execução), não `avgPrice` (média da Position).
+function legacyFee(
   record: PrismaOrder,
   quantity: number,
   price: number | null
-): { fee: number; netAmount: number } | null {
+): number | null {
   if (record.status !== 'FILLED' || price === null) return null
-  const total = round2(quantity * price)
-  const netAmount = record.side === 'BUY' ? buyCost(total) : round2(total - calculateOrderFee(total))
-  return { fee: round2(calculateOrderFee(quantity * price)), netAmount }
+  return round2(calculateOrderFee(quantity * price))
 }
 
 // Abaixo do mínimo, o arredondamento em centavos cria dinheiro (compra de
@@ -145,7 +144,7 @@ function toOrder(record: PrismaOrder): Order {
   const settled =
     record.fee && record.netAmount
       ? { fee: record.fee.toNumber(), netAmount: record.netAmount.toNumber() }
-      : legacySettlement(record, quantity, price)
+      : null
 
   return {
     id: record.id,
@@ -159,7 +158,7 @@ function toOrder(record: PrismaOrder): Order {
     createdAt: record.createdAt.toISOString(),
     executedAt: record.executedAt ? record.executedAt.toISOString() : null,
     avgPrice: record.avgPrice ? record.avgPrice.toNumber() : null,
-    fee: settled?.fee ?? null,
+    fee: settled?.fee ?? legacyFee(record, quantity, price),
     ...(settled && { netAmount: settled.netAmount }),
   }
 }
