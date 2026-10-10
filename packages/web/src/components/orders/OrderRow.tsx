@@ -48,7 +48,7 @@ interface OrderRowProps {
 }
 
 export function OrderRow({ order, onCancel }: OrderRowProps) {
-  const { price, avgPrice, fee } = order;
+  const { price, avgPrice, fee, netAmount } = order;
 
   return (
     <div className="py-3">
@@ -78,6 +78,11 @@ export function OrderRow({ order, onCancel }: OrderRowProps) {
           )}
           {typeof fee === "number" && (
             <OrderDetail label="Taxa" value={formatCurrency(fee)} />
+          )}
+          {/* O que de fato saiu ou entrou na conta (do servidor): preço × quantidade arredondado
+              na tela não batia com o débito. Ordens antigas e abertas não têm. */}
+          {typeof netAmount === "number" && (
+            <OrderDetail label="Total" value={formatCurrency(netAmount)} />
           )}
         </span>
         <span className="flex items-center gap-2">

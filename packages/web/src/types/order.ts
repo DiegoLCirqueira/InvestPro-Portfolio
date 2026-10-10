@@ -22,6 +22,9 @@ export interface Order {
   avgPrice: number | null;
   // Taxa InvestPro; null enquanto a ordem não foi executada.
   fee?: number | null;
+  // Só em FILLED (GET /orders): o valor exato debitado na compra ou creditado na venda, já com a
+  // taxa. Ausente em ordens antigas e abertas.
+  netAmount?: number;
   // R$ resgatados da Caixinha para pagar a compra (só na resposta do POST; 0/ausente se não usou).
   savingsBoxUsed?: number;
 }
