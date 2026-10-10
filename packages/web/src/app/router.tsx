@@ -4,6 +4,7 @@ import { Layout } from "./Layout";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { HomeRoute } from "./HomeRoute";
 import { SessionLoading } from "./SessionLoading";
+import { PageLoading } from "./PageLoading";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { NewsSkeleton } from "@/components/skeletons/NewsSkeleton";
@@ -72,24 +73,6 @@ const NotFound = lazy(() =>
   import("@/pages/NotFound").then((m) => ({ default: m.NotFound })),
 );
 
-function RouteErrorFallback() {
-  return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="text-center space-y-4">
-        <p className="text-brand-danger text-sm font-semibold">
-          Erro ao carregar esta página
-        </p>
-        <a
-          href="/"
-          className="text-xs text-brand-primary hover:underline"
-        >
-          Voltar ao início
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function PageFallback({ skeleton }: { skeleton: React.ReactNode }) {
   return (
     <div className="flex-1 animate-in fade-in duration-300">
@@ -98,6 +81,9 @@ function PageFallback({ skeleton }: { skeleton: React.ReactNode }) {
   );
 }
 
+// Fallback do Suspense = carregamento (esqueleto da página ou PageLoading): ele aparece toda vez que
+// o código da página ainda está baixando. Antes 10 rotas usavam um texto de erro aqui, e numa rede
+// lenta o usuário via "Erro ao carregar esta página" sem erro nenhum. Erro de verdade: ErrorBoundary.
 function withSuspense(
   Component: React.LazyExoticComponent<React.ComponentType>,
   skeleton: React.ReactNode,
@@ -137,11 +123,11 @@ export function Router() {
         />
         <Route
           path="/recommendations"
-          element={withSuspense(Recommendations, <RouteErrorFallback />)}
+          element={withSuspense(Recommendations, <PageLoading />)}
         />
         <Route
           path="/diversification"
-          element={withSuspense(Diversification, <RouteErrorFallback />)}
+          element={withSuspense(Diversification, <PageLoading />)}
         />
         <Route
           path="/risk"
@@ -165,32 +151,32 @@ export function Router() {
         />
         <Route
           path="/profile"
-          element={withSuspense(UserProfile, <RouteErrorFallback />)}
+          element={withSuspense(UserProfile, <PageLoading />)}
         />
         <Route
           path="/profile/investor-profile"
-          element={withSuspense(InvestorProfile, <RouteErrorFallback />)}
+          element={withSuspense(InvestorProfile, <PageLoading />)}
         />
         <Route
           path="/admin/users"
           element={
             <ProtectedRoute requiredRole="ADMIN">
-              {withSuspense(AdminUsers, <RouteErrorFallback />)}
+              {withSuspense(AdminUsers, <PageLoading />)}
             </ProtectedRoute>
           }
         />
       </Route>
-      <Route path="/login" element={withSuspense(Login, <RouteErrorFallback />)} />
-      <Route path="/register" element={withSuspense(Register, <RouteErrorFallback />)} />
+      <Route path="/login" element={withSuspense(Login, <PageLoading fullScreen />)} />
+      <Route path="/register" element={withSuspense(Register, <PageLoading fullScreen />)} />
       <Route
         path="/forgot-password"
-        element={withSuspense(ForgotPassword, <RouteErrorFallback />)}
+        element={withSuspense(ForgotPassword, <PageLoading fullScreen />)}
       />
       <Route
         path="/reset-password"
-        element={withSuspense(ResetPassword, <RouteErrorFallback />)}
+        element={withSuspense(ResetPassword, <PageLoading fullScreen />)}
       />
-      <Route path="*" element={withSuspense(NotFound, <RouteErrorFallback />)} />
+      <Route path="*" element={withSuspense(NotFound, <PageLoading fullScreen />)} />
     </Routes>
   );
 }

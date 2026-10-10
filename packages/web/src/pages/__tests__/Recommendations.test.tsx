@@ -11,8 +11,13 @@ vi.mock("@/services/api", async () => {
   return { ...actual, api: apiMock };
 });
 
-function renderWith(response: RecommendationsResponse) {
-  apiMock.get.mockResolvedValue(response);
+// savingsBox: saldo na Caixinha (GET /savings-box), que muda a ação de "reduzir renda fixa".
+function renderWith(response: RecommendationsResponse, savingsBox = 0) {
+  apiMock.get.mockImplementation((path: string) =>
+    Promise.resolve(
+      path === "/savings-box" ? { balance: savingsBox, rate: 0.06, estimatedYield: 0 } : response,
+    ),
+  );
   return render(
     <MemoryRouter>
       <Recommendations />
@@ -97,6 +102,41 @@ describe("Recommendations (pelo perfil de investidor)", () => {
 
     expect(await screen.findByRole("link", { name: /Ir para o Câmbio/ })).toHaveAttribute("href", "/exchange");
     expect(screen.getByRole("link", { name: /Ir para Ordens/ })).toHaveAttribute("href", "/orders");
+  });
+
+  describe("reduzir renda fixa", () => {
+    const reduceFixedIncome = {
+      profile: "MODERATE" as const,
+      allocation: [],
+      items: [
+        {
+          id: "reduce-FIXED_INCOME",
+          category: "RISK" as const,
+          title: "Reduzir a exposição a renda fixa",
+          description: "Hoje renda fixa (inclui R$ 1.500,00 na Caixinha) representa 64,4%…",
+        },
+      ],
+    };
+
+    it("com saldo na Caixinha: leva para a Caixinha (em Ordens não dá para reduzi-la)", async () => {
+      renderWith(reduceFixedIncome, 1_500);
+
+      expect(await screen.findByRole("link", { name: /Ir para a Caixinha/ })).toHaveAttribute(
+        "href",
+        "/caixinha",
+      );
+      expect(screen.queryByRole("link", { name: /Ir para Ordens/ })).not.toBeInTheDocument();
+    });
+
+    it("sem saldo na Caixinha: continua indo para Ordens", async () => {
+      renderWith(reduceFixedIncome, 0);
+
+      expect(await screen.findByRole("link", { name: /Ir para Ordens/ })).toHaveAttribute(
+        "href",
+        "/orders",
+      );
+      expect(screen.queryByRole("link", { name: /Ir para a Caixinha/ })).not.toBeInTheDocument();
+    });
   });
 
   it("deixa claro que é conteúdo educativo, sem alegar inteligência artificial", async () => {
