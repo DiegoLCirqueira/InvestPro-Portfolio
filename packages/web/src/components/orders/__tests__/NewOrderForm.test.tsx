@@ -392,6 +392,32 @@ describe("NewOrderForm", () => {
     expect(mockCreateOrder.mutate).not.toHaveBeenCalled();
   });
 
+  it.each(["Limitada", "Stop"])(
+    "%s: Preço logo abaixo da Quantidade, antes do saldo e do resumo (e o Tab segue essa ordem)",
+    (type) => {
+      renderForm();
+      typeTicker("PETR4");
+      fireEvent.click(screen.getByLabelText("Tipo"));
+      fireEvent.click(screen.getByRole("option", { name: type }));
+
+      const quantity = screen.getByLabelText("Quantidade");
+      const price = screen.getByLabelText("Preço da ordem");
+      const follows = (a: Node, b: Node) =>
+        Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(quantity, price)).toBe(true);
+      expect(follows(price, screen.getByText("Saldo disponível"))).toBe(true);
+      expect(follows(price, screen.getByText("Valor total"))).toBe(true);
+      expect(follows(price, screen.getByText("Você pagará"))).toBe(true);
+
+      // Sem tabindex manual: o Tab é a ordem do DOM, e nada focável fica entre os dois campos.
+      const focusable = [
+        ...document.querySelectorAll<HTMLElement>("input, button, select, textarea, a[href]"),
+      ].filter((element) => !element.hasAttribute("disabled"));
+      expect(focusable.indexOf(price)).toBe(focusable.indexOf(quantity) + 1);
+      expect(document.querySelector("[tabindex]:not([tabindex='-1']):not([tabindex='0'])")).toBeNull();
+    },
+  );
+
   it("vindo do Mercado (?ticker=), o ativo já vem escolhido", () => {
     renderForm("/orders?ticker=ITUB4");
 

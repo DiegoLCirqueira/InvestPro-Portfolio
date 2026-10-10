@@ -287,6 +287,18 @@ export function NewOrderForm({ onCreated, account }: NewOrderFormProps) {
         </FormField>
       )}
 
+      {/* Limitada/Stop: o Preço vem logo depois da Quantidade e antes do resumo, que depende dele
+          (antes ficava abaixo do "Você pagará", e o Tab seguia essa ordem). */}
+      {form.needsPrice && (
+        <FormField label="Preço" htmlFor="order-price">
+          <CurrencyDigitsField
+            id="order-price"
+            input={form.priceInput}
+            ariaLabel="Preço da ordem"
+          />
+        </FormField>
+      )}
+
       {/* Na venda o bloco só mostra o saldo (a checagem ali é de quantidade). */}
       {account.isLoaded && (
         <OrderBalance
@@ -310,16 +322,6 @@ export function NewOrderForm({ onCreated, account }: NewOrderFormProps) {
         isPriceEstimated={form.isPriceEstimated}
         isShort={isShort}
       />
-
-      {form.needsPrice && (
-        <FormField label="Preço" htmlFor="order-price">
-          <CurrencyDigitsField
-            id="order-price"
-            input={form.priceInput}
-            ariaLabel="Preço da ordem"
-          />
-        </FormField>
-      )}
 
       {purchase && form.settlement && (
         isShort ? (
