@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AllocationBars } from "@/components/investor-profile/AllocationBars";
 import { INVESTOR_PROFILE_LABELS, useRecommendations } from "@/hooks/use-investor-profile";
+import { useSavingsBox } from "@/hooks/use-savings-box";
 import type { PersonalizedRecommendation, RecommendationCategory } from "@/types/investor-profile";
 import { cardClassName } from "@/components/ui/card";
 import { CATEGORY_LABELS } from "@/lib/allocation";
@@ -29,6 +30,9 @@ const PROFILE_LINK_CLASS =
 // perfil de investidor. Conteúdo educativo, não recomendação de investimento.
 export function Recommendations() {
   const { data, error, isLoading, refetch } = useRecommendations();
+  // A Caixinha conta como renda fixa: com saldo nela, "reduzir renda fixa" se faz resgatando.
+  const savingsBox = useSavingsBox();
+  const hasSavingsBox = savingsBox.balance > 0;
 
   return (
     <div className="flex flex-col animate-in fade-in duration-500">
@@ -84,7 +88,7 @@ export function Recommendations() {
             className="grid gap-4 nav:grid-cols-2 nav:[&>*:last-child:nth-child(odd)]:col-span-2"
           >
             {data.items.map((item) => (
-              <RecommendationCard key={item.id} item={item} />
+              <RecommendationCard key={item.id} item={item} hasSavingsBox={hasSavingsBox} />
             ))}
           </section>
         </div>
@@ -97,7 +101,10 @@ export function Recommendations() {
 // (recommendations.domain.ts): antes nenhuma levava a lugar nenhum.
 const MARKET_TYPES = new Set(["STOCK", "CRYPTO", "FIXED_INCOME"]);
 
-function recommendationAction(item: PersonalizedRecommendation): { label: string; to: string } | null {
+function recommendationAction(
+  item: PersonalizedRecommendation,
+  hasSavingsBox: boolean,
+): { label: string; to: string } | null {
   if (item.id === "idle-cash") return { label: "Depositar na Caixinha", to: SAVINGS_BOX_PATH };
   if (item.id === "start-investing") return { label: "Ver ativos disponíveis", to: "/market" };
   const [direction, type] = item.id.split("-");
@@ -106,13 +113,23 @@ function recommendationAction(item: PersonalizedRecommendation): { label: string
   if (direction === "increase" && MARKET_TYPES.has(type)) {
     return { label: "Ver ativos no Mercado", to: `/market?tipo=${type}` };
   }
+  // Renda fixa acima da referência com dinheiro na Caixinha: em Ordens não há como reduzi-la.
+  if (item.id === "reduce-FIXED_INCOME" && hasSavingsBox) {
+    return { label: "Ir para a Caixinha", to: SAVINGS_BOX_PATH };
+  }
   if (direction === "reduce") return { label: "Ir para Ordens", to: "/orders" };
   return null;
 }
 
-function RecommendationCard({ item }: { item: PersonalizedRecommendation }) {
+function RecommendationCard({
+  item,
+  hasSavingsBox,
+}: {
+  item: PersonalizedRecommendation;
+  hasSavingsBox: boolean;
+}) {
   const badge = CATEGORY_BADGES[item.category];
-  const action = recommendationAction(item);
+  const action = recommendationAction(item, hasSavingsBox);
   return (
     <article className={cn(cardClassName, "flex flex-col")}>
       {/* Selo ao lado do título (também no celular) e descrição em largura total embaixo: antes,
