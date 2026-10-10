@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCancelOrder } from "@/hooks/use-orders";
-import { formatCurrency, formatQuantity } from "@/lib/format";
+import { formatQuantity, formatUnitPrice } from "@/lib/format";
 import { ORDER_TYPE_LABELS } from "@/lib/order-form";
 import { ApiError } from "@/services/api";
 import type { Order } from "@/types/order";
@@ -102,7 +102,7 @@ export function CancelOrderDialog({
               <>
                 {" "}a{" "}
                 <span className="font-semibold text-foreground tabular-nums">
-                  {formatCurrency(order.price)}
+                  {formatUnitPrice(order.price)}
                 </span>
               </>
             )}{" "}

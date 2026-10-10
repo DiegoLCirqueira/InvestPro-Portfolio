@@ -30,6 +30,43 @@ describe("OrderRow", () => {
     expect(text).not.toContain("42.33");
   });
 
+  it("preço e PM com mais de 2 casas aparecem com até 4 (como o servidor executou)", () => {
+    const { container } = render(
+      <OrderRow order={{ ...filledOrder, quantity: 300, price: 4.9918, avgPrice: 4.9918, fee: 14.98 }} />,
+    );
+    const text = container.textContent ?? "";
+
+    expect(text).toMatch(/Preço: R\$\s4,9918/);
+    expect(text).toMatch(/PM: R\$\s4,9918/);
+    expect(text).toMatch(/Taxa: R\$\s14,98/);
+  });
+
+  it("compra 300 × 4,9918: preço R$ 4,9918, taxa R$ 14,98 e o total debitado pelo servidor", () => {
+    const { container } = render(
+      <OrderRow
+        order={{
+          ...filledOrder,
+          quantity: 300,
+          price: 4.9918,
+          avgPrice: 4.9918,
+          fee: 14.98,
+          netAmount: 1_512.52,
+        }}
+      />,
+    );
+    const text = container.textContent ?? "";
+
+    expect(text).toMatch(/Preço: R\$\s4,9918/);
+    expect(text).toMatch(/Taxa: R\$\s14,98/);
+    expect(text).toMatch(/Total: R\$\s1\.512,52/);
+  });
+
+  it("ordem antiga (ou aberta) sem netAmount: sem Total, como antes", () => {
+    const { container } = render(<OrderRow order={filledOrder} />);
+
+    expect(container.textContent ?? "").not.toMatch(/Total/);
+  });
+
   it("o ticker tem a mesma largura mínima em toda linha, curto ou longo", () => {
     for (const ticker of ["BTC", "ITUB4", "USDBRL"]) {
       const { getByText, unmount } = render(<OrderRow order={{ ...filledOrder, ticker }} />);
