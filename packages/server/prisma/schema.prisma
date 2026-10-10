@@ -186,6 +186,10 @@ model Transfer {
   @@index([userId, createdAt])
 }
 
+// price na escala das cotações (cripto e câmbio têm 4+ casas): com 2 casas o
+// histórico mostrava um preço diferente do que foi usado no débito/crédito.
+// fee/netAmount: o que de fato foi cobrado/liquidado na execução (taxa e total
+// debitado na compra ou creditado na venda); null nas ordens anteriores a eles.
 model Order {
   id         String      @id @default(uuid())
   userId     String
@@ -194,9 +198,11 @@ model Order {
   side       OrderSide
   type       OrderType
   quantity   Decimal     @db.Decimal(15, 8)
-  price      Decimal?    @db.Decimal(15, 2)
+  price      Decimal?    @db.Decimal(20, 8)
   status     OrderStatus @default(PENDING)
   avgPrice   Decimal?    @db.Decimal(15, 2)
+  fee        Decimal?    @db.Decimal(15, 2)
+  netAmount  Decimal?    @db.Decimal(15, 2)
   createdAt  DateTime    @default(now())
   executedAt DateTime?
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)

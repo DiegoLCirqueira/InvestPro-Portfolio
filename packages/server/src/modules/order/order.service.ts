@@ -54,13 +54,19 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-// Fee derivada do preço/quantidade já persistidos (não é uma coluna própria):
-// 1% do valor executado (quantity * price), só quando a ordem de fato preencheu.
-// Usar `price` (preço desta execução), não `avgPrice` (média da Position, que
-// mistura fills anteriores em compras incrementais).
-function orderFee(status: string, quantity: number, price: number | null): number | null {
-  if (status !== 'FILLED' || price === null) return null
-  return round2(calculateOrderFee(quantity * price))
+// Ordens anteriores às colunas fee/netAmount: deriva do preço/quantidade
+// persistidos, com as mesmas fórmulas da execução, só quando a ordem de fato
+// preencheu. Usa `price` (preço desta execução), não `avgPrice` (média da
+// Position, que mistura fills anteriores em compras incrementais).
+function legacySettlement(
+  record: PrismaOrder,
+  quantity: number,
+  price: number | null
+): { fee: number; netAmount: number } | null {
+  if (record.status !== 'FILLED' || price === null) return null
+  const total = round2(quantity * price)
+  const netAmount = record.side === 'BUY' ? buyCost(total) : round2(total - calculateOrderFee(total))
+  return { fee: round2(calculateOrderFee(quantity * price)), netAmount }
 }
 
 // Abaixo do mínimo, o arredondamento em centavos cria dinheiro (compra de
@@ -136,6 +142,10 @@ interface ExecutedOrder {
 function toOrder(record: PrismaOrder): Order {
   const quantity = record.quantity.toNumber()
   const price = record.price ? record.price.toNumber() : null
+  const settled =
+    record.fee && record.netAmount
+      ? { fee: record.fee.toNumber(), netAmount: record.netAmount.toNumber() }
+      : legacySettlement(record, quantity, price)
 
   return {
     id: record.id,
@@ -149,7 +159,8 @@ function toOrder(record: PrismaOrder): Order {
     createdAt: record.createdAt.toISOString(),
     executedAt: record.executedAt ? record.executedAt.toISOString() : null,
     avgPrice: record.avgPrice ? record.avgPrice.toNumber() : null,
-    fee: orderFee(record.status, quantity, price),
+    fee: settled?.fee ?? null,
+    ...(settled && { netAmount: settled.netAmount }),
   }
 }
 
@@ -213,6 +224,10 @@ async function executeOrderTx(
 
   let orderAvgPrice: number | null = null
   let savingsBoxUsed = 0
+  // Gravados na ordem pra o histórico mostrar exatamente o que se moveu no saldo
+  // (recalcular depois a partir do preço guardado podia divergir em centavos).
+  let fee: number
+  let netAmount: number
   // Id definido antes: o resgate da Caixinha (ORDER_FUNDING) acontece antes da
   // Order ser criada e já precisa apontar pra ela no extrato.
   const orderId = randomUUID()
@@ -266,6 +281,8 @@ async function executeOrderTx(
     })
 
     orderAvgPrice = round2(fill.avgPrice)
+    netAmount = cost
+    fee = round2(cost - total)
   } else {
     const held = await assertFreePosition(tx, userId, asset.ticker, current, input.quantity)
     const fill = applySellFill(held, input.quantity)
@@ -293,6 +310,8 @@ async function executeOrderTx(
     })
 
     orderAvgPrice = null
+    netAmount = proceeds
+    fee = round2(total - proceeds)
   }
 
   const record = await tx.order.create({
@@ -307,6 +326,8 @@ async function executeOrderTx(
       price: fillPrice, // preço de execução (o limite/gatilho só vale enquanto OPEN)
       status: 'FILLED',
       avgPrice: orderAvgPrice,
+      fee,
+      netAmount,
       executedAt: new Date(),
     },
   })

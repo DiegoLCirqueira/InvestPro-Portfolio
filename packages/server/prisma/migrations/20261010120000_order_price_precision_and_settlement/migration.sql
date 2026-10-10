@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "fee" DECIMAL(15,2),
+ADD COLUMN     "netAmount" DECIMAL(15,2),
+ALTER COLUMN "price" SET DATA TYPE DECIMAL(20,8);
+

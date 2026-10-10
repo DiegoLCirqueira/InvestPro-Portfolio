@@ -70,6 +70,9 @@ export const orderSchema = z.object({
   // Fee da InvestPro (1% do valor executado). null enquanto a ordem não
   // executa (LIMIT/STOP em OPEN) — só existe fee sobre o que de fato preenche.
   fee: z.number().nonnegative().nullable().optional(),
+  // Total liquidado no saldo em conta: debitado na compra (valor + taxa) ou
+  // creditado na venda (valor − taxa), exatamente como foi cobrado. Só em FILLED.
+  netAmount: z.number().nonnegative().optional(),
   // R$ resgatados da Caixinha pra cobrir a compra. Só vem quando a ordem pediu
   // useSavingsBox (0 se o saldo em conta bastou).
   savingsBoxUsed: z.number().nonnegative().optional(),
