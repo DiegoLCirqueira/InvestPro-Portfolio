@@ -1,5 +1,5 @@
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
-import { formatCurrency, formatDateTime, formatQuantity } from "@/lib/format";
+import { formatCurrency, formatDateTime, formatQuantity, formatUnitPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { isCancellable, ORDER_TYPE_LABELS } from "@/lib/order-form";
 import type { Order, OrderSide, OrderStatus } from "@/types/order";
@@ -71,10 +71,10 @@ export function OrderRow({ order, onCancel }: OrderRowProps) {
             {formatQuantity(order.quantity)}
           </span>
           {typeof price === "number" && (
-            <OrderDetail label="Preço" value={formatCurrency(price)} />
+            <OrderDetail label="Preço" value={formatUnitPrice(price)} />
           )}
           {typeof avgPrice === "number" && (
-            <OrderDetail label="PM" value={formatCurrency(avgPrice)} />
+            <OrderDetail label="PM" value={formatUnitPrice(avgPrice)} />
           )}
           {typeof fee === "number" && (
             <OrderDetail label="Taxa" value={formatCurrency(fee)} />

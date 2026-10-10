@@ -6,6 +6,20 @@ export function formatCurrency(value: number, currency = "BRL"): string {
   }).format(value);
 }
 
+/**
+ * Preço unitário de execução: o servidor guarda até 8 casas (ex. cotação 4,9918), e arredondar
+ * para 2 fazia preço × quantidade não bater com o débito. Mostra até 4, sem zeros sobrando
+ * (4,99 continua 4,99). Valores totais seguem no formatCurrency.
+ */
+export function formatUnitPrice(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(value);
+}
+
 /** Número em formato pt-BR (vírgula decimal, ponto de milhar) com casas fixas. */
 export function formatDecimal(value: number, decimals = 2): string {
   return new Intl.NumberFormat("pt-BR", {
