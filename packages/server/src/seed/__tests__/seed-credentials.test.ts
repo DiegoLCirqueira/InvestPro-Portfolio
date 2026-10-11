@@ -136,4 +136,18 @@ describe('prisma/seed.ts (guarda do código-fonte)', () => {
 
     expect(upsertsWithEmptyUpdate).toHaveLength(2)
   })
+
+  it('o upsert do admin nunca eleva role em update: só cria com ADMIN, nunca promove conta existente', () => {
+    const userUpserts = seedSource.match(/user\.upsert\(\{[\s\S]*?\n {2}\}\)/g) ?? []
+
+    expect(userUpserts.length).toBeGreaterThan(0)
+    for (const upsert of userUpserts) {
+      const updateClause = upsert.match(/update:\s*\{([\s\S]*?)\}/)?.[1] ?? ''
+      expect(updateClause).not.toMatch(/role/)
+    }
+  })
+
+  it('conta pré-existente com o email do admin é recusada, nunca promovida', () => {
+    expect(seedSource).toMatch(/if\s*\(\s*adminExisted\s*\)\s*\{[\s\S]*?throw new Error/)
+  })
 })

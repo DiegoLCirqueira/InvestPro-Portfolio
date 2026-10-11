@@ -42,11 +42,21 @@ async function main() {
   console.log(describeAccountPassword(DEMO_EMAIL, demoExisted, demoPassword, DEMO_PASSWORD_ENV))
 
   const adminExisted = await accountExists(ADMIN_EMAIL)
+  // Se a conta já existe (ex.: alguém se registrou com esse email pelo /auth/register
+  // antes do seed rodar), NUNCA promovemos a ADMIN aqui — isso entregaria a role a
+  // quem quer que já controle a senha dessa conta. Seed só cria; nunca eleva.
+  if (adminExisted) {
+    throw new Error(
+      `Seed recusado: já existe uma conta com o email ${ADMIN_EMAIL}. ` +
+        'O seed não promove contas existentes a ADMIN (risco de sequestro de privilégio). ' +
+        'Se for legítima, promova manualmente no banco; senão, investigue quem a criou.'
+    )
+  }
   const adminPasswordHash = await hashPassword(adminPassword.password)
 
   const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
-    update: { role: 'ADMIN' },
+    update: {},
     create: {
       email: ADMIN_EMAIL,
       passwordHash: adminPasswordHash,
