@@ -149,6 +149,16 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+// Um registro por e-mail de redefinição enviado, sem dado pessoal: só serve pra
+// contar o volume global e impor o teto (PASSWORD_RESET_EMAILS_PER_HOUR/DAY).
+// Linhas com mais de um dia são apagadas na própria contagem.
+model PasswordResetEmailSend {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model BankAccount {
   id         String   @id @default(uuid())
   userId     String

@@ -101,6 +101,7 @@ Abra o serviço do backend → aba **Variables** e adicione:
 | `EXCHANGE_RATE_MAX_DEVIATION_PERCENT` | Opcional — desvio máximo (%) de uma cotação nova em relação à última boa em cache; acima disso é rejeitada. Padrão `15` (faixa 1-100). |
 | `REFRESH_ROTATE_AFTER_SECONDS` | Opcional — idade mínima do refresh token para ser rotacionado. Padrão `600` (faixa 0-900; `0` = sempre). Ver "Refresh token" abaixo. |
 | `REFRESH_REUSE_GRACE_SECONDS` | Opcional — janela de tolerância de reuso do refresh token. Padrão `10` (faixa 0-30; `0` desliga). Ver "Refresh token" abaixo. |
+| `PASSWORD_RESET_EMAILS_PER_HOUR` / `PASSWORD_RESET_EMAILS_PER_DAY` | Opcional — teto global de e-mails de redefinição de senha (todas as contas, contado no banco). Padrões `30` e `100`; ajuste ao limite do plano do Resend. Acima do teto o endpoint responde igual, mas não envia. |
 | `RESEND_FROM_EMAIL` | Remetente dos emails (ex.: `InvestPro <no-reply@investpro.app>`). Requer domínio verificado no Resend em produção — sem isso, usar o default `onboarding@resend.dev` (limitado, não recomendado pra produção real). |
 
 > **Importante:** a aplicação **falha na inicialização** se `NODE_ENV=production`

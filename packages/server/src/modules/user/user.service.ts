@@ -66,7 +66,9 @@ async function setCpfOnce(tx: Prisma.TransactionClient, userId: string, cpf: str
   }
 }
 
-// CPF de outra conta: a mensagem não confirma que ele existe nem de quem é.
+// CPF de outra conta: a mensagem não diz de quem é, mas o 409 (vs 200) confirma
+// que o CPF já está cadastrado, e como a transação desfaz, dá pra testar de novo.
+// Risco aceito por ora (simulador) — ver issue #16 antes de mexer.
 function cpfInUseError(): AppError {
   return new AppError('CPF_IN_USE', 'Não foi possível usar este CPF', 409)
 }

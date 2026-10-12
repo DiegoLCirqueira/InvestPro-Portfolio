@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => {
     sendPasswordResetEmail: vi.fn(),
     sendPasswordChangedEmail: vi.fn(),
     isEmailRateLimited: vi.fn(),
+    claimResetEmailSlot: vi.fn(),
   }
 })
 
@@ -82,6 +83,10 @@ vi.mock('../lib/emailRateLimit.js', () => ({
   isEmailRateLimited: mocks.isEmailRateLimited,
 }))
 
+vi.mock('../lib/resetEmailBudget.js', () => ({
+  claimResetEmailSlot: mocks.claimResetEmailSlot,
+}))
+
 import { randomBytes } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
@@ -89,7 +94,7 @@ import type { FastifyBaseLogger } from 'fastify'
 import { register, login, refresh, logout, forgotPassword, resetPassword, AppError } from '../auth.service.js'
 import { EmailDeliveryError } from '../lib/emailDeliveryError.js'
 
-const fakeLog = { error: vi.fn() } as unknown as FastifyBaseLogger
+const fakeLog = { error: vi.fn(), warn: vi.fn() } as unknown as FastifyBaseLogger
 
 // Senha de fixture aleatória por execução: nenhum valor fixo de senha no repositório.
 const BASE = {
@@ -110,6 +115,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.refreshTokenFindUnique.mockResolvedValue(null)
   mocks.isEmailRateLimited.mockReturnValue(false)
+  mocks.claimResetEmailSlot.mockResolvedValue(true)
   mocks.sendPasswordResetEmail.mockResolvedValue(undefined)
   mocks.sendPasswordChangedEmail.mockResolvedValue(undefined)
 })
@@ -667,6 +673,24 @@ describe('forgotPassword', () => {
     await forgotPassword(dbUser.email, fakeLog)
     expect(mocks.findUnique).not.toHaveBeenCalled()
     expect(mocks.passwordResetTokenCreate).not.toHaveBeenCalled()
+  })
+
+  it('teto global atingido: não envia, não mexe no token pendente e responde igual', async () => {
+    mocks.findUnique.mockResolvedValue(dbUser)
+    mocks.claimResetEmailSlot.mockResolvedValue(false)
+
+    await expect(forgotPassword(dbUser.email, fakeLog)).resolves.toBeUndefined()
+
+    expect(mocks.passwordResetTokenDeleteMany).not.toHaveBeenCalled()
+    expect(mocks.passwordResetTokenCreate).not.toHaveBeenCalled()
+    expect(mocks.sendPasswordResetEmail).not.toHaveBeenCalled()
+    expect(fakeLog.warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('e-mail inexistente não consome vaga do teto global', async () => {
+    mocks.findUnique.mockResolvedValue(null)
+    await forgotPassword('nao-existe@teste.com', fakeLog)
+    expect(mocks.claimResetEmailSlot).not.toHaveBeenCalled()
   })
 })
 

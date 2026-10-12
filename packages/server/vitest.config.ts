@@ -8,6 +8,10 @@ assertTestDatabase(testDatabaseUrl)
 
 const sharedTestEnv = {
   DATABASE_URL: testDatabaseUrl,
+  // O teto global de e-mails de reset é contado no banco de testes, que acumula
+  // entre execuções: folgado aqui; reset-email-budget.test.ts passa os limites.
+  PASSWORD_RESET_EMAILS_PER_HOUR: '10000',
+  PASSWORD_RESET_EMAILS_PER_DAY: '100000',
   JWT_SECRET: 'investpro-dev-jwt-secret-2024',
   JWT_REFRESH_SECRET: 'investpro-dev-refresh-secret-2024',
   NODE_ENV: 'development',

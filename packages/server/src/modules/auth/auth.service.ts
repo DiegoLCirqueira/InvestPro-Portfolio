@@ -13,6 +13,7 @@ import {
 } from "./lib/refreshToken.js";
 import { generatePasswordResetToken, hashResetToken } from "./lib/resetToken.js";
 import { isEmailRateLimited } from "./lib/emailRateLimit.js";
+import { claimResetEmailSlot } from "./lib/resetEmailBudget.js";
 import { isAccountRateLimited, registerLoginFailure, clearLoginAttempts } from "./lib/loginRateLimit.js";
 import { sendPasswordResetEmail, sendPasswordChangedEmail } from "./lib/email.js";
 import { logEmailFailure } from "./lib/emailFailureLog.js";
@@ -32,8 +33,9 @@ function stripPassword<T extends { passwordHash?: string }>(obj: T): Omit<T, "pa
 
 const emailTakenError = (): AppError => new AppError("EMAIL_TAKEN", "Email já está em uso", 409);
 
-// Conflito de CPF: a resposta é genérica de propósito (nem cita o CPF), pra o
-// cadastro não virar consulta de "este CPF já tem conta?".
+// Conflito de CPF: a mensagem é genérica (nem cita o CPF), mas isso NÃO impede a
+// consulta "este CPF já tem conta?": com um e-mail novo, 409 aqui vs 201 já
+// responde. Risco aceito por ora (simulador) — ver issue #16 antes de mexer.
 const registrationConflictError = (): AppError =>
   new AppError("REGISTRATION_CONFLICT", "Não foi possível concluir o cadastro com esses dados", 409);
 
@@ -307,6 +309,13 @@ export async function forgotPassword(email: string, log: FastifyBaseLogger): Pro
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return;
+
+  // Teto global atingido: resposta continua genérica (o endpoint nunca diz se
+  // enviou), e o token pendente do usuário fica intacto.
+  if (!(await claimResetEmailSlot())) {
+    log.warn("Teto global de e-mails de redefinição de senha atingido; envio suprimido");
+    return;
+  }
 
   await prisma.passwordResetToken.deleteMany({
     where: { userId: user.id, usedAt: null },

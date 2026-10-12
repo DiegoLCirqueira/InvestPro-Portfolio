@@ -97,6 +97,23 @@ export const env = {
     max: 100,
     unit: "%",
   }),
+  // Teto GLOBAL de e-mails de redefinição de senha (todas as contas somadas),
+  // contado no banco: os limites em memória valem só por instância serverless e
+  // não impedem esgotar a cota paga do Resend com uma lista de e-mails válidos.
+  PASSWORD_RESET_EMAILS_PER_HOUR: parseIntegerInRange(process.env.PASSWORD_RESET_EMAILS_PER_HOUR, {
+    name: "PASSWORD_RESET_EMAILS_PER_HOUR",
+    defaultValue: 30,
+    min: 1,
+    max: 10_000,
+    unit: "e-mails/hora",
+  }),
+  PASSWORD_RESET_EMAILS_PER_DAY: parseIntegerInRange(process.env.PASSWORD_RESET_EMAILS_PER_DAY, {
+    name: "PASSWORD_RESET_EMAILS_PER_DAY",
+    defaultValue: 100,
+    min: 1,
+    max: 100_000,
+    unit: "e-mails/dia",
+  }),
   // Rotação preguiçosa: o refresh token só é trocado quando tem mais que isso de
   // idade (0 = sempre). Recargas rápidas reusam o mesmo cookie; o teto é o TTL do
   // access token.
