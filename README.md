@@ -7,6 +7,8 @@
   </a>
 </div>
 
+> **No ar em [investpro.dev.br](https://investpro.dev.br).** Crie uma conta gratuita e teste tudo pelo site: cadastro, login, ordens, câmbio, PIX, Caixinha e relatórios de risco. Este repositório existe para mostrar o código.
+>
 > **Projeto de portfólio.** O InvestPro **não é uma instituição financeira**: todo o dinheiro, as ordens, o câmbio e as transferências são **simulados**. Nenhum valor real é movimentado e as sugestões do sistema são educativas, não recomendação de investimento.
 
 ---
@@ -40,73 +42,33 @@ Monorepo com npm workspaces:
 | `packages/server` (API) | Node.js, Fastify 5, Prisma 6, PostgreSQL, Zod, JWT com refresh token em cookie httpOnly, bcrypt, Pino, Swagger |
 | `packages/shared` | Schemas Zod e tipos compartilhados entre site e API |
 
-**Testes:** Vitest e Testing Library (web), Vitest e Supertest com um PostgreSQL de testes em Docker (API).
+**Testes:** Vitest e Testing Library (web), Vitest com testes de rota contra um PostgreSQL de testes em Docker (API).
 **CI:** GitHub Actions (build, migrações e testes dos dois pacotes).
 **Produção:** site e API na Vercel (a API como função serverless), banco PostgreSQL no Supabase. E-mails transacionais via Resend.
 
-## Como rodar localmente
+## Onde olhar no código
 
-Pré-requisitos: Node.js 22 e Docker (para o PostgreSQL).
+| Assunto | Caminho |
+|---|---|
+| Regras de negócio das ordens (reserva de saldo e posição, taxa, mínimos) | `packages/server/src/modules/order/` |
+| Transferências e reconhecimento de chave PIX | `packages/server/src/modules/transfer/` e `packages/shared/src/transfer/` |
+| Contratos compartilhados entre site e API (schemas Zod) | `packages/shared/src/` |
+| Modelo de dados e migrações | `packages/server/prisma/` |
+| Decisões de arquitetura | `docs/adr/` |
 
-```bash
-# 1. Clone e instale (o postinstall já gera o cliente do Prisma)
-git clone https://github.com/DiegoLCirqueira/InvestPro-Portfolio.git
-cd InvestPro-Portfolio
-npm install
+Cada módulo da API separa rotas (`*.routes.ts`), serviço (`*.service.ts`) e regras puras (`*.domain.ts`). As regras puras são testadas sem banco de dados.
 
-# 2. Suba o PostgreSQL de desenvolvimento (porta 5432)
-docker compose up -d postgres
+## Qualidade
 
-# 3. Configure as variáveis de ambiente
-cp packages/server/.env.example packages/server/.env
-cp packages/web/.env.example packages/web/.env
-# Os valores de exemplo já apontam para o banco local e para a API em http://localhost:3001.
-# Chaves das fontes de cotação (BRAPI_API_KEY) e de e-mail (RESEND_API_KEY) são opcionais em desenvolvimento.
+- **147 arquivos de teste** (Vitest e Testing Library no site; na API, Vitest com testes de rota contra um PostgreSQL de testes em Docker).
+- **CI no GitHub Actions** a cada push: build, migrações, testes dos dois pacotes e varredura de segredos com gitleaks.
+- **Segurança:** senhas com bcrypt, refresh token em cookie httpOnly com rotação, rate limit por rota, CORS restrito e headers de segurança (Helmet).
 
-# 4. Crie as tabelas (e, opcionalmente, os dados de demonstração)
-cd packages/server
-npx prisma migrate deploy
-SEED_ADMIN_PASSWORD="<mínimo 12 caracteres>" SEED_USER_PASSWORD="<mínimo 12 caracteres>" npm run prisma:seed
-cd ../..
-
-# 5. Rode a API (http://localhost:3001) e o site (http://localhost:5173), em terminais separados
-npm run dev --workspace=packages/server
-npm run dev
-```
-
-Em desenvolvimento, a documentação da API (Swagger) fica em `http://localhost:3001/docs`.
-
-### Contas de demonstração (seed), só em desenvolvimento
-
-`npm run prisma:seed --workspace=packages/server` cria duas contas: uma conta de demonstração (`diego@investpro.com`, com saldo e posições) e uma conta de administrador (`admin@investpro.com`).
-
-- **Não existe senha fixa no repositório.** A senha de cada conta vem de `SEED_USER_PASSWORD` e `SEED_ADMIN_PASSWORD` (mínimo de 12 caracteres), definidas no ambiente ou em `packages/server/.env`.
-- Se a variável estiver vazia, o seed **gera uma senha aleatória** e a mostra **uma única vez** no console, só no momento em que cria a conta. Guarde-a nessa hora.
-- Uma conta que já existe não tem a senha alterada.
-- O seed nunca transforma uma conta já existente em administrador: se `admin@investpro.com` já existir sem ter sido criado por ele, o seed para e avisa.
-- Em produção (`NODE_ENV=production`) o seed se recusa a rodar, salvo autorização explícita.
-
-## Como rodar os testes
-
-```bash
-# Frontend
-npm run test --workspace=packages/web
-
-# API: sobe um PostgreSQL só de testes (Docker, porta 5433, dados em memória),
-# aplica as migrações e roda a suíte contra ele
-cd packages/server
-npm run test:db:up
-npm test
-npm run test:db:down
-```
-
-Os testes da API se recusam a rodar contra um banco que não seja local: eles criam e apagam contas e abrem muitas conexões, o que pode esgotar o pool de um banco remoto e derrubar o site. Para rodar contra um banco remoto **descartável**, defina `ALLOW_REMOTE_TEST_DB=true` de propósito. **Nunca use essa opção com o banco de produção.** No CI, os testes usam o PostgreSQL do próprio runner.
-
-**O que ainda não existe:** testes end-to-end automatizados no navegador. Hoje os fluxos completos no site publicado são verificados manualmente.
+Para rodar localmente, os arquivos `.env.example` em `packages/server` e `packages/web` listam as variáveis, e o `docker-compose.yml` sobe o PostgreSQL.
 
 ## Status
 
-Projeto concluído em outubro de 2026. O site segue no ar em [investpro.dev.br](https://investpro.dev.br) como demonstração.
+Projeto concluído em outubro de 2026 e no ar em [investpro.dev.br](https://investpro.dev.br).
 
 ## Licença
 
